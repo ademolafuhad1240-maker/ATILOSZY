@@ -405,3 +405,30 @@ select {
 }
 
 /* SORVYRA COMMERCE HOME END */
+
+/* SORVYRA NIGERIA HUB */
+.sorvyra-nigeria-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(12, 136, 140, 0.13), transparent 26%),
+    radial-gradient(circle at 5% 90%, rgba(212, 173, 85, 0.08), transparent 24%),
+    #071019;
+}
+
+.sorvyra-nigeria-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+.sorvyra-nigeria-hero > * {
+  position: relative;
+}
+
