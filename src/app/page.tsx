@@ -28,7 +28,7 @@ const stores = [
       'Skincare, haircare, makeup, clothing, accessories and personal-care essentials.',
     href: '/ng/zee-beauty-fashion',
     image:
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1400&auto=format&fit=crop&q=90',
     accent: '#efa9c8',
   },
   {
@@ -48,7 +48,7 @@ const stores = [
       'Underwear, sleepwear, leggings, loungewear and everyday essentials for women and men.',
     href: '/qa/zee-comfort-hub',
     image:
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=1400&auto=format&fit=crop&q=90',
+      'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1400&auto=format&fit=crop&q=90',
     accent: '#eeb5c5',
   },
 ];

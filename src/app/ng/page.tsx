@@ -273,7 +273,7 @@ export default function NigeriaPage() {
 
             <NigeriaStorePanel
               storefront={zee}
-              image="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1200&auto=format&fit=crop&q=90"
+              image="https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200&auto=format&fit=crop&q=90"
               eyebrow="Beauty, fashion and care"
               accent="#f2bad1"
             />

@@ -80,7 +80,7 @@ export const discoveryProducts: DiscoveryProduct[] = [
     currency: 'QAR',
     price: 149,
     image:
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=1000&auto=format&fit=crop&q=88',
+      'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1000&auto=format&fit=crop&q=88',
     href: '/qa/zee-comfort-hub',
     badge: 'Comfort Pick',
   },
@@ -103,7 +103,7 @@ export const discoveryProducts: DiscoveryProduct[] = [
     currency: 'NGN',
     price: 22500,
     image:
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1000&auto=format&fit=crop&q=88',
+      'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1000&auto=format&fit=crop&q=88',
     href: '/ng/zee-beauty-fashion',
   },
 ];

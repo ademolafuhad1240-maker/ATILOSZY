@@ -78,7 +78,7 @@ export const storefronts: Storefront[] = [
     ],
     logo: null,
     coverImage:
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&auto=format&fit=crop&q=88',
+      'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1400&auto=format&fit=crop&q=88',
     theme: 'zee-nigeria',
     address: 'Okinni, Olaoluwa Estate, Osogbo, Osun State.',
     hours: 'Open daily, 10:00 AM–6:00 PM',
@@ -136,7 +136,7 @@ export const storefronts: Storefront[] = [
     ],
     logo: '/brand/zee-comfort-hub-logo.png',
     coverImage:
-      'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=1400&auto=format&fit=crop&q=88',
+      'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1400&auto=format&fit=crop&q=88',
     theme: 'zee-qatar',
     address: 'Fareej Abdul Aziz, Doha, Qatar.',
     hours: 'Open daily, 10:00 AM–6:00 PM',

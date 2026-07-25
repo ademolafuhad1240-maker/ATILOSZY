@@ -689,3 +689,44 @@ header form:focus-within {
 }
 
 /* SORVYRA LIVING MOTION END */
+
+/* ZEE NIGERIA PREMIUM STOREFRONT */
+.zee-nigeria-commerce-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(244, 190, 211, 0.15), transparent 26%),
+    radial-gradient(circle at 88% 84%, rgba(245, 224, 217, 0.08), transparent 25%),
+    #4a102f;
+}
+
+.zee-nigeria-commerce-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.065;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 68px 68px;
+}
+
+.zee-nigeria-commerce-hero > * {
+  position: relative;
+}
+
+.zee-nigeria-commerce-hero.living-spotlight::after {
+  background:
+    radial-gradient(
+      circle at var(--living-pointer-x) var(--living-pointer-y),
+      rgba(246, 183, 209, 0.17),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 82% 82%,
+      rgba(255, 229, 220, 0.06),
+      transparent 22%
+    );
+}
+

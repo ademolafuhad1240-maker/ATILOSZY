@@ -25,7 +25,7 @@ export default function LivingMotion() {
 
     const heroes = Array.from(
       document.querySelectorAll<HTMLElement>(
-        '.sorvyra-commerce-hero, .sorvyra-nigeria-hero, .atiloszy-commerce-hero',
+        '.sorvyra-commerce-hero, .sorvyra-nigeria-hero, .atiloszy-commerce-hero, .zee-nigeria-commerce-hero',
       ),
     );
 
