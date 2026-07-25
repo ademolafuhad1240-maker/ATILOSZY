@@ -369,3 +369,39 @@ select {
     animation: none !important;
   }
 }
+
+/* SORVYRA COMMERCE HOME START */
+
+.sorvyra-commerce-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 82% 12%, rgba(23, 158, 162, 0.16), transparent 27%),
+    linear-gradient(145deg, #071019 0%, #0d1822 55%, #071019 100%);
+}
+
+.sorvyra-commerce-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+.sorvyra-commerce-hero > * {
+  position: relative;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* SORVYRA COMMERCE HOME END */

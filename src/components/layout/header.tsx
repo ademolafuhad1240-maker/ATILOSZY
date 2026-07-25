@@ -1,72 +1,104 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronDown, Menu, Search, X } from 'lucide-react';
+import {
+  ChevronDown,
+  Heart,
+  MapPin,
+  Menu,
+  Search,
+  ShoppingBag,
+  UserRound,
+  X,
+} from 'lucide-react';
 import Container from '@/components/ui/container';
 
-const navigation = [
-  { href: '/', label: 'All Stores' },
-  { href: '/ng', label: 'Nigeria' },
-  { href: '/qa', label: 'Qatar' },
+const categories = [
+  { href: '/', label: 'New & Trending' },
+  { href: '/ng/atiloszy', label: 'Shoes & Essentials' },
+  { href: '/ng/zee-beauty-fashion', label: 'Beauty & Fashion' },
+  { href: '/ng/atiloszy', label: 'Home & Living' },
+  { href: '/ng/denald', label: 'Solar & Technology' },
+  { href: '/qa/zee-comfort-hub', label: 'Qatar Comfort' },
+  { href: '/ng/denald', label: 'Installation Services' },
 ];
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/10 bg-[#f8f6f0]/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 bg-[#0a1119] text-white shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
       <Container>
-        <div className="flex h-[84px] items-center justify-between">
-          <Link href="/" className="flex min-w-0 items-center gap-3">
-            <div className="relative h-14 w-14 shrink-0 overflow-hidden bg-[#07172b] shadow-[0_8px_30px_rgba(3,18,38,0.16)]">
-              <Image
-                src="/brand/sorvyra-store-logo.png"
-                alt=""
-                fill
-                sizes="56px"
-                className="scale-[1.62] object-cover object-[50%_24%]"
-              />
-            </div>
-
-            <div className="min-w-0">
-              <span className="block truncate text-[18px] font-extrabold tracking-[0.1em] text-[#091421] sm:text-[21px]">
-                SORVYRA
-              </span>
-              <span className="block text-[8px] font-bold uppercase tracking-[0.38em] text-[#aa8739]">
-                Store
-              </span>
-            </div>
+        <div className="flex min-h-[82px] items-center gap-5 lg:gap-8">
+          <Link href="/" className="shrink-0" aria-label="SORVYRA STORE home">
+            <span className="block text-[20px] font-extrabold tracking-[0.14em] sm:text-[23px]">
+              SORVYRA
+            </span>
+            <span className="mt-0.5 block text-[7px] font-extrabold uppercase tracking-[0.44em] text-[#d4ad55]">
+              Store
+            </span>
           </Link>
 
-          <nav className="hidden items-center gap-9 lg:flex" aria-label="Primary navigation">
-            {navigation.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2d3538] transition hover:text-[#a17d32]"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <form
+            action="/shop"
+            className="hidden min-h-12 flex-1 items-center overflow-hidden rounded-full bg-white lg:flex"
+          >
+            <Search
+              size={19}
+              className="ml-5 shrink-0 text-[#4c5661]"
+              strokeWidth={1.8}
+            />
+            <input
+              type="search"
+              name="q"
+              aria-label="Search across SORVYRA stores"
+              placeholder="Search products, categories and stores"
+              className="h-12 min-w-0 flex-1 border-0 bg-transparent px-4 text-sm text-[#111820] outline-none placeholder:text-[#7f8790]"
+            />
+            <button
+              type="submit"
+              className="mr-1.5 rounded-full bg-[#0c888c] px-6 py-3 text-[9px] font-extrabold uppercase tracking-[0.16em] text-white transition hover:bg-[#0a7478]"
+            >
+              Search
+            </button>
+          </form>
 
-          <div className="flex items-center gap-1">
+          <div className="ml-auto flex items-center">
+            <Link
+              href="/ng"
+              className="hidden min-h-11 items-center gap-2 px-3 text-[9px] font-bold uppercase tracking-[0.14em] text-white/78 transition hover:text-white md:flex"
+            >
+              <MapPin size={17} strokeWidth={1.6} />
+              Nigeria
+              <ChevronDown size={13} />
+            </Link>
+
             <button
               type="button"
-              aria-label="Search all stores"
-              className="grid h-11 w-11 place-items-center transition hover:bg-black/5"
+              aria-label="Customer account"
+              className="hidden h-11 w-11 place-items-center text-white/75 transition hover:text-white sm:grid"
             >
-              <Search size={19} strokeWidth={1.6} />
+              <UserRound size={20} strokeWidth={1.6} />
+            </button>
+
+            <button
+              type="button"
+              aria-label="Saved products"
+              className="hidden h-11 w-11 place-items-center text-white/75 transition hover:text-white sm:grid"
+            >
+              <Heart size={20} strokeWidth={1.6} />
             </button>
 
             <Link
-              href="/ng"
-              className="hidden min-h-11 items-center gap-2 border border-black/12 px-4 text-[9px] font-bold uppercase tracking-[0.15em] sm:inline-flex"
+              href="/cart"
+              aria-label="Shopping bag"
+              className="relative grid h-11 w-11 place-items-center text-white/80 transition hover:text-white"
             >
-              Nigeria
-              <ChevronDown size={14} />
+              <ShoppingBag size={20} strokeWidth={1.6} />
+              <span className="absolute right-0 top-0 grid h-5 min-w-5 place-items-center rounded-full bg-[#d4ad55] px-1 text-[8px] font-extrabold text-[#0a1119]">
+                0
+              </span>
             </Link>
 
             <button
@@ -81,21 +113,64 @@ export default function Header() {
           </div>
         </div>
 
-        {mobileOpen && (
-          <nav className="border-t border-black/10 py-4 lg:hidden" aria-label="Mobile navigation">
-            {navigation.map((item) => (
+        <form
+          action="/shop"
+          className="mb-4 flex min-h-12 items-center overflow-hidden rounded-full bg-white lg:hidden"
+        >
+          <Search
+            size={18}
+            className="ml-4 shrink-0 text-[#4c5661]"
+            strokeWidth={1.8}
+          />
+          <input
+            type="search"
+            name="q"
+            aria-label="Search across SORVYRA stores"
+            placeholder="Search all stores"
+            className="h-12 min-w-0 flex-1 bg-transparent px-3 text-sm text-[#111820] outline-none"
+          />
+          <button
+            type="submit"
+            className="mr-1.5 rounded-full bg-[#0c888c] px-5 py-3 text-[8px] font-extrabold uppercase tracking-[0.14em]"
+          >
+            Search
+          </button>
+        </form>
+      </Container>
+
+      <div className="border-t border-white/8 bg-[#0d1721]">
+        <Container>
+          <nav
+            className="hide-scrollbar hidden min-h-12 items-center gap-8 overflow-x-auto lg:flex"
+            aria-label="Shopping departments"
+          >
+            {categories.map((category) => (
               <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className="block border-b border-black/5 py-4 text-xs font-bold uppercase tracking-[0.16em]"
+                key={`${category.href}-${category.label}`}
+                href={category.href}
+                className="shrink-0 text-[9px] font-extrabold uppercase tracking-[0.16em] text-white/62 transition hover:text-[#5ed0ca]"
               >
-                {item.label}
+                {category.label}
               </Link>
             ))}
           </nav>
-        )}
-      </Container>
+
+          {mobileOpen && (
+            <nav className="grid gap-1 py-4 lg:hidden" aria-label="Mobile shopping departments">
+              {categories.map((category) => (
+                <Link
+                  key={`${category.href}-${category.label}`}
+                  href={category.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="border-b border-white/6 py-3 text-[10px] font-bold uppercase tracking-[0.15em] text-white/70"
+                >
+                  {category.label}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </Container>
+      </div>
     </header>
   );
 }
