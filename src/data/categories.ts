@@ -1,38 +1,44 @@
 export const categories = [
   {
-    slug: 'home-and-garden',
-    name: 'Home & Garden',
-    description: 'Create the perfect home environment',
-    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=500&fit=crop',
+    name: 'Home & Living',
+    slug: 'home-living',
+    description: 'Beautiful and practical pieces created for modern everyday spaces.',
+    image:
+      'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&auto=format&fit=crop&q=88',
   },
   {
-    slug: 'kitchen-and-dining',
-    name: 'Kitchen & Dining',
-    description: 'Essential tools for cooking and dining',
-    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=500&fit=crop',
+    name: 'Beauty & Personal Care',
+    slug: 'beauty-personal-care',
+    description: 'Thoughtful beauty tools and personal-care essentials.',
+    image:
+      'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=1200&auto=format&fit=crop&q=88',
   },
   {
-    slug: 'wellness-and-beauty',
-    name: 'Wellness & Beauty',
-    description: 'Self-care products for your well-being',
-    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=500&fit=crop',
+    name: 'Fashion Accessories',
+    slug: 'fashion-accessories',
+    description: 'Finishing pieces that bring character to your everyday style.',
+    image:
+      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=1200&auto=format&fit=crop&q=88',
   },
   {
-    slug: 'office-and-work',
-    name: 'Office & Work',
-    description: 'Tools to organize and inspire productivity',
-    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=500&fit=crop',
+    name: 'Electronics & Gadgets',
+    slug: 'electronics-gadgets',
+    description: 'Useful technology designed to make daily routines easier.',
+    image:
+      'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=1200&auto=format&fit=crop&q=88',
   },
   {
-    slug: 'outdoor-and-travel',
-    name: 'Outdoor & Travel',
-    description: 'Adventure awaits with the right gear',
-    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=500&fit=crop',
+    name: 'Kids & Gifts',
+    slug: 'kids-gifts',
+    description: 'Playful finds and thoughtful gifts for memorable moments.',
+    image:
+      'https://images.unsplash.com/photo-1594787318286-3d835c1d207f?w=1200&auto=format&fit=crop&q=88',
   },
   {
-    slug: 'gifts-and-accessories',
-    name: 'Gifts & Accessories',
-    description: 'Perfect presents and finishing touches',
-    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=500&fit=crop',
+    name: 'Everyday Essentials',
+    slug: 'everyday-essentials',
+    description: 'Reliable items made for work, travel and everyday organisation.',
+    image:
+      'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=1200&auto=format&fit=crop&q=88',
   },
 ];

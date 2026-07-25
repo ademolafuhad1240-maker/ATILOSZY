@@ -5,14 +5,21 @@ interface ProductPriceProps {
   compareAtPrice?: number | null;
 }
 
-export default function ProductPrice({ price, compareAtPrice }: ProductPriceProps) {
-  const showSalePrice = compareAtPrice != null && compareAtPrice > price;
+export default function ProductPrice({
+  price,
+  compareAtPrice,
+}: ProductPriceProps) {
+  const hasDiscount = compareAtPrice != null && compareAtPrice > price;
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-lg font-bold text-charcoal">{formatPrice(price)}</span>
-      {showSalePrice && (
-        <span className="text-sm text-text-muted line-through">{formatPrice(compareAtPrice)}</span>
+    <div className="flex flex-wrap items-center gap-3">
+      <span className="text-sm font-bold tracking-tight text-[#171815]">
+        {formatPrice(price)}
+      </span>
+      {hasDiscount && (
+        <span className="text-xs text-[#8a8c85] line-through">
+          {formatPrice(compareAtPrice)}
+        </span>
       )}
     </div>
   );

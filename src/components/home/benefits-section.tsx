@@ -1,34 +1,39 @@
+import { Headphones, PackageCheck, Sparkles, Store } from 'lucide-react';
 import Container from '@/components/ui/container';
 
 const benefits = [
   {
-    title: 'Carefully Curated',
-    description: 'Every product is thoughtfully selected to meet our high standards of quality and design.',
+    icon: Sparkles,
+    title: 'Thoughtfully selected',
+    description: 'A considered collection built around usefulness, presentation and everyday value.',
   },
   {
-    title: 'Quality Assured',
-    description: 'We partner with trusted brands and makers to bring you the best selections.',
+    icon: Store,
+    title: 'Physical and online',
+    description: 'A unified ATILOSZY experience designed to serve customers wherever they shop.',
   },
   {
-    title: 'Fast Shipping',
-    description: 'Get your items delivered quickly with reliable shipping to your doorstep.',
+    icon: PackageCheck,
+    title: 'Clear product details',
+    description: 'Useful information to help you choose the right item with confidence.',
   },
   {
-    title: 'Satisfied Customers',
-    description: 'Your satisfaction is our priority. We stand behind every product we sell.',
+    icon: Headphones,
+    title: 'Helpful support',
+    description: 'Human assistance when you need information about an item or an order.',
   },
 ];
 
 export default function BenefitsSection() {
   return (
-    <section className="py-16 md:py-24 bg-emerald-dark text-cream-off">
+    <section className="border-y border-black/10 bg-[#fbf8f1] py-16">
       <Container>
-        <h2 className="text-4xl font-bold text-center mb-12">Why Choose ATILOSZY</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {benefits.map((benefit, index) => (
-            <div key={index} className="p-6 bg-emerald-rich rounded-sm">
-              <h3 className="text-xl font-bold mb-2 text-gold-soft">{benefit.title}</h3>
-              <p className="text-cream-warm">{benefit.description}</p>
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+          {benefits.map(({ icon: Icon, title, description }) => (
+            <div key={title}>
+              <Icon size={23} strokeWidth={1.4} className="text-[#a4813d]" />
+              <h3 className="mt-5 font-display text-2xl font-semibold">{title}</h3>
+              <p className="mt-3 text-sm leading-6 text-[#73766f]">{description}</p>
             </div>
           ))}
         </div>

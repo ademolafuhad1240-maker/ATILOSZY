@@ -1,47 +1,53 @@
 import type { Metadata, Viewport } from 'next';
+import { Cormorant_Garamond, Manrope } from 'next/font/google';
 import './globals.css';
 import AnnouncementBar from '@/components/layout/announcement-bar';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import CartProvider from '@/components/cart/cart-provider';
 
+const displayFont = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  variable: '--font-display',
+});
+
+const bodyFont = Manrope({
+  subsets: ['latin'],
+  variable: '--font-body',
+});
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  themeColor: '#0b2a20',
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://atiloszy.sorvyra.com'),
   title: {
-    default: 'ATILOSZY - Everyday finds, thoughtfully chosen',
+    default: 'ATILOSZY — Thoughtfully Chosen',
     template: '%s | ATILOSZY',
   },
   description:
-    'Discover useful, beautiful and carefully selected products that add value to your daily life. Shop ATILOSZY, a SORVYRA Brand.',
-  keywords: [
-    'shopping',
-    'curated products',
-    'home goods',
-    'kitchen',
-    'wellness',
-    'gifts',
-  ],
+    'A premium Nigerian variety store offering thoughtfully selected products for modern everyday living.',
   openGraph: {
-    title: 'ATILOSZY - Everyday finds, thoughtfully chosen',
+    title: 'ATILOSZY — Thoughtfully Chosen',
     description:
-      'Discover useful, beautiful and carefully selected products that add value to your daily life.',
+      'Useful, beautiful and carefully selected products for modern everyday living.',
     type: 'website',
+    siteName: 'ATILOSZY',
   },
-  robots: 'index, follow',
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en">
-      <body className="bg-cream-off text-charcoal">
+    <html lang="en-NG" className={`${displayFont.variable} ${bodyFont.variable}`}>
+      <body>
         <CartProvider>
           <AnnouncementBar />
           <Header />

@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { Menu, Search, ShoppingBag, X } from 'lucide-react';
 import Container from '@/components/ui/container';
-import { Menu, X, Search, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/components/cart/cart-provider';
 
 const navLinks = [
-  { href: '/shop', label: 'Shop' },
-  { href: '/about', label: 'About' },
+  { href: '/shop', label: 'Shop All' },
+  { href: '/shop', label: 'New Arrivals' },
+  { href: '/about', label: 'Our Story' },
   { href: '/contact', label: 'Contact' },
 ];
 
@@ -16,78 +18,97 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { items } = useCart();
 
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemCount = items.reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
 
   return (
-    <header className="border-b border-border-color bg-cream-off sticky top-0 z-40">
+    <header className="sticky top-0 z-50 border-b border-black/10 bg-[#fbf8f1]/95 backdrop-blur-xl">
       <Container>
-        <div className="flex items-center justify-between py-4">
-          {/* Logo */}
-          <Link href="/" className="flex-1">
-            <div className="flex items-baseline gap-2">
-              <h1 className="text-2xl font-bold text-charcoal">ATILOSZY</h1>
-              <span className="text-xs text-text-muted">A SORVYRA Brand</span>
+        <div className="flex h-[82px] items-center justify-between">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden bg-black shadow-[0_0_24px_rgba(211,176,102,0.18)]">
+              <Image
+                src="/brand/atiloszy-logo-original.png"
+                alt=""
+                fill
+                sizes="48px"
+                className="scale-[2.2] object-cover object-[50%_34%]"
+              />
+            </div>
+
+            <div>
+              <span className="block font-display text-[29px] font-semibold leading-none tracking-[0.05em] text-[#132019]">
+                ATILOSZY
+              </span>
+              <span className="mt-1 block text-[8px] font-extrabold uppercase tracking-[0.32em] text-[#9a7838]">
+                Varieties Store
+              </span>
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
+          <nav
+            className="hidden items-center gap-9 lg:flex"
+            aria-label="Primary navigation"
+          >
+            {navLinks.map((link, index) => (
               <Link
-                key={link.href}
+                key={`${link.href}-${index}`}
                 href={link.href}
-                className="text-charcoal hover:text-emerald-rich transition-colors"
+                className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#363933] transition-colors hover:text-[#a27e38]"
               >
                 {link.label}
               </Link>
             ))}
           </nav>
 
-          {/* Right Side Actions */}
-          <div className="flex items-center gap-4 flex-1 justify-end">
+          <div className="flex items-center gap-1">
             <button
-              className="p-2 hover:bg-cream-warm rounded-sm transition-colors"
-              aria-label="Search"
+              type="button"
+              aria-label="Search products"
+              className="grid h-11 w-11 place-items-center transition hover:bg-black/5"
             >
-              <Search size={20} className="text-charcoal" />
+              <Search size={19} strokeWidth={1.6} />
             </button>
+
             <Link
               href="/cart"
-              className="p-2 hover:bg-cream-warm rounded-sm transition-colors relative"
-              aria-label="Shopping cart"
+              aria-label={`Shopping bag with ${itemCount} items`}
+              className="relative grid h-11 w-11 place-items-center transition hover:bg-black/5"
             >
-              <ShoppingCart size={20} className="text-charcoal" />
+              <ShoppingBag size={20} strokeWidth={1.6} />
+
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gold-warm text-charcoal text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                <span className="absolute right-0 top-0 grid h-5 min-w-5 place-items-center rounded-full bg-[#0c3124] px-1 text-[10px] font-bold text-white">
                   {itemCount}
                 </span>
               )}
             </Link>
 
-            {/* Mobile Menu Toggle */}
             <button
-              className="md:hidden p-2 hover:bg-cream-warm rounded-sm transition-colors"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
+              type="button"
+              className="grid h-11 w-11 place-items-center lg:hidden"
+              aria-label="Toggle navigation"
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((open) => !open)}
             >
-              {mobileMenuOpen ? (
-                <X size={20} className="text-charcoal" />
-              ) : (
-                <Menu size={20} className="text-charcoal" />
-              )}
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="md:hidden pb-4 flex flex-col gap-2">
-            {navLinks.map((link) => (
+          <nav
+            className="border-t border-black/10 py-5 lg:hidden"
+            aria-label="Mobile navigation"
+          >
+            {navLinks.map((link, index) => (
               <Link
-                key={link.href}
+                key={`${link.href}-mobile-${index}`}
                 href={link.href}
-                className="text-charcoal hover:text-emerald-rich py-2 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
+                className="block border-b border-black/5 py-4 text-xs font-bold uppercase tracking-[0.16em]"
               >
                 {link.label}
               </Link>
