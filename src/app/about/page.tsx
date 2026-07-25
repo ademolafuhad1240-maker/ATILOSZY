@@ -15,7 +15,7 @@ export default function AboutPage() {
         <Container>
           <h1 className="text-5xl md:text-6xl font-bold mb-6">About ATILOSZY</h1>
           <p className="text-xl text-cream-warm max-w-2xl">
-            We believe that everyday products should be both useful and beautiful. That's why we carefully curate every item in our collection.
+            We believe that everyday products should be both useful and beautiful. That&apos;s why we carefully curate every item in our collection.
           </p>
         </Container>
       </section>
@@ -29,10 +29,10 @@ export default function AboutPage() {
               ATILOSZY exists to simplify the way you shop for everyday items. We partner with trusted brands and makers to bring you a thoughtfully selected collection of products that add real value to your life.
             </p>
             <p className="text-lg text-text-muted mb-6 leading-relaxed">
-              Every product in our store is chosen with care—we look for quality, design, and functionality. We believe that good things don't have to be complicated, and that's reflected in everything we do.
+              Every product in our store is chosen with care—we look for quality, design, and functionality. We believe that good things don&apos;t have to be complicated, and that&apos;s reflected in everything we do.
             </p>
             <p className="text-lg text-text-muted leading-relaxed">
-              As a proud SORVYRA Brand, we're committed to excellence and customer satisfaction in every interaction.
+              As a proud SORVYRA Brand, we&apos;re committed to excellence and customer satisfaction in every interaction.
             </p>
           </div>
         </Container>
@@ -49,13 +49,13 @@ export default function AboutPage() {
             <div className="p-8 bg-white rounded-sm border border-border-color">
               <h3 className="text-2xl font-bold text-emerald-rich mb-4">Quality First</h3>
               <p className="text-text-muted">
-                We don't compromise on quality. Every product meets our high standards before it reaches you.
+                We don&apos;t compromise on quality. Every product meets our high standards before it reaches you.
               </p>
             </div>
             <div className="p-8 bg-white rounded-sm border border-border-color">
               <h3 className="text-2xl font-bold text-emerald-rich mb-4">Customer Focused</h3>
               <p className="text-text-muted">
-                Your satisfaction is our top priority. We're here to help and make your experience exceptional.
+                Your satisfaction is our top priority. We&apos;re here to help and make your experience exceptional.
               </p>
             </div>
             <div className="p-8 bg-white rounded-sm border border-border-color">
@@ -76,7 +76,7 @@ export default function AboutPage() {
             subtitle="Passionate about finding great products for you"
           />
           <p className="text-center text-text-muted max-w-2xl mx-auto mt-8">
-            The ATILOSZY team is dedicated to bringing you the best selection of everyday products. We're constantly searching for new finds and listening to your feedback to improve your shopping experience.
+            The ATILOSZY team is dedicated to bringing you the best selection of everyday products. We&apos;re constantly searching for new finds and listening to your feedback to improve your shopping experience.
           </p>
         </Container>
       </section>

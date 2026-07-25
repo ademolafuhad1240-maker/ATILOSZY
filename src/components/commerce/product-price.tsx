@@ -2,11 +2,11 @@ import { formatPrice } from '@/lib/currency';
 
 interface ProductPriceProps {
   price: number;
-  compareAtPrice?: number;
+  compareAtPrice?: number | null;
 }
 
 export default function ProductPrice({ price, compareAtPrice }: ProductPriceProps) {
-  const showSalePrice = compareAtPrice && compareAtPrice > price;
+  const showSalePrice = compareAtPrice != null && compareAtPrice > price;
 
   return (
     <div className="flex items-center gap-2">

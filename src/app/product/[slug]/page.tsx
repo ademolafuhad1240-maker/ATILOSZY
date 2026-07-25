@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Container from '@/components/ui/container';
-import Button from '@/components/ui/button';
 import ProductPrice from '@/components/commerce/product-price';
 import AddToCartButton from '@/components/cart/add-to-cart-button';
 import Badge from '@/components/ui/badge';

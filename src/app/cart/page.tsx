@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Container from '@/components/ui/container';
 import Button from '@/components/ui/button';
 import { useCart } from '@/components/cart/cart-provider';
@@ -12,8 +11,6 @@ import EmptyState from '@/components/ui/empty-state';
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity } = useCart();
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-
   const cartItems = items.map((item) => ({
     ...item,
     product: getProductBySlug(item.productId)!,
@@ -161,12 +158,13 @@ export default function CartPage() {
                 </div>
 
                 <Button
-                  onClick={() => setIsCheckingOut(true)}
+                  type="button"
                   variant="primary"
                   size="lg"
                   className="w-full mb-3"
+                  disabled
                 >
-                  Proceed to Checkout
+                  Checkout integration coming soon
                 </Button>
                 <Link href="/shop">
                   <Button variant="outline" size="lg" className="w-full">

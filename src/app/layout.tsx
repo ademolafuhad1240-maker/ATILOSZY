@@ -1,9 +1,14 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import AnnouncementBar from '@/components/layout/announcement-bar';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import CartProvider from '@/components/cart/cart-provider';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   title: {
@@ -27,7 +32,6 @@ export const metadata: Metadata = {
     type: 'website',
   },
   robots: 'index, follow',
-  viewport: 'width=device-width, initial-scale=1.0',
 };
 
 export default function RootLayout({
