@@ -20,23 +20,23 @@ const bodyFont = Manrope({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0b2a20',
+  themeColor: '#050a13',
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://atiloszy.sorvyra.com'),
+  metadataBase: new URL('https://shop.sorvyra.com'),
   title: {
-    default: 'ATILOSZY — Thoughtfully Chosen',
-    template: '%s | ATILOSZY',
+    default: 'SORVYRA STORE — Nigeria & Qatar',
+    template: '%s | SORVYRA STORE',
   },
   description:
-    'A premium Nigerian variety store offering thoughtfully selected products for modern everyday living.',
+    'The official shopping and services platform for ATILOSZY, ZEE and DENALD across Nigeria and Qatar.',
   openGraph: {
-    title: 'ATILOSZY — Thoughtfully Chosen',
+    title: 'SORVYRA STORE',
     description:
-      'Useful, beautiful and carefully selected products for modern everyday living.',
+      'Shop owned SORVYRA businesses across Nigeria and Qatar.',
     type: 'website',
-    siteName: 'ATILOSZY',
+    siteName: 'SORVYRA STORE',
   },
 };
 
@@ -46,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-NG" className={`${displayFont.variable} ${bodyFont.variable}`}>
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
       <body>
         <CartProvider>
           <AnnouncementBar />
