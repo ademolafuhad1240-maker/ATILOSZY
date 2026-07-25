@@ -458,3 +458,234 @@ select {
   position: relative;
 }
 
+/* SORVYRA LIVING MOTION START */
+
+.living-announcement {
+  position: relative;
+  overflow: hidden;
+  min-height: 30px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.living-announcement::before,
+.living-announcement::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  pointer-events: none;
+}
+
+.living-announcement::before {
+  left: 0;
+  background: linear-gradient(to right, #071019, transparent);
+}
+
+.living-announcement::after {
+  right: 0;
+  background: linear-gradient(to left, #071019, transparent);
+}
+
+.living-announcement-track {
+  display: flex;
+  width: max-content;
+  min-height: 30px;
+  align-items: center;
+  animation: living-announcement-scroll 32s linear infinite;
+}
+
+.living-announcement:hover .living-announcement-track {
+  animation-play-state: paused;
+}
+
+.living-announcement-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 34px;
+  white-space: nowrap;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.living-announcement-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #d4ad55;
+  box-shadow: 0 0 12px rgba(212, 173, 85, 0.6);
+}
+
+.living-motion-ready .living-reveal,
+.living-motion-ready .living-card {
+  opacity: 0;
+  transform: translate3d(0, 30px, 0);
+  transition:
+    opacity 850ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 850ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--living-delay, 0ms);
+}
+
+.living-motion-ready .living-reveal.is-visible,
+.living-motion-ready .living-card.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.living-card {
+  transition:
+    opacity 850ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 850ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 300ms ease;
+}
+
+.living-card:hover {
+  transform: translate3d(0, -5px, 0);
+  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.14));
+}
+
+.living-spotlight {
+  --living-pointer-x: 72%;
+  --living-pointer-y: 30%;
+  position: relative;
+  isolation: isolate;
+}
+
+.living-spotlight::after {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.38;
+  background:
+    radial-gradient(
+      circle at var(--living-pointer-x) var(--living-pointer-y),
+      rgba(92, 221, 211, 0.14),
+      transparent 25%
+    );
+  transition: opacity 400ms ease;
+}
+
+.atiloszy-commerce-hero.living-spotlight::after {
+  background:
+    radial-gradient(
+      circle at var(--living-pointer-x) var(--living-pointer-y),
+      rgba(69, 210, 132, 0.14),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 16% 80%,
+      rgba(216, 189, 105, 0.07),
+      transparent 22%
+    );
+}
+
+.living-cinematic-image {
+  animation: living-cinematic-drift 16s ease-in-out infinite alternate;
+  animation-delay: var(--living-image-delay, 0s);
+  will-change: transform;
+}
+
+.living-action {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.living-action::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -70%;
+  bottom: -70%;
+  left: -34%;
+  width: 18%;
+  opacity: 0;
+  transform: skewX(-18deg);
+  background: rgba(255, 255, 255, 0.42);
+  filter: blur(5px);
+  animation: living-action-shine 4.8s ease-in-out infinite;
+}
+
+.living-action:hover svg {
+  transform: translateX(4px);
+}
+
+.living-action svg {
+  transition: transform 220ms ease;
+}
+
+header form {
+  transition:
+    box-shadow 260ms ease,
+    transform 260ms ease;
+}
+
+header form:focus-within {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 3px rgba(12, 136, 140, 0.18),
+    0 16px 42px rgba(0, 0, 0, 0.18);
+}
+
+@keyframes living-announcement-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes living-cinematic-drift {
+  0% {
+    transform: scale(1.015) translate3d(-0.25%, 0, 0);
+  }
+
+  100% {
+    transform: scale(1.065) translate3d(0.75%, -0.45%, 0);
+  }
+}
+
+@keyframes living-action-shine {
+  0%,
+  54% {
+    left: -34%;
+    opacity: 0;
+  }
+
+  62% {
+    opacity: 0.55;
+  }
+
+  78%,
+  100% {
+    left: 125%;
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .living-announcement-track,
+  .living-cinematic-image,
+  .living-action::after {
+    animation: none !important;
+  }
+
+  .living-motion-ready .living-reveal,
+  .living-motion-ready .living-card {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .living-card:hover {
+    transform: none;
+    filter: none;
+  }
+}
+
+/* SORVYRA LIVING MOTION END */
