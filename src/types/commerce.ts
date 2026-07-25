@@ -7,24 +7,16 @@ export interface Product {
   name: string;
   shortDescription: string;
   description: string;
-  categorySlug: string;
   price: number;
-  compareAtPrice?: number;
+  compareAtPrice?: number | null;
   image: string;
   secondaryImages?: string[];
-  badge?: string;
+  categorySlug: string;
+  badge?: string | null;
   featured: boolean;
-  newArrival: boolean;
+  isNew: boolean;
   inventoryStatus: InventoryStatus;
   fulfillmentType: FulfillmentType;
-}
-
-export interface Category {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  image: string;
 }
 
 export interface CartItem {

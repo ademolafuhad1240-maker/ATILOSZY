@@ -1,38 +1,34 @@
 import type { Metadata } from 'next';
-import { STORE_CONFIG } from '@/config/store';
-import '@/app/globals.css';
+import './globals.css';
+import AnnouncementBar from '@/components/layout/announcement-bar';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import AnnouncementBar from '@/components/layout/announcement-bar';
 import CartProvider from '@/components/cart/cart-provider';
 
-const metadata: Metadata = {
-  metadataBase: new URL(STORE_CONFIG.productionDomain),
+export const metadata: Metadata = {
   title: {
-    default: 'ATILOSZY — A SORVYRA Brand',
+    default: 'ATILOSZY - Everyday finds, thoughtfully chosen',
     template: '%s | ATILOSZY',
   },
   description:
-    'Discover useful, beautiful and carefully selected products for everyday life—all in one trusted store.',
+    'Discover useful, beautiful and carefully selected products that add value to your daily life. Shop ATILOSZY, a SORVYRA Brand.',
+  keywords: [
+    'shopping',
+    'curated products',
+    'home goods',
+    'kitchen',
+    'wellness',
+    'gifts',
+  ],
   openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: STORE_CONFIG.productionDomain,
-    siteName: 'ATILOSZY',
-    title: 'ATILOSZY — A SORVYRA Brand',
+    title: 'ATILOSZY - Everyday finds, thoughtfully chosen',
     description:
-      'Discover useful, beautiful and carefully selected products for everyday life—all in one trusted store.',
+      'Discover useful, beautiful and carefully selected products that add value to your daily life.',
+    type: 'website',
   },
-  twitter: {
-    card: 'summary_large_image',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: 'index, follow',
+  viewport: 'width=device-width, initial-scale=1.0',
 };
-
-export { metadata };
 
 export default function RootLayout({
   children,
@@ -41,10 +37,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <meta name="theme-color" content="#0B3B2E" />
-      </head>
-      <body>
+      <body className="bg-cream-off text-charcoal">
         <CartProvider>
           <AnnouncementBar />
           <Header />
