@@ -18,7 +18,8 @@
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
     "db:audit": "tsx scripts/audit-storefront-foundation.ts",
-    "db:audit:catalog": "tsx scripts/audit-catalog-foundation.ts"
+    "db:audit:catalog": "tsx scripts/audit-catalog-foundation.ts",
+    "db:audit:services": "node --conditions=react-server --import tsx scripts/audit-catalog-services.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
