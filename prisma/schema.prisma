@@ -60,6 +60,27 @@ enum StockMovementType {
   DAMAGE
 }
 
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum VerificationPurpose {
+  REGISTRATION
+  EMAIL_CHANGE
+  PHONE_CHANGE
+  PASSWORD_RESET
+  TWO_FACTOR_RECOVERY
+}
+
+enum CustomerAddressType {
+  SHIPPING
+  BILLING
+  BOTH
+}
+
 model Currency {
   code          String            @id @db.VarChar(3)
   name          String            @unique
@@ -75,48 +96,56 @@ model Currency {
 }
 
 model Country {
-  code             String       @id @db.VarChar(2)
-  name             String       @unique
-  phoneCallingCode String       @db.VarChar(8)
-  defaultLocale    String       @db.VarChar(16)
-  defaultTimezone  String       @db.VarChar(64)
-  currencyCode     String       @db.VarChar(3)
-  currency         Currency     @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  storefronts      Storefront[]
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  code              String            @id @db.VarChar(2)
+  name              String            @unique
+  phoneCallingCode  String            @db.VarChar(8)
+  defaultLocale     String            @db.VarChar(16)
+  defaultTimezone   String            @db.VarChar(64)
+  currencyCode      String            @db.VarChar(3)
+  currency          Currency          @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  storefronts       Storefront[]
+  customerAddresses CustomerAddress[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@index([currencyCode])
   @@map("countries")
 }
 
 model Storefront {
-  id                String                        @id @default(cuid())
-  key               String                        @unique @db.VarChar(50)
-  code              String                        @unique @db.VarChar(3)
-  slug              String                        @unique @db.VarChar(80)
-  name              String
-  shortName         String
-  description       String
-  route             String                        @unique
-  locationLabel     String
-  locale            String                        @db.VarChar(16)
-  timezone          String                        @db.VarChar(64)
-  logoPath          String?
-  coverImage        String?
-  kind              StorefrontKind
-  status            StorefrontStatus              @default(ACTIVE)
-  countryCode       String                        @db.VarChar(2)
-  currencyCode      String                        @db.VarChar(3)
-  country           Country                       @relation(fields: [countryCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  currency          Currency                      @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  contact           StorefrontContact?
-  fulfilment        StorefrontFulfilmentSettings?
-  categories        Category[]
-  catalogueProducts StorefrontProduct[]
-  inventories       Inventory[]
-  createdAt         DateTime                      @default(now())
-  updatedAt         DateTime                      @updatedAt
+  id                 String                        @id @default(cuid())
+  key                String                        @unique @db.VarChar(50)
+  code               String                        @unique @db.VarChar(3)
+  slug               String                        @unique @db.VarChar(80)
+  name               String
+  shortName          String
+  description        String
+  route              String                        @unique
+  locationLabel      String
+  locale             String                        @db.VarChar(16)
+  timezone           String                        @db.VarChar(64)
+  logoPath           String?
+  coverImage         String?
+  kind               StorefrontKind
+  status             StorefrontStatus              @default(ACTIVE)
+  countryCode        String                        @db.VarChar(2)
+  currencyCode       String                        @db.VarChar(3)
+  country            Country                       @relation(fields: [countryCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  currency           Currency                      @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  contact            StorefrontContact?
+  fulfilment         StorefrontFulfilmentSettings?
+  categories         Category[]
+  catalogueProducts  StorefrontProduct[]
+  inventories        Inventory[]
+  users              User[]
+  customers          StorefrontCustomer[]
+  customerSecurity   CustomerSecuritySettings[]
+  customerAddresses  CustomerAddress[]
+  customerSessions   Session[]
+  emailVerifications EmailVerification[]
+  phoneVerifications PhoneVerification[]
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
 
   @@index([countryCode, status])
   @@index([currencyCode])
@@ -355,4 +384,174 @@ model StockMovement {
   @@index([inventoryId, createdAt])
   @@index([referenceType, referenceId])
   @@map("stock_movements")
+}
+
+model User {
+  id                  String                    @id @default(cuid())
+  storefrontId        String
+  email               String                    @db.VarChar(254)
+  normalizedEmail     String                    @db.VarChar(254)
+  phone               String                    @db.VarChar(32)
+  normalizedPhone     String                    @db.VarChar(32)
+  passwordHash        String                    @db.VarChar(255)
+  status              UserStatus                @default(PENDING_VERIFICATION)
+  emailVerifiedAt     DateTime?
+  phoneVerifiedAt     DateTime?
+  lastLoginAt         DateTime?
+  failedLoginAttempts Int                       @default(0)
+  lockedUntil         DateTime?
+  sessionVersion      Int                       @default(1)
+  deletedAt           DateTime?
+  storefront          Storefront                @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  customer            StorefrontCustomer?
+  security            CustomerSecuritySettings?
+  addresses           CustomerAddress[]
+  sessions            Session[]
+  emailVerifications  EmailVerification[]
+  phoneVerifications  PhoneVerification[]
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  @@unique([storefrontId, normalizedEmail])
+  @@unique([storefrontId, normalizedPhone])
+  @@unique([id, storefrontId])
+  @@index([storefrontId, status])
+  @@index([normalizedEmail])
+  @@index([normalizedPhone])
+  @@index([emailVerifiedAt, phoneVerifiedAt])
+  @@map("users")
+}
+
+model StorefrontCustomer {
+  id                String     @id @default(cuid())
+  userId            String
+  storefrontId      String
+  firstName         String
+  lastName          String
+  displayName       String?
+  marketingOptIn    Boolean    @default(false)
+  marketingOptInAt  DateTime?
+  termsAcceptedAt   DateTime
+  privacyAcceptedAt DateTime
+  user              User       @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Cascade, onUpdate: Cascade)
+  storefront        Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@unique([userId, storefrontId])
+  @@index([storefrontId, createdAt])
+  @@map("storefront_customers")
+}
+
+model CustomerSecuritySettings {
+  id                        String     @id @default(cuid())
+  userId                    String
+  storefrontId              String
+  twoFactorEnabled          Boolean    @default(false)
+  twoFactorSecretCiphertext String?
+  twoFactorRecoveryData     Json?
+  twoFactorConfirmedAt      DateTime?
+  loginAlertsEnabled        Boolean    @default(true)
+  passwordChangedAt         DateTime?
+  user                      User       @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Cascade, onUpdate: Cascade)
+  storefront                Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt                 DateTime   @default(now())
+  updatedAt                 DateTime   @updatedAt
+
+  @@unique([userId, storefrontId])
+  @@index([storefrontId, twoFactorEnabled])
+  @@map("customer_security_settings")
+}
+
+model CustomerAddress {
+  id                 String              @id @default(cuid())
+  userId             String
+  storefrontId       String
+  countryCode        String              @db.VarChar(2)
+  type               CustomerAddressType @default(SHIPPING)
+  label              String?
+  recipientFirstName String
+  recipientLastName  String
+  recipientPhone     String              @db.VarChar(32)
+  addressLine1       String
+  addressLine2       String?
+  city               String
+  stateOrProvince    String?
+  postalCode         String?             @db.VarChar(32)
+  deliveryNotes      String?
+  isDefaultShipping  Boolean             @default(false)
+  isDefaultBilling   Boolean             @default(false)
+  deletedAt          DateTime?
+  user               User                @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Cascade, onUpdate: Cascade)
+  storefront         Storefront          @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  country            Country             @relation(fields: [countryCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([userId, storefrontId])
+  @@index([storefrontId, city])
+  @@index([countryCode])
+  @@index([isDefaultShipping, isDefaultBilling])
+  @@map("customer_addresses")
+}
+
+model Session {
+  id            String     @id @default(cuid())
+  userId        String
+  storefrontId  String
+  tokenHash     String     @unique @db.VarChar(128)
+  expiresAt     DateTime
+  lastSeenAt    DateTime?
+  revokedAt     DateTime?
+  revokedReason String?
+  ipAddress     String?    @db.VarChar(64)
+  userAgent     String?
+  user          User       @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Cascade, onUpdate: Cascade)
+  storefront    Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([userId, storefrontId, expiresAt])
+  @@index([storefrontId, revokedAt])
+  @@map("sessions")
+}
+
+model EmailVerification {
+  id           String              @id @default(cuid())
+  userId       String
+  storefrontId String
+  email        String              @db.VarChar(254)
+  tokenHash    String              @unique @db.VarChar(128)
+  purpose      VerificationPurpose @default(REGISTRATION)
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int                 @default(0)
+  user         User                @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Cascade, onUpdate: Cascade)
+  storefront   Storefront          @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt    DateTime            @default(now())
+
+  @@index([userId, storefrontId, purpose, expiresAt])
+  @@index([email, consumedAt])
+  @@map("email_verifications")
+}
+
+model PhoneVerification {
+  id           String              @id @default(cuid())
+  userId       String
+  storefrontId String
+  phone        String              @db.VarChar(32)
+  challengeId  String              @unique @db.VarChar(128)
+  codeHash     String              @db.VarChar(128)
+  purpose      VerificationPurpose @default(REGISTRATION)
+  expiresAt    DateTime
+  consumedAt   DateTime?
+  attemptCount Int                 @default(0)
+  maxAttempts  Int                 @default(5)
+  user         User                @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Cascade, onUpdate: Cascade)
+  storefront   Storefront          @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt    DateTime            @default(now())
+
+  @@index([userId, storefrontId, purpose, expiresAt])
+  @@index([phone, consumedAt])
+  @@map("phone_verifications")
 }
