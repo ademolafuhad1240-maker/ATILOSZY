@@ -122,41 +122,42 @@ model Country {
 }
 
 model Storefront {
-  id                 String                        @id @default(cuid())
-  key                String                        @unique @db.VarChar(50)
-  code               String                        @unique @db.VarChar(3)
-  slug               String                        @unique @db.VarChar(80)
-  name               String
-  shortName          String
-  description        String
-  route              String                        @unique
-  locationLabel      String
-  locale             String                        @db.VarChar(16)
-  timezone           String                        @db.VarChar(64)
-  logoPath           String?
-  coverImage         String?
-  kind               StorefrontKind
-  status             StorefrontStatus              @default(ACTIVE)
-  countryCode        String                        @db.VarChar(2)
-  currencyCode       String                        @db.VarChar(3)
-  country            Country                       @relation(fields: [countryCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  currency           Currency                      @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  contact            StorefrontContact?
-  fulfilment         StorefrontFulfilmentSettings?
-  categories         Category[]
-  catalogueProducts  StorefrontProduct[]
-  inventories        Inventory[]
-  users              User[]
-  customers          StorefrontCustomer[]
-  customerSecurity   CustomerSecuritySettings[]
-  customerAddresses  CustomerAddress[]
-  customerSessions   Session[]
-  emailVerifications EmailVerification[]
-  phoneVerifications PhoneVerification[]
-  carts              Cart[]
-  createdAt          DateTime                      @default(now())
-  updatedAt          DateTime                      @updatedAt
-  orders             Order[]
+  id                    String                        @id @default(cuid())
+  key                   String                        @unique @db.VarChar(50)
+  code                  String                        @unique @db.VarChar(3)
+  slug                  String                        @unique @db.VarChar(80)
+  name                  String
+  shortName             String
+  description           String
+  route                 String                        @unique
+  locationLabel         String
+  locale                String                        @db.VarChar(16)
+  timezone              String                        @db.VarChar(64)
+  logoPath              String?
+  coverImage            String?
+  kind                  StorefrontKind
+  status                StorefrontStatus              @default(ACTIVE)
+  countryCode           String                        @db.VarChar(2)
+  currencyCode          String                        @db.VarChar(3)
+  country               Country                       @relation(fields: [countryCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  currency              Currency                      @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  contact               StorefrontContact?
+  fulfilment            StorefrontFulfilmentSettings?
+  categories            Category[]
+  catalogueProducts     StorefrontProduct[]
+  inventories           Inventory[]
+  users                 User[]
+  customers             StorefrontCustomer[]
+  customerSecurity      CustomerSecuritySettings[]
+  customerAddresses     CustomerAddress[]
+  customerSessions      Session[]
+  emailVerifications    EmailVerification[]
+  phoneVerifications    PhoneVerification[]
+  carts                 Cart[]
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  orders                Order[]
+  paymentProviderEvents PaymentProviderEvent[]
 
   @@unique([id, currencyCode])
   @@index([countryCode, status])
@@ -714,6 +715,14 @@ enum PickupReservationStatus {
   CANCELLED
 }
 
+enum PaymentProviderEventStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  IGNORED
+  FAILED
+}
+
 model Order {
   id                    String                @id @default(cuid())
   orderNumber           String                @unique @db.VarChar(40)
@@ -822,28 +831,29 @@ model OrderAddress {
 }
 
 model OrderPayment {
-  id                String              @id @default(cuid())
+  id                String                 @id @default(cuid())
   orderId           String
   storefrontId      String
-  currencyCode      String              @db.VarChar(3)
+  currencyCode      String                 @db.VarChar(3)
   purpose           OrderPaymentPurpose
   method            OrderPaymentMethod?
-  status            OrderPaymentStatus  @default(PENDING)
-  amount            Decimal             @db.Decimal(18, 2)
-  provider          String?             @db.VarChar(80)
-  providerReference String?             @db.VarChar(191)
-  idempotencyKey    String?             @db.VarChar(191)
-  failureCode       String?             @db.VarChar(120)
+  status            OrderPaymentStatus     @default(PENDING)
+  amount            Decimal                @db.Decimal(18, 2)
+  provider          String?                @db.VarChar(80)
+  providerReference String?                @db.VarChar(191)
+  idempotencyKey    String?                @db.VarChar(191)
+  failureCode       String?                @db.VarChar(120)
   failureMessage    String?
   providerMetadata  Json?
-  initiatedAt       DateTime            @default(now())
+  initiatedAt       DateTime               @default(now())
   paidAt            DateTime?
   failedAt          DateTime?
   cancelledAt       DateTime?
   refundedAt        DateTime?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  order             Order               @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  order             Order                  @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+  providerEvents    PaymentProviderEvent[]
 
   @@unique([storefrontId, idempotencyKey])
   @@unique([provider, providerReference])
@@ -851,6 +861,36 @@ model OrderPayment {
   @@index([storefrontId, createdAt])
   @@index([status, createdAt])
   @@map("order_payments")
+}
+
+model PaymentProviderEvent {
+  id                  String                     @id @default(cuid())
+  provider            String                     @db.VarChar(80)
+  providerEventId     String                     @db.VarChar(191)
+  eventType           String                     @db.VarChar(120)
+  status              PaymentProviderEventStatus @default(RECEIVED)
+  payloadHash         String                     @db.VarChar(128)
+  payload             Json
+  signatureVerified   Boolean                    @default(false)
+  storefrontId        String?
+  orderPaymentId      String?
+  attemptCount        Int                        @default(0)
+  processingStartedAt DateTime?
+  processedAt         DateTime?
+  failureCode         String?                    @db.VarChar(120)
+  failureMessage      String?
+  receivedAt          DateTime                   @default(now())
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  storefront          Storefront?                @relation(fields: [storefrontId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  orderPayment        OrderPayment?              @relation(fields: [orderPaymentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([provider, providerEventId])
+  @@index([status, receivedAt])
+  @@index([provider, eventType, receivedAt])
+  @@index([storefrontId, receivedAt])
+  @@index([orderPaymentId, receivedAt])
+  @@map("payment_provider_events")
 }
 
 model DeliveryFeeQuote {
