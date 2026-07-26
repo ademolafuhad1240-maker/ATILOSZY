@@ -730,3 +730,43 @@ header form:focus-within {
     );
 }
 
+/* DENALD PREMIUM STOREFRONT */
+.denald-commerce-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(22, 103, 164, 0.18), transparent 27%),
+    radial-gradient(circle at 8% 88%, rgba(244, 198, 66, 0.08), transparent 24%),
+    #071a31;
+}
+
+.denald-commerce-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.065;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 68px 68px;
+}
+
+.denald-commerce-hero > * {
+  position: relative;
+}
+
+.denald-commerce-hero.living-spotlight::after {
+  background:
+    radial-gradient(
+      circle at var(--living-pointer-x) var(--living-pointer-y),
+      rgba(55, 159, 222, 0.17),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 15% 82%,
+      rgba(244, 198, 66, 0.07),
+      transparent 22%
+    );
+}
+
