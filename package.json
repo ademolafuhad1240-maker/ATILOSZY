@@ -33,7 +33,8 @@
     "db:audit:live-catalog": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-live-catalog-cart-integration.ts",
     "db:audit:legacy-cart-retirement": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-legacy-cart-retirement.ts",
     "db:audit:orders": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-order-foundation.ts",
-    "db:audit:checkout-services": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-checkout-services.ts"
+    "db:audit:checkout-services": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-checkout-services.ts",
+    "db:audit:checkout-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-checkout-api.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
