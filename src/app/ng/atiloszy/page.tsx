@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 };
 
 const storeNavigation = [
+  { label: 'Shop all', href: '/ng/atiloszy/shop' },
   { label: 'New arrivals', href: '#new-arrivals' },
   { label: 'Footwear', href: '#categories' },
   { label: 'Home', href: '#categories' },
@@ -220,7 +221,7 @@ export default function AtiloszyPage() {
             </div>
 
             <Link
-              href="/shop"
+              href="/ng/atiloszy/shop"
               className="flex items-center gap-2 text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#102219]"
             >
               Shop everything
@@ -278,7 +279,7 @@ export default function AtiloszyPage() {
             </div>
 
             <Link
-              href="/shop"
+              href="/ng/atiloszy/shop"
               className="flex items-center gap-2 text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#102219]"
             >
               View all products

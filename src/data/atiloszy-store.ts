@@ -24,7 +24,7 @@ export const atiloszyProducts: AtiloszyProduct[] = [
     image:
       'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=1000&auto=format&fit=crop&q=88',
     badge: 'Trending',
-    href: '/shop',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     id: 'ati-footwear-002',
@@ -34,7 +34,7 @@ export const atiloszyProducts: AtiloszyProduct[] = [
     image:
       'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1000&auto=format&fit=crop&q=88',
     badge: 'New',
-    href: '/shop',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     id: 'ati-home-001',
@@ -44,7 +44,7 @@ export const atiloszyProducts: AtiloszyProduct[] = [
     image:
       'https://images.unsplash.com/photo-1603006905003-be475563bc59?w=1000&auto=format&fit=crop&q=88',
     badge: 'Featured',
-    href: '/product/sculpted-aroma-diffuser',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     id: 'ati-everyday-001',
@@ -53,7 +53,7 @@ export const atiloszyProducts: AtiloszyProduct[] = [
     price: 18500,
     image:
       'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=1000&auto=format&fit=crop&q=88',
-    href: '/product/insulated-travel-tumbler',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     id: 'ati-gadget-001',
@@ -63,7 +63,7 @@ export const atiloszyProducts: AtiloszyProduct[] = [
     image:
       'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=1000&auto=format&fit=crop&q=88',
     badge: 'Popular',
-    href: '/product/compact-wireless-speaker',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     id: 'ati-gadget-002',
@@ -72,7 +72,7 @@ export const atiloszyProducts: AtiloszyProduct[] = [
     price: 17500,
     image:
       'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=1000&auto=format&fit=crop&q=88',
-    href: '/product/foldable-charging-stand',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     id: 'ati-fashion-001',
@@ -82,7 +82,7 @@ export const atiloszyProducts: AtiloszyProduct[] = [
     image:
       'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=1000&auto=format&fit=crop&q=88',
     badge: 'Limited',
-    href: '/product/structured-mini-tote',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     id: 'ati-home-002',
@@ -91,7 +91,7 @@ export const atiloszyProducts: AtiloszyProduct[] = [
     price: 21500,
     image:
       'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1000&auto=format&fit=crop&q=88',
-    href: '/product/modular-storage-caddy',
+    href: '/ng/atiloszy/shop#products',
   },
 ];
 
@@ -101,42 +101,42 @@ export const atiloszyCategories: AtiloszyCategory[] = [
     description: 'Shoes selected for comfort, daily movement and personal style.',
     image:
       'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1100&auto=format&fit=crop&q=88',
-    href: '/shop',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     name: 'Home & Living',
     description: 'Useful products that bring order, comfort and character into your space.',
     image:
       'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1100&auto=format&fit=crop&q=88',
-    href: '/category/home-living',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     name: 'Kitchen Essentials',
     description: 'Practical kitchen products for easier everyday routines.',
     image:
       'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=1100&auto=format&fit=crop&q=88',
-    href: '/shop',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     name: 'Gadgets',
     description: 'Compact technology and accessories for work, travel and relaxation.',
     image:
       'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=1100&auto=format&fit=crop&q=88',
-    href: '/category/electronics-gadgets',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     name: 'Fashion Accessories',
     description: 'Bags, watches and accessories that complete the everyday look.',
     image:
       'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=1100&auto=format&fit=crop&q=88',
-    href: '/category/fashion-accessories',
+    href: '/ng/atiloszy/shop#products',
   },
   {
     name: 'Kids & Gifts',
     description: 'Thoughtful gifts and creative products for children and special moments.',
     image:
       'https://images.unsplash.com/photo-1594787318286-3d835c1d207f?w=1100&auto=format&fit=crop&q=88',
-    href: '/category/kids-gifts',
+    href: '/ng/atiloszy/shop#products',
   },
 ];
 
