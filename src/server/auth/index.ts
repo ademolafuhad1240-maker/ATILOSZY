@@ -43,3 +43,36 @@ export type {
   ValidatedSession,
   VerificationResult,
 } from "./types";
+
+export {
+  assertAuthDeliveryEnabled,
+  createDisabledAuthDeliveryProvider,
+  getAuthDeliveryProvider,
+  isAuthDeliveryUnavailableError,
+  AuthDeliveryUnavailableError,
+} from "./delivery";
+
+export {
+  requestPasswordReset,
+  resetCustomerPassword,
+} from "./recovery";
+
+export {
+  resendRegistrationVerification,
+} from "./resend";
+
+export type {
+  AuthDeliveryProvider,
+  EmailVerificationDelivery,
+  PasswordResetDelivery,
+  PhoneVerificationDelivery,
+} from "./delivery";
+
+export type {
+  GenericRecoveryResult,
+  RecoveryClockOptions,
+  RequestPasswordResetInput,
+  ResendRegistrationVerificationInput,
+  ResetCustomerPasswordInput,
+  ResetPasswordResult,
+} from "./recovery-types";
