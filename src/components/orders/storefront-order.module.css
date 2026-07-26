@@ -1,0 +1,455 @@
+.page {
+  min-height: 100vh;
+  padding: clamp(1rem, 3vw, 3rem);
+  background:
+    radial-gradient(
+      circle at 88% 0%,
+      rgba(255, 255, 255, 0.11),
+      transparent 34rem
+    ),
+    linear-gradient(
+      145deg,
+      #07111b,
+      #101c28 50%,
+      #07111b
+    );
+  color: #f8fafc;
+}
+
+.header {
+  width: min(1180px, 100%);
+  margin: 0 auto 1.5rem;
+  padding:
+    clamp(1.4rem, 4vw, 3rem);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  border: 1px solid
+    rgba(255, 255, 255, 0.13);
+  background:
+    rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(20px);
+}
+
+.eyebrow,
+.stateLabel {
+  margin: 0 0 0.7rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size:
+    clamp(1.8rem, 5vw, 4rem);
+  letter-spacing: -0.045em;
+}
+
+.header > div > p:last-child {
+  margin: 1rem 0 0;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.header nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.header nav a,
+.primaryLink {
+  min-height: 2.7rem;
+  padding: 0.75rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid
+    rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.header nav a:hover,
+.primaryLink:hover {
+  background: #ffffff;
+  color: #07111b;
+}
+
+.orderGrid {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(300px, 390px);
+  align-items: start;
+  gap: 1.5rem;
+}
+
+.mainColumn {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.statusPanel,
+.panel,
+.paymentNotice,
+.summary,
+.state {
+  border: 1px solid
+    rgba(255, 255, 255, 0.12);
+  background:
+    rgba(255, 255, 255, 0.055);
+  box-shadow:
+    0 28px 80px
+      rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+}
+
+.statusPanel {
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.statusPanel > div {
+  min-width: 0;
+  padding: 0.75rem;
+  border-left: 1px solid
+    rgba(255, 255, 255, 0.16);
+}
+
+.statusPanel p {
+  margin: 0 0 0.4rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.statusPanel strong {
+  overflow-wrap: anywhere;
+  font-size: 0.88rem;
+}
+
+.statusPanel strong[data-status="CANCELLED"] {
+  color: #ffb6b6;
+}
+
+.paymentNotice,
+.panel,
+.state {
+  padding:
+    clamp(1.3rem, 3vw, 2.2rem);
+}
+
+.paymentNotice {
+  border-color:
+    rgba(255, 214, 122, 0.26);
+  background:
+    rgba(255, 197, 72, 0.075);
+}
+
+.paymentNotice h2,
+.state h2 {
+  margin: 0;
+  font-size: 1.65rem;
+}
+
+.paymentNotice > p:last-child,
+.state > p {
+  max-width: 720px;
+  margin: 0.75rem 0 0;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.7;
+}
+
+.panelHeading,
+.summaryHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panelHeading {
+  margin-bottom: 1.2rem;
+}
+
+.panelHeading h2,
+.paymentRows h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.panelHeading span,
+.summaryHeading span {
+  color: rgba(255, 255, 255, 0.53);
+  font-size: 0.78rem;
+}
+
+.products {
+  display: grid;
+}
+
+.product {
+  padding: 1.15rem 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.2rem;
+  border-bottom: 1px solid
+    rgba(255, 255, 255, 0.1);
+}
+
+.product:last-child {
+  border-bottom: 0;
+}
+
+.product h3,
+.address h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.product p,
+.address p {
+  margin: 0.3rem 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+}
+
+.product small,
+.address small {
+  display: block;
+  margin-top: 0.45rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.productPrice {
+  display: grid;
+  justify-items: end;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.productPrice span {
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.75rem;
+}
+
+.addressGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.address {
+  padding: 1.1rem;
+  border: 1px solid
+    rgba(255, 255, 255, 0.1);
+  background:
+    rgba(0, 0, 0, 0.12);
+}
+
+.summary {
+  position: sticky;
+  top: 1.5rem;
+  overflow: hidden;
+}
+
+.summaryHeading {
+  padding: 1.25rem 1.4rem;
+  border-bottom: 1px solid
+    rgba(255, 255, 255, 0.1);
+}
+
+.summaryHeading p {
+  margin: 0;
+  font-weight: 850;
+}
+
+.totals {
+  padding: 1.25rem 1.4rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.totals > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.grandTotal {
+  margin-top: 0.35rem;
+  padding-top: 1rem;
+  border-top: 1px solid
+    rgba(255, 255, 255, 0.12);
+  color: #ffffff !important;
+  font-size: 1.05rem;
+}
+
+.paymentRows {
+  padding: 1.25rem 1.4rem;
+  border-top: 1px solid
+    rgba(255, 255, 255, 0.1);
+}
+
+.paymentRows h2 {
+  margin-bottom: 0.9rem;
+}
+
+.paymentRows article {
+  padding: 0.75rem 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid
+    rgba(255, 255, 255, 0.08);
+}
+
+.paymentRows article:last-child {
+  border-bottom: 0;
+}
+
+.paymentRows article div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.paymentRows article span {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+}
+
+.error {
+  margin: 0 1.4rem 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid
+    rgba(255, 105, 105, 0.35);
+  background:
+    rgba(255, 62, 62, 0.09);
+  color: #ffd2d2;
+  line-height: 1.55;
+}
+
+.cancelButton {
+  width: calc(100% - 2.8rem);
+  min-height: 3.2rem;
+  margin: 0 1.4rem 1.4rem;
+  border: 1px solid
+    rgba(255, 118, 118, 0.4);
+  border-radius: 0;
+  background:
+    rgba(255, 66, 66, 0.08);
+  color: #ffd3d3;
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background:
+    rgba(255, 66, 66, 0.16);
+}
+
+.cancelButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.cancelledNotice {
+  margin: 0 1.4rem 1.4rem;
+  padding: 1rem;
+  border: 1px solid
+    rgba(255, 255, 255, 0.11);
+  background:
+    rgba(0, 0, 0, 0.14);
+}
+
+.cancelledNotice p {
+  margin: 0.45rem 0;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.55;
+}
+
+.cancelledNotice small {
+  color: rgba(255, 255, 255, 0.43);
+}
+
+.state {
+  width: min(900px, 100%);
+  margin: 0 auto;
+}
+
+.state .primaryLink {
+  margin-top: 1.1rem;
+}
+
+@media (
+  max-width: 900px
+) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header nav {
+    justify-content: flex-start;
+  }
+
+  .orderGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary {
+    position: static;
+  }
+
+  .statusPanel {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (
+  max-width: 620px
+) {
+  .page {
+    padding: 0.8rem;
+  }
+
+  .header nav {
+    width: 100%;
+    display: grid;
+  }
+
+  .statusPanel,
+  .addressGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .product {
+    flex-direction: column;
+  }
+
+  .productPrice {
+    justify-items: start;
+  }
+}

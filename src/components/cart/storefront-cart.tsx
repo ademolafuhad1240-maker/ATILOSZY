@@ -742,15 +742,20 @@ export function StorefrontCart({
                       : "Clear cart"}
                   </button>
 
-                  <button
+                  <Link
                     className={
-                      styles.primaryButton
+                      styles.checkoutLink
                     }
-                    type="button"
-                    disabled
+                    href={
+                      cartHref.replace(
+                        /\/cart$/,
+                        "/checkout",
+                      )
+                    }
+                    data-checkout-link
                   >
-                    Checkout coming next
-                  </button>
+                    Proceed to secure checkout
+                  </Link>
                 </div>
 
                 <p
@@ -758,10 +763,7 @@ export function StorefrontCart({
                     styles.checkoutNote
                   }
                 >
-                  Checkout is intentionally
-                  disabled until order,
-                  payment and fulfilment
-                  protections are added.
+                  Products and prices are revalidated before an unpaid order is created.
                 </p>
               </aside>
             </>

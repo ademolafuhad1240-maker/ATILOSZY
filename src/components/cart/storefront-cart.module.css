@@ -322,3 +322,30 @@
     text-align: center;
   }
 }
+
+.checkoutLink {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.9rem 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 1rem;
+  background: #111820;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.checkoutLink:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
