@@ -30,7 +30,8 @@
     "db:audit:cart": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-foundation.ts",
     "db:audit:cart-services": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-services.ts",
     "db:audit:cart-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-api-pages.ts",
-    "db:audit:live-catalog": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-live-catalog-cart-integration.ts"
+    "db:audit:live-catalog": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-live-catalog-cart-integration.ts",
+    "db:audit:legacy-cart-retirement": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-legacy-cart-retirement.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",

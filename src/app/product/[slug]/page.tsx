@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Container from '@/components/ui/container';
 import ProductPrice from '@/components/commerce/product-price';
-import AddToCartButton from '@/components/cart/add-to-cart-button';
+import StorefrontPurchaseCta from '@/components/cart/storefront-purchase-cta';
 import Badge from '@/components/ui/badge';
 import { getProductBySlug, getProductsByCategory } from '@/lib/products';
 import Link from 'next/link';
@@ -122,12 +122,9 @@ export default async function ProductPage({
                 </p>
               </div>
 
-              {/* Add to Cart */}
+              {/* Storefront selection */}
               <div className="mb-8">
-                <AddToCartButton
-                  product={product}
-                  disabled={product.inventoryStatus === 'out_of_stock'}
-                />
+                <StorefrontPurchaseCta />
               </div>
 
               {/* Additional Info */}

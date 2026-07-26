@@ -92,13 +92,10 @@ export default function Header() {
 
             <Link
               href="/cart"
-              aria-label="Shopping bag"
+              aria-label="Choose storefront cart"
               className="relative grid h-11 w-11 place-items-center text-white/80 transition hover:text-white"
             >
               <ShoppingBag size={20} strokeWidth={1.6} />
-              <span className="absolute right-0 top-0 grid h-5 min-w-5 place-items-center rounded-full bg-[#d4ad55] px-1 text-[8px] font-extrabold text-[#0a1119]">
-                0
-              </span>
             </Link>
 
             <button

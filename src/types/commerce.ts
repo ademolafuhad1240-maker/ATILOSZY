@@ -18,8 +18,3 @@ export interface Product {
   inventoryStatus: InventoryStatus;
   fulfillmentType: FulfillmentType;
 }
-
-export interface CartItem {
-  productId: string;
-  quantity: number;
-}

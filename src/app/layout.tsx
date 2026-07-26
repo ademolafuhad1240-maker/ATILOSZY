@@ -4,7 +4,6 @@ import './globals.css';
 import AnnouncementBar from '@/components/layout/announcement-bar';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
-import CartProvider from '@/components/cart/cart-provider';
 import LivingMotion from '@/components/motion/living-motion';
 
 const displayFont = Cormorant_Garamond({
@@ -49,13 +48,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
       <body>
-        <CartProvider>
           <LivingMotion />
           <AnnouncementBar />
           <Header />
           <main>{children}</main>
           <Footer />
-        </CartProvider>
       </body>
     </html>
   );
