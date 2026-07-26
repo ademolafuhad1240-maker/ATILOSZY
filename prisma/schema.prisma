@@ -19,15 +19,57 @@ enum StorefrontKind {
   SERVICE_HYBRID
 }
 
+enum CategoryStatus {
+  ACTIVE
+  HIDDEN
+  ARCHIVED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum StorefrontProductStatus {
+  DRAFT
+  ACTIVE
+  HIDDEN
+  ARCHIVED
+}
+
+enum ProductVariantStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+}
+
+enum PriceType {
+  REGULAR
+  SALE
+}
+
+enum StockMovementType {
+  OPENING_STOCK
+  PURCHASE
+  ADJUSTMENT
+  RESERVATION
+  RELEASE
+  SALE
+  RETURN
+  DAMAGE
+}
+
 model Currency {
-  code          String       @id @db.VarChar(3)
-  name          String       @unique
-  symbol        String       @db.VarChar(12)
-  decimalPlaces Int          @default(2)
+  code          String            @id @db.VarChar(3)
+  name          String            @unique
+  symbol        String            @db.VarChar(12)
+  decimalPlaces Int               @default(2)
   countries     Country[]
   storefronts   Storefront[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  prices        StorefrontPrice[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@map("currencies")
 }
@@ -49,29 +91,32 @@ model Country {
 }
 
 model Storefront {
-  id            String                        @id @default(cuid())
-  key           String                        @unique @db.VarChar(50)
-  code          String                        @unique @db.VarChar(3)
-  slug          String                        @unique @db.VarChar(80)
-  name          String
-  shortName     String
-  description   String
-  route         String                        @unique
-  locationLabel String
-  locale        String                        @db.VarChar(16)
-  timezone      String                        @db.VarChar(64)
-  logoPath      String?
-  coverImage    String?
-  kind          StorefrontKind
-  status        StorefrontStatus              @default(ACTIVE)
-  countryCode   String                        @db.VarChar(2)
-  currencyCode  String                        @db.VarChar(3)
-  country       Country                       @relation(fields: [countryCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  currency      Currency                      @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  contact       StorefrontContact?
-  fulfilment    StorefrontFulfilmentSettings?
-  createdAt     DateTime                      @default(now())
-  updatedAt     DateTime                      @updatedAt
+  id                String                        @id @default(cuid())
+  key               String                        @unique @db.VarChar(50)
+  code              String                        @unique @db.VarChar(3)
+  slug              String                        @unique @db.VarChar(80)
+  name              String
+  shortName         String
+  description       String
+  route             String                        @unique
+  locationLabel     String
+  locale            String                        @db.VarChar(16)
+  timezone          String                        @db.VarChar(64)
+  logoPath          String?
+  coverImage        String?
+  kind              StorefrontKind
+  status            StorefrontStatus              @default(ACTIVE)
+  countryCode       String                        @db.VarChar(2)
+  currencyCode      String                        @db.VarChar(3)
+  country           Country                       @relation(fields: [countryCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  currency          Currency                      @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  contact           StorefrontContact?
+  fulfilment        StorefrontFulfilmentSettings?
+  categories        Category[]
+  catalogueProducts StorefrontProduct[]
+  inventories       Inventory[]
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
 
   @@index([countryCode, status])
   @@index([currencyCode])
@@ -125,4 +170,189 @@ model StorefrontFulfilmentSettings {
   updatedAt                            DateTime   @updatedAt
 
   @@map("storefront_fulfilment_settings")
+}
+
+model Category {
+  id                 String              @id @default(cuid())
+  storefrontId       String
+  parentId           String?
+  slug               String              @db.VarChar(100)
+  name               String
+  description        String?
+  imageUrl           String?
+  position           Int                 @default(0)
+  status             CategoryStatus      @default(ACTIVE)
+  storefront         Storefront          @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  parent             Category?           @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  children           Category[]          @relation("CategoryHierarchy")
+  storefrontProducts StorefrontProduct[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([storefrontId, slug])
+  @@index([storefrontId, status, position])
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Product {
+  id                 String              @id @default(cuid())
+  slug               String              @unique @db.VarChar(140)
+  name               String
+  shortDescription   String?
+  description        String?
+  brand              String?
+  status             ProductStatus       @default(DRAFT)
+  storefrontProducts StorefrontProduct[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([status])
+  @@map("products")
+}
+
+model StorefrontProduct {
+  id             String                  @id @default(cuid())
+  storefrontId   String
+  productId      String
+  categoryId     String?
+  slug           String                  @db.VarChar(140)
+  status         StorefrontProductStatus @default(DRAFT)
+  isFeatured     Boolean                 @default(false)
+  isDemo         Boolean                 @default(false)
+  sortOrder      Int                     @default(0)
+  maxPerOrder    Int?
+  publishedAt    DateTime?
+  availableFrom  DateTime?
+  availableUntil DateTime?
+  storefront     Storefront              @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product        Product                 @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category       Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  variants       ProductVariant[]
+  images         ProductImage[]
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@unique([storefrontId, productId])
+  @@unique([storefrontId, slug])
+  @@index([storefrontId, status, isFeatured])
+  @@index([categoryId])
+  @@index([productId])
+  @@map("storefront_products")
+}
+
+model ProductVariant {
+  id                  String               @id @default(cuid())
+  storefrontProductId String
+  sku                 String               @unique @db.VarChar(80)
+  barcode             String?              @unique @db.VarChar(80)
+  title               String
+  status              ProductVariantStatus @default(ACTIVE)
+  isDefault           Boolean              @default(false)
+  weightGrams         Int?
+  lengthMm            Int?
+  widthMm             Int?
+  heightMm            Int?
+  storefrontProduct   StorefrontProduct    @relation(fields: [storefrontProductId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  options             VariantOption[]
+  images              ProductImage[]
+  prices              StorefrontPrice[]
+  inventory           Inventory?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@index([storefrontProductId, status])
+  @@map("product_variants")
+}
+
+model VariantOption {
+  id               String         @id @default(cuid())
+  productVariantId String
+  name             String         @db.VarChar(80)
+  value            String         @db.VarChar(120)
+  position         Int            @default(0)
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([productVariantId, name])
+  @@index([productVariantId, position])
+  @@map("variant_options")
+}
+
+model ProductImage {
+  id                  String            @id @default(cuid())
+  storefrontProductId String
+  variantId           String?
+  url                 String
+  altText             String?
+  position            Int               @default(0)
+  isPrimary           Boolean           @default(false)
+  storefrontProduct   StorefrontProduct @relation(fields: [storefrontProductId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  variant             ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([storefrontProductId, position])
+  @@index([variantId])
+  @@map("product_images")
+}
+
+model StorefrontPrice {
+  id               String         @id @default(cuid())
+  productVariantId String
+  currencyCode     String         @db.VarChar(3)
+  type             PriceType      @default(REGULAR)
+  amount           Decimal        @db.Decimal(18, 2)
+  compareAtAmount  Decimal?       @db.Decimal(18, 2)
+  costAmount       Decimal?       @db.Decimal(18, 2)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  isActive         Boolean        @default(true)
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  currency         Currency       @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([productVariantId, isActive, startsAt, endsAt])
+  @@index([currencyCode])
+  @@map("storefront_prices")
+}
+
+model Inventory {
+  id               String          @id @default(cuid())
+  storefrontId     String
+  productVariantId String          @unique
+  quantityOnHand   Int             @default(0)
+  quantityReserved Int             @default(0)
+  reorderLevel     Int             @default(0)
+  isTracked        Boolean         @default(true)
+  allowBackorder   Boolean         @default(false)
+  storefront       Storefront      @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productVariant   ProductVariant  @relation(fields: [productVariantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  movements        StockMovement[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([storefrontId])
+  @@index([quantityOnHand, quantityReserved])
+  @@map("inventories")
+}
+
+model StockMovement {
+  id                    String            @id @default(cuid())
+  inventoryId           String
+  type                  StockMovementType
+  quantityDelta         Int
+  quantityOnHandAfter   Int
+  quantityReservedAfter Int
+  reason                String?
+  referenceType         String?           @db.VarChar(80)
+  referenceId           String?           @db.VarChar(160)
+  inventory             Inventory         @relation(fields: [inventoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt             DateTime          @default(now())
+
+  @@index([inventoryId, createdAt])
+  @@index([referenceType, referenceId])
+  @@map("stock_movements")
 }

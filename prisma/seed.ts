@@ -286,6 +286,137 @@ const storefrontDefinitions = [
   },
 ] as const;
 
+const categoryDefinitions = {
+  atiloszy: [
+    {
+      slug: "shoes",
+      name: "Shoes",
+      description: "Everyday footwear and carefully selected shoes.",
+      position: 1,
+    },
+    {
+      slug: "household-essentials",
+      name: "Household Essentials",
+      description: "Useful products for everyday home life.",
+      position: 2,
+    },
+    {
+      slug: "useful-gadgets",
+      name: "Useful Gadgets",
+      description: "Practical gadgets and convenient accessories.",
+      position: 3,
+    },
+    {
+      slug: "gifts",
+      name: "Gifts",
+      description: "Thoughtful products for gifting occasions.",
+      position: 4,
+    },
+    {
+      slug: "everyday-essentials",
+      name: "Everyday Essentials",
+      description: "Reliable daily-use products.",
+      position: 5,
+    },
+  ],
+  "zee-beauty-fashion": [
+    {
+      slug: "beauty",
+      name: "Beauty",
+      description: "Beauty products selected for everyday routines.",
+      position: 1,
+    },
+    {
+      slug: "fashion",
+      name: "Fashion",
+      description: "Fashion pieces and wearable essentials.",
+      position: 2,
+    },
+    {
+      slug: "personal-care",
+      name: "Personal Care",
+      description: "Personal-care products for daily use.",
+      position: 3,
+    },
+    {
+      slug: "household",
+      name: "Household",
+      description: "Useful household products and accessories.",
+      position: 4,
+    },
+    {
+      slug: "everyday-essentials",
+      name: "Everyday Essentials",
+      description: "Frequently needed everyday items.",
+      position: 5,
+    },
+  ],
+  denald: [
+    {
+      slug: "solar",
+      name: "Solar",
+      description: "Solar panels, inverters, batteries and power solutions.",
+      position: 1,
+    },
+    {
+      slug: "cctv",
+      name: "CCTV",
+      description: "Security cameras, recorders and surveillance equipment.",
+      position: 2,
+    },
+    {
+      slug: "computers",
+      name: "Computers",
+      description: "Computer systems and workplace technology.",
+      position: 3,
+    },
+    {
+      slug: "accessories",
+      name: "Accessories",
+      description: "Supporting equipment, cables and technical accessories.",
+      position: 4,
+    },
+  ],
+  "zee-comfort-hub": [
+    {
+      slug: "bras",
+      name: "Bras",
+      description: "Comfort-focused everyday bras.",
+      position: 1,
+    },
+    {
+      slug: "underwear",
+      name: "Underwear",
+      description: "Comfortable underwear for everyday wear.",
+      position: 2,
+    },
+    {
+      slug: "leggings",
+      name: "Leggings",
+      description: "Flexible leggings for comfort and movement.",
+      position: 3,
+    },
+    {
+      slug: "sleepwear",
+      name: "Sleepwear",
+      description: "Soft sleepwear designed for restful evenings.",
+      position: 4,
+    },
+    {
+      slug: "loungewear",
+      name: "Loungewear",
+      description: "Relaxed pieces for comfortable home living.",
+      position: 5,
+    },
+    {
+      slug: "mens-essentials",
+      name: "Men's Essentials",
+      description: "Boxers, singlets, vintage tops and round-neck essentials.",
+      position: 6,
+    },
+  ],
+} as const;
+
 async function seed() {
   for (const currency of currencies) {
     await prisma.currency.upsert({
@@ -337,12 +468,38 @@ async function seed() {
         ...definition.fulfilment,
       },
     });
+
+
+    const categories = categoryDefinitions[definition.store.key];
+
+    for (const category of categories) {
+      await prisma.category.upsert({
+        where: {
+          storefrontId_slug: {
+            storefrontId: storefront.id,
+            slug: category.slug,
+          },
+        },
+        update: {
+          name: category.name,
+          description: category.description,
+          position: category.position,
+        },
+        create: {
+          storefrontId: storefront.id,
+          slug: category.slug,
+          name: category.name,
+          description: category.description,
+          position: category.position,
+        },
+      });
+    }
   }
 }
 
 seed()
   .then(async () => {
-    console.log("SORVYRA storefront foundation seeded successfully.");
+    console.log("SORVYRA storefront and catalogue foundation seeded successfully.");
     await prisma.$disconnect();
   })
   .catch(async (error: unknown) => {
