@@ -770,3 +770,83 @@ header form:focus-within {
     );
 }
 
+/* SORVYRA QATAR HUB */
+.sorvyra-qatar-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(239, 196, 206, 0.16), transparent 27%),
+    radial-gradient(circle at 88% 84%, rgba(255, 234, 238, 0.07), transparent 25%),
+    #401326;
+}
+
+.sorvyra-qatar-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 68px 68px;
+}
+
+.sorvyra-qatar-hero > * {
+  position: relative;
+}
+
+.sorvyra-qatar-hero.living-spotlight::after {
+  background:
+    radial-gradient(
+      circle at var(--living-pointer-x) var(--living-pointer-y),
+      rgba(244, 207, 216, 0.17),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 82% 82%,
+      rgba(255, 239, 242, 0.06),
+      transparent 22%
+    );
+}
+
+/* ZEE COMFORT HUB PREMIUM STOREFRONT */
+.zee-comfort-commerce-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(239, 196, 206, 0.17), transparent 27%),
+    radial-gradient(circle at 8% 88%, rgba(255, 237, 240, 0.07), transparent 24%),
+    #401326;
+}
+
+.zee-comfort-commerce-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 68px 68px;
+}
+
+.zee-comfort-commerce-hero > * {
+  position: relative;
+}
+
+.zee-comfort-commerce-hero.living-spotlight::after {
+  background:
+    radial-gradient(
+      circle at var(--living-pointer-x) var(--living-pointer-y),
+      rgba(244, 207, 216, 0.18),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 18% 82%,
+      rgba(255, 239, 242, 0.06),
+      transparent 22%
+    );
+}
+
