@@ -22,7 +22,8 @@
     "db:audit:services": "node --conditions=react-server --import tsx scripts/audit-catalog-services.ts",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "db:audit:identity": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-customer-identity.ts",
-    "db:audit:auth": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-customer-auth-services.ts"
+    "db:audit:auth": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-customer-auth-services.ts",
+    "db:audit:auth-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-auth-api-routes.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
