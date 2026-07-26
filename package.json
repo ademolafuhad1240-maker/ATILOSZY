@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "db:up": "docker compose -f docker-compose.postgres.yml --env-file .env up -d",
     "db:down": "docker compose -f docker-compose.postgres.yml --env-file .env down",
     "db:logs": "docker compose -f docker-compose.postgres.yml --env-file .env logs -f postgres",
@@ -19,7 +19,8 @@
     "db:seed": "prisma db seed",
     "db:audit": "tsx scripts/audit-storefront-foundation.ts",
     "db:audit:catalog": "tsx scripts/audit-catalog-foundation.ts",
-    "db:audit:services": "node --conditions=react-server --import tsx scripts/audit-catalog-services.ts"
+    "db:audit:services": "node --conditions=react-server --import tsx scripts/audit-catalog-services.ts",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
