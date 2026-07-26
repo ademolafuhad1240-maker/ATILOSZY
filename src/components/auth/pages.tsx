@@ -27,6 +27,10 @@ import {
 import {
   VerificationForm,
 } from "./verify-form";
+import {
+  ForgotPasswordForm,
+  ResetPasswordForm,
+} from "./recovery-forms";
 
 import styles from "./auth.module.css";
 
@@ -114,6 +118,53 @@ export function StorefrontVerifyPage({
         initialPhoneChallengeId={
           firstSearchValue(
             searchParams.challengeId,
+          )
+        }
+      />
+    </AuthShell>
+  );
+}
+
+export function StorefrontForgotPasswordPage({
+  storefront,
+}: {
+  storefront: StorefrontAuthConfig;
+}) {
+  return (
+    <AuthShell
+      storefront={storefront}
+      title="Recover access safely."
+      description={
+        "Request a single-use recovery link for the account registered with this storefront."
+      }
+    >
+      <ForgotPasswordForm
+        storefront={storefront}
+      />
+    </AuthShell>
+  );
+}
+
+export function StorefrontResetPasswordPage({
+  storefront,
+  searchParams,
+}: {
+  storefront: StorefrontAuthConfig;
+  searchParams: SearchParams;
+}) {
+  return (
+    <AuthShell
+      storefront={storefront}
+      title="Choose a new password."
+      description={
+        "Replace your password securely. Existing sessions will be revoked after a successful reset."
+      }
+    >
+      <ResetPasswordForm
+        storefront={storefront}
+        initialToken={
+          firstSearchValue(
+            searchParams.token,
           )
         }
       />

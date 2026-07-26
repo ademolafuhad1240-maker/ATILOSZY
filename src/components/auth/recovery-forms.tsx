@@ -5,7 +5,6 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import type {
   StorefrontAuthConfig,
@@ -14,9 +13,7 @@ import type {
 import styles from "./auth.module.css";
 
 interface ApiPayload {
-  ok?: boolean;
   error?: {
-    code?: string;
     message?: string;
   };
 }
@@ -26,7 +23,7 @@ interface FormNotice {
   message: string;
 }
 
-async function readApiPayload(
+async function readPayload(
   response: Response,
 ): Promise<ApiPayload> {
   try {
@@ -36,7 +33,7 @@ async function readApiPayload(
   }
 }
 
-function errorMessage(
+function resolveMessage(
   payload: ApiPayload,
   fallback: string,
 ): string {
@@ -46,200 +43,7 @@ function errorMessage(
   );
 }
 
-export function LoginForm({
-  storefront,
-}: {
-  storefront: StorefrontAuthConfig;
-}) {
-  const router = useRouter();
-
-  const [
-    notice,
-    setNotice,
-  ] = useState<FormNotice | null>(
-    null,
-  );
-
-  const [
-    submitting,
-    setSubmitting,
-  ] = useState(false);
-
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ): Promise<void> {
-    event.preventDefault();
-
-    const form =
-      event.currentTarget;
-
-    const formData =
-      new FormData(form);
-
-    setNotice(null);
-    setSubmitting(true);
-
-    try {
-      const response = await fetch(
-        "/api/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          credentials: "same-origin",
-          body: JSON.stringify({
-            storefrontCode:
-              storefront.code,
-            email:
-              formData.get("email"),
-            password:
-              formData.get("password"),
-          }),
-        },
-      );
-
-      const payload =
-        await readApiPayload(response);
-
-      if (!response.ok) {
-        throw new Error(
-          errorMessage(
-            payload,
-            "Sign in could not be completed.",
-          ),
-        );
-      }
-
-      setNotice({
-        kind: "success",
-        message:
-          "Sign in successful. Opening your account…",
-      });
-
-      router.replace(
-        storefront.accountHref,
-      );
-
-      router.refresh();
-    } catch (error) {
-      setNotice({
-        kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Sign in could not be completed.",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <>
-      <div className={styles.panelHeader}>
-        <h2 className={styles.panelTitle}>
-          Welcome back
-        </h2>
-
-        <p className={styles.panelText}>
-          Use the email and password
-          registered specifically with{" "}
-          {storefront.shortName}.
-        </p>
-      </div>
-
-      <form
-        className={styles.form}
-        onSubmit={handleSubmit}
-        data-auth-form="login"
-      >
-        <label className={styles.field}>
-          <span className={styles.label}>
-            Email address
-          </span>
-
-          <input
-            className={styles.input}
-            type="email"
-            name="email"
-            autoComplete="email"
-            maxLength={254}
-            required
-            placeholder="you@example.com"
-          />
-        </label>
-
-        <label className={styles.field}>
-          <span className={styles.label}>
-            Password
-          </span>
-
-          <input
-            className={styles.input}
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            maxLength={128}
-            required
-            placeholder="Your password"
-          />
-        </label>
-
-        {notice ? (
-          <div
-            className={
-              notice.kind === "error"
-                ? styles.errorNotice
-                : styles.successNotice
-            }
-            role={
-              notice.kind === "error"
-                ? "alert"
-                : "status"
-            }
-            aria-live="polite"
-          >
-            {notice.message}
-          </div>
-        ) : null}
-
-        <button
-          className={styles.primaryButton}
-          type="submit"
-          disabled={submitting}
-        >
-          {submitting
-            ? "Signing in…"
-            : `Sign in to ${storefront.shortName}`}
-        </button>
-      </form>
-
-      <p className={styles.formFooter}>
-        <Link
-          href={
-            storefront.forgotPasswordHref
-          }
-          className={styles.inlineLink}
-        >
-          Forgot your password?
-        </Link>
-        {" · "}
-        New to this storefront?{" "}
-        <Link
-          href={storefront.registerHref}
-          className={styles.inlineLink}
-        >
-          Create an account
-        </Link>
-        .
-      </p>
-    </>
-  );
-}
-
-export function RegistrationForm({
+export function ForgotPasswordForm({
   storefront,
 }: {
   storefront: StorefrontAuthConfig;
@@ -256,7 +60,7 @@ export function RegistrationForm({
     setSubmitting,
   ] = useState(false);
 
-  async function handleSubmit(
+  async function submit(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
@@ -272,7 +76,7 @@ export function RegistrationForm({
 
     try {
       const response = await fetch(
-        "/api/auth/register",
+        "/api/auth/recovery/request",
         {
           method: "POST",
           headers: {
@@ -283,50 +87,20 @@ export function RegistrationForm({
           body: JSON.stringify({
             storefrontCode:
               storefront.code,
-            firstName:
-              formData.get(
-                "firstName",
-              ),
-            lastName:
-              formData.get(
-                "lastName",
-              ),
-            displayName:
-              formData.get(
-                "displayName",
-              ) || undefined,
             email:
               formData.get("email"),
-            phone:
-              formData.get("phone"),
-            password:
-              formData.get(
-                "password",
-              ),
-            marketingOptIn:
-              formData.get(
-                "marketingOptIn",
-              ) === "on",
-            termsAccepted:
-              formData.get(
-                "termsAccepted",
-              ) === "on",
-            privacyAccepted:
-              formData.get(
-                "privacyAccepted",
-              ) === "on",
           }),
         },
       );
 
       const payload =
-        await readApiPayload(response);
+        await readPayload(response);
 
       if (!response.ok) {
         throw new Error(
-          errorMessage(
+          resolveMessage(
             payload,
-            "Registration could not be completed.",
+            "The recovery request could not be completed.",
           ),
         );
       }
@@ -336,7 +110,7 @@ export function RegistrationForm({
       setNotice({
         kind: "success",
         message:
-          "Account created. Complete both verification steps when your email and phone messages arrive.",
+          "When an eligible account exists, password-reset instructions will be sent to its registered email.",
       });
     } catch (error) {
       setNotice({
@@ -344,7 +118,7 @@ export function RegistrationForm({
         message:
           error instanceof Error
             ? error.message
-            : "Registration could not be completed.",
+            : "The recovery request could not be completed.",
       });
     } finally {
       setSubmitting(false);
@@ -355,82 +129,30 @@ export function RegistrationForm({
     <>
       <div className={styles.panelHeader}>
         <h2 className={styles.panelTitle}>
-          Create your account
+          Recover your account
         </h2>
 
         <p className={styles.panelText}>
-          This account belongs only to{" "}
-          {storefront.name}. Accounts,
-          carts and orders remain separate
-          between SORVYRA storefronts.
+          Enter the email registered
+          specifically with{" "}
+          {storefront.shortName}.
         </p>
       </div>
 
       <div className={styles.notice}>
-        Registration remains unavailable
-        until verified email and SMS
-        delivery providers are connected.
-        This form is ready for activation
-        afterward.
+        Recovery email delivery remains
+        disabled until a verified provider
+        is connected.
       </div>
 
       <form
         className={styles.form}
-        onSubmit={handleSubmit}
-        data-auth-form="register"
+        onSubmit={submit}
+        data-auth-form="forgot-password"
       >
-        <div className={styles.fieldGrid}>
-          <label className={styles.field}>
-            <span className={styles.label}>
-              First name
-            </span>
-
-            <input
-              className={styles.input}
-              type="text"
-              name="firstName"
-              autoComplete="given-name"
-              maxLength={100}
-              required
-            />
-          </label>
-
-          <label className={styles.field}>
-            <span className={styles.label}>
-              Last name
-            </span>
-
-            <input
-              className={styles.input}
-              type="text"
-              name="lastName"
-              autoComplete="family-name"
-              maxLength={100}
-              required
-            />
-          </label>
-        </div>
-
         <label className={styles.field}>
           <span className={styles.label}>
-            Display name{" "}
-            <span aria-hidden="true">
-              · optional
-            </span>
-          </span>
-
-          <input
-            className={styles.input}
-            type="text"
-            name="displayName"
-            autoComplete="nickname"
-            maxLength={100}
-          />
-        </label>
-
-        <label className={styles.field}>
-          <span className={styles.label}>
-            Email address
+            Registered email address
           </span>
 
           <input
@@ -442,87 +164,6 @@ export function RegistrationForm({
             required
             placeholder="you@example.com"
           />
-        </label>
-
-        <label className={styles.field}>
-          <span className={styles.label}>
-            Phone number
-          </span>
-
-          <input
-            className={styles.input}
-            type="tel"
-            name="phone"
-            autoComplete="tel"
-            maxLength={32}
-            required
-            placeholder="+234… or +974…"
-          />
-        </label>
-
-        <label className={styles.field}>
-          <span className={styles.label}>
-            Password
-          </span>
-
-          <input
-            className={styles.input}
-            type="password"
-            name="password"
-            autoComplete="new-password"
-            minLength={12}
-            maxLength={128}
-            required
-            placeholder="At least 12 characters"
-          />
-        </label>
-
-        <label
-          className={styles.checkboxRow}
-        >
-          <input
-            className={styles.checkbox}
-            type="checkbox"
-            name="termsAccepted"
-            required
-          />
-
-          <span>
-            I accept this storefront’s
-            customer terms.
-          </span>
-        </label>
-
-        <label
-          className={styles.checkboxRow}
-        >
-          <input
-            className={styles.checkbox}
-            type="checkbox"
-            name="privacyAccepted"
-            required
-          />
-
-          <span>
-            I accept the privacy notice
-            and account data processing.
-          </span>
-        </label>
-
-        <label
-          className={styles.checkboxRow}
-        >
-          <input
-            className={styles.checkbox}
-            type="checkbox"
-            name="marketingOptIn"
-          />
-
-          <span>
-            Send me optional product and
-            offer updates. I can change
-            this later.
-          </span>
         </label>
 
         {notice ? (
@@ -549,21 +190,389 @@ export function RegistrationForm({
           disabled={submitting}
         >
           {submitting
-            ? "Creating account…"
-            : "Create storefront account"}
+            ? "Requesting recovery…"
+            : "Send password-reset instructions"}
         </button>
       </form>
 
       <p className={styles.formFooter}>
-        Already registered here?{" "}
+        Remembered your password?{" "}
         <Link
           href={storefront.loginHref}
           className={styles.inlineLink}
         >
-          Sign in
+          Return to sign in
         </Link>
         .
       </p>
     </>
+  );
+}
+
+export function ResetPasswordForm({
+  storefront,
+  initialToken,
+}: {
+  storefront: StorefrontAuthConfig;
+  initialToken?: string;
+}) {
+  const [
+    notice,
+    setNotice,
+  ] = useState<FormNotice | null>(
+    null,
+  );
+
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+
+  async function submit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault();
+
+    const form =
+      event.currentTarget;
+
+    const formData =
+      new FormData(form);
+
+    const newPassword =
+      formData.get("newPassword");
+
+    const confirmPassword =
+      formData.get("confirmPassword");
+
+    setNotice(null);
+
+    if (
+      typeof newPassword !== "string" ||
+      newPassword !== confirmPassword
+    ) {
+      setNotice({
+        kind: "error",
+        message:
+          "The password confirmation does not match.",
+      });
+
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const response = await fetch(
+        "/api/auth/recovery/reset",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            storefrontCode:
+              storefront.code,
+            token:
+              formData.get("token"),
+            newPassword,
+          }),
+        },
+      );
+
+      const payload =
+        await readPayload(response);
+
+      if (!response.ok) {
+        throw new Error(
+          resolveMessage(
+            payload,
+            "The password could not be reset.",
+          ),
+        );
+      }
+
+      form.reset();
+
+      setNotice({
+        kind: "success",
+        message:
+          "Your password has been replaced and existing sessions have been revoked. Sign in again using the new password.",
+      });
+    } catch (error) {
+      setNotice({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "The password could not be reset.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <div className={styles.panelHeader}>
+        <h2 className={styles.panelTitle}>
+          Set a new password
+        </h2>
+
+        <p className={styles.panelText}>
+          Use the secure token from your
+          recovery email and create a new
+          storefront password.
+        </p>
+      </div>
+
+      <form
+        className={styles.form}
+        onSubmit={submit}
+        data-auth-form="reset-password"
+      >
+        <label className={styles.field}>
+          <span className={styles.label}>
+            Password-reset token
+          </span>
+
+          <input
+            className={styles.input}
+            type="text"
+            name="token"
+            defaultValue={initialToken}
+            maxLength={256}
+            required
+            autoComplete="off"
+          />
+        </label>
+
+        <label className={styles.field}>
+          <span className={styles.label}>
+            New password
+          </span>
+
+          <input
+            className={styles.input}
+            type="password"
+            name="newPassword"
+            autoComplete="new-password"
+            minLength={12}
+            maxLength={128}
+            required
+            placeholder="At least 12 characters"
+          />
+        </label>
+
+        <label className={styles.field}>
+          <span className={styles.label}>
+            Confirm new password
+          </span>
+
+          <input
+            className={styles.input}
+            type="password"
+            name="confirmPassword"
+            autoComplete="new-password"
+            minLength={12}
+            maxLength={128}
+            required
+          />
+        </label>
+
+        {notice ? (
+          <div
+            className={
+              notice.kind === "error"
+                ? styles.errorNotice
+                : styles.successNotice
+            }
+            role={
+              notice.kind === "error"
+                ? "alert"
+                : "status"
+            }
+            aria-live="polite"
+          >
+            {notice.message}
+          </div>
+        ) : null}
+
+        <button
+          className={styles.primaryButton}
+          type="submit"
+          disabled={submitting}
+        >
+          {submitting
+            ? "Replacing password…"
+            : "Replace password"}
+        </button>
+      </form>
+
+      <p className={styles.formFooter}>
+        Ready to continue?{" "}
+        <Link
+          href={storefront.loginHref}
+          className={styles.inlineLink}
+        >
+          Return to sign in
+        </Link>
+        .
+      </p>
+    </>
+  );
+}
+
+export function ResendVerificationForm({
+  storefront,
+}: {
+  storefront: StorefrontAuthConfig;
+}) {
+  const [
+    notice,
+    setNotice,
+  ] = useState<FormNotice | null>(
+    null,
+  );
+
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+
+  async function submit(
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> {
+    event.preventDefault();
+
+    const form =
+      event.currentTarget;
+
+    const formData =
+      new FormData(form);
+
+    setNotice(null);
+    setSubmitting(true);
+
+    try {
+      const response = await fetch(
+        "/api/auth/verify/resend",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            storefrontCode:
+              storefront.code,
+            email:
+              formData.get("email"),
+          }),
+        },
+      );
+
+      const payload =
+        await readPayload(response);
+
+      if (!response.ok) {
+        throw new Error(
+          resolveMessage(
+            payload,
+            "Verification messages could not be requested.",
+          ),
+        );
+      }
+
+      form.reset();
+
+      setNotice({
+        kind: "success",
+        message:
+          "When an eligible pending account exists, new verification instructions will be delivered.",
+      });
+    } catch (error) {
+      setNotice({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Verification messages could not be requested.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className={styles.verifyCard}>
+      <h3 className={styles.verifyTitle}>
+        Need new verification messages?
+      </h3>
+
+      <p className={styles.verifyText}>
+        Request replacement email and
+        phone challenges using the
+        storefront email you registered.
+      </p>
+
+      <div className={styles.notice}>
+        Message delivery remains disabled
+        until verified providers are
+        connected.
+      </div>
+
+      <form
+        className={styles.form}
+        onSubmit={submit}
+        data-auth-form="resend-verification"
+      >
+        <label className={styles.field}>
+          <span className={styles.label}>
+            Registered email address
+          </span>
+
+          <input
+            className={styles.input}
+            type="email"
+            name="email"
+            autoComplete="email"
+            maxLength={254}
+            required
+          />
+        </label>
+
+        {notice ? (
+          <div
+            className={
+              notice.kind === "error"
+                ? styles.errorNotice
+                : styles.successNotice
+            }
+            role={
+              notice.kind === "error"
+                ? "alert"
+                : "status"
+            }
+            aria-live="polite"
+          >
+            {notice.message}
+          </div>
+        ) : null}
+
+        <button
+          className={styles.secondaryButton}
+          type="submit"
+          disabled={submitting}
+        >
+          {submitting
+            ? "Requesting messages…"
+            : "Resend verification messages"}
+        </button>
+      </form>
+    </section>
   );
 }

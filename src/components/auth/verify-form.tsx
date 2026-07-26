@@ -11,6 +11,9 @@ import type {
 } from "../../lib/storefront-auth";
 
 import styles from "./auth.module.css";
+import {
+  ResendVerificationForm,
+} from "./recovery-forms";
 
 interface ApiPayload {
   error?: {
@@ -387,6 +390,10 @@ export function VerificationForm({
           </form>
         </section>
       </div>
+
+      <ResendVerificationForm
+        storefront={storefront}
+      />
 
       <p className={styles.formFooter}>
         Finished both steps?{" "}

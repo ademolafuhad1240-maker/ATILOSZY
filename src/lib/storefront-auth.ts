@@ -14,6 +14,8 @@ export interface StorefrontAuthConfig {
   accountHref: string;
   loginHref: string;
   registerHref: string;
+  forgotPasswordHref: string;
+  resetPasswordHref: string;
   verifyHref: string;
   accent: string;
   accentStrong: string;
@@ -34,6 +36,10 @@ const storefronts = {
     loginHref: "/ng/atiloszy/account/login",
     registerHref:
       "/ng/atiloszy/account/register",
+    forgotPasswordHref:
+      "/ng/atiloszy/account/forgot-password",
+    resetPasswordHref:
+      "/ng/atiloszy/account/reset-password",
     verifyHref:
       "/ng/atiloszy/account/verify",
     accent: "#b8a16a",
@@ -56,6 +62,10 @@ const storefronts = {
       "/ng/zee-beauty-fashion/account/login",
     registerHref:
       "/ng/zee-beauty-fashion/account/register",
+    forgotPasswordHref:
+      "/ng/zee-beauty-fashion/account/forgot-password",
+    resetPasswordHref:
+      "/ng/zee-beauty-fashion/account/reset-password",
     verifyHref:
       "/ng/zee-beauty-fashion/account/verify",
     accent: "#b04b72",
@@ -76,6 +86,10 @@ const storefronts = {
     loginHref: "/ng/denald/account/login",
     registerHref:
       "/ng/denald/account/register",
+    forgotPasswordHref:
+      "/ng/denald/account/forgot-password",
+    resetPasswordHref:
+      "/ng/denald/account/reset-password",
     verifyHref:
       "/ng/denald/account/verify",
     accent: "#15929c",
@@ -98,6 +112,10 @@ const storefronts = {
       "/qa/zee-comfort-hub/account/login",
     registerHref:
       "/qa/zee-comfort-hub/account/register",
+    forgotPasswordHref:
+      "/qa/zee-comfort-hub/account/forgot-password",
+    resetPasswordHref:
+      "/qa/zee-comfort-hub/account/reset-password",
     verifyHref:
       "/qa/zee-comfort-hub/account/verify",
     accent: "#a23c60",

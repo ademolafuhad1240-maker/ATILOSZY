@@ -9,6 +9,9 @@ import {
   normalizeStorefrontCode,
 } from "./crypto";
 import {
+  isAuthDeliveryUnavailableError,
+} from "./delivery";
+import {
   AuthServiceError,
   type AuthErrorCode,
 } from "./errors";
@@ -25,6 +28,7 @@ type ErrorResponseCode =
   | "CONTENT_TYPE_REQUIRED"
   | "FORBIDDEN_ORIGIN"
   | "AUTH_NOT_READY"
+  | "AUTH_DELIVERY_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 export class ApiRequestError extends Error {
@@ -161,6 +165,25 @@ export function authApiErrorResponse(
         },
       },
       error.status,
+    );
+  }
+
+  if (
+    isAuthDeliveryUnavailableError(
+      error,
+    )
+  ) {
+    return authJsonResponse(
+      {
+        ok: false,
+        error: {
+          code:
+            "AUTH_DELIVERY_UNAVAILABLE",
+          message:
+            "Verification and recovery delivery is not available yet.",
+        },
+      },
+      503,
     );
   }
 

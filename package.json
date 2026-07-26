@@ -25,7 +25,8 @@
     "db:audit:auth": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-customer-auth-services.ts",
     "db:audit:auth-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-auth-api-routes.ts",
     "db:audit:auth-ui": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-customer-auth-pages.ts",
-    "db:audit:recovery": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-auth-recovery-services.ts"
+    "db:audit:recovery": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-auth-recovery-services.ts",
+    "db:audit:recovery-http": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-auth-recovery-routes-pages.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
