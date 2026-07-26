@@ -6,3 +6,123 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum StorefrontStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum StorefrontKind {
+  RETAIL
+  SERVICE_HYBRID
+}
+
+model Currency {
+  code          String       @id @db.VarChar(3)
+  name          String       @unique
+  symbol        String       @db.VarChar(12)
+  decimalPlaces Int          @default(2)
+  countries     Country[]
+  storefronts   Storefront[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@map("currencies")
+}
+
+model Country {
+  code             String       @id @db.VarChar(2)
+  name             String       @unique
+  phoneCallingCode String       @db.VarChar(8)
+  defaultLocale    String       @db.VarChar(16)
+  defaultTimezone  String       @db.VarChar(64)
+  currencyCode     String       @db.VarChar(3)
+  currency         Currency     @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  storefronts      Storefront[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([currencyCode])
+  @@map("countries")
+}
+
+model Storefront {
+  id            String                        @id @default(cuid())
+  key           String                        @unique @db.VarChar(50)
+  code          String                        @unique @db.VarChar(3)
+  slug          String                        @unique @db.VarChar(80)
+  name          String
+  shortName     String
+  description   String
+  route         String                        @unique
+  locationLabel String
+  locale        String                        @db.VarChar(16)
+  timezone      String                        @db.VarChar(64)
+  logoPath      String?
+  coverImage    String?
+  kind          StorefrontKind
+  status        StorefrontStatus              @default(ACTIVE)
+  countryCode   String                        @db.VarChar(2)
+  currencyCode  String                        @db.VarChar(3)
+  country       Country                       @relation(fields: [countryCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  currency      Currency                      @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  contact       StorefrontContact?
+  fulfilment    StorefrontFulfilmentSettings?
+  createdAt     DateTime                      @default(now())
+  updatedAt     DateTime                      @updatedAt
+
+  @@index([countryCode, status])
+  @@index([currencyCode])
+  @@map("storefronts")
+}
+
+model StorefrontContact {
+  id                       String     @id @default(cuid())
+  storefrontId             String     @unique
+  email                    String?    @db.VarChar(254)
+  phone                    String?    @db.VarChar(32)
+  secondaryPhone           String?    @db.VarChar(32)
+  whatsapp                 String?    @db.VarChar(32)
+  secondaryWhatsapp        String?    @db.VarChar(32)
+  whatsappUrl              String?
+  addressLine1             String?
+  addressLine2             String?
+  city                     String
+  stateOrProvince          String?
+  postalCode               String?    @db.VarChar(32)
+  businessHours            String?
+  whatsappAvailable24Hours Boolean    @default(false)
+  storefront               Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
+
+  @@map("storefront_contacts")
+}
+
+model StorefrontFulfilmentSettings {
+  id                                   String     @id @default(cuid())
+  storefrontId                         String     @unique
+  pickupEnabled                        Boolean    @default(false)
+  localDeliveryEnabled                 Boolean    @default(false)
+  countrywideDeliveryEnabled           Boolean    @default(false)
+  sameDayDeliveryEnabled               Boolean    @default(false)
+  installationEnabled                  Boolean    @default(false)
+  serviceQuoteEnabled                  Boolean    @default(false)
+  deliveryCoverage                     String?
+  pickupReservationMinutes             Int        @default(240)
+  nearClosePickupExtensionEnabled      Boolean    @default(true)
+  nearClosePickupCutoffMinutes         Int        @default(660)
+  managerPickupExtensionEnabled        Boolean    @default(true)
+  deliveryFeeQuotedAfterProductPayment Boolean    @default(true)
+  deliveryQuoteValidityHours           Int        @default(24)
+  deliveryCodeRequired                 Boolean    @default(true)
+  cashOnDeliveryProductValueEnabled    Boolean    @default(false)
+  splitShipmentsEnabled                Boolean    @default(false)
+  storefront                           Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt                            DateTime   @default(now())
+  updatedAt                            DateTime   @updatedAt
+
+  @@map("storefront_fulfilment_settings")
+}
