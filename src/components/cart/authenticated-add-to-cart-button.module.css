@@ -1,0 +1,86 @@
+.wrapper {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.quantityLabel {
+  display: grid;
+  gap: 0.35rem;
+  color: #5c6470;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.quantityInput {
+  width: 5rem;
+  border: 1px solid
+    rgba(15, 24, 38, 0.16);
+  border-radius: 0.75rem;
+  padding: 0.7rem;
+  background: #ffffff;
+  color: #101827;
+  font: inherit;
+  text-align: center;
+}
+
+.button {
+  min-height: 2.8rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.72rem 1.15rem;
+  background: #101827;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+
+.button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.notice,
+.success,
+.error {
+  margin: 0;
+  border-radius: 0.8rem;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.notice {
+  background: #fff5d8;
+  color: #705516;
+}
+
+.success {
+  background: #e5f4eb;
+  color: #1f6846;
+}
+
+.error {
+  background: #fbe6e6;
+  color: #8c2424;
+}
+
+.notice a,
+.success a {
+  color: inherit;
+  font-weight: 850;
+}

@@ -1,3 +1,4 @@
+import StorefrontLiveCatalogSection from '@/components/catalog/storefront-live-catalog-section';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, MessageCircle } from 'lucide-react';
@@ -6,6 +7,8 @@ import {
   denaldProducts,
   denaldSolutions,
 } from '@/data/denald-store';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Shop Equipment | DENALD',
@@ -111,6 +114,8 @@ export default function DenaldShopPage() {
           </a>
         </div>
       </section>
-    </>
+
+      <StorefrontLiveCatalogSection storefrontCode="DEN" />
+</>
   );
 }

@@ -29,7 +29,8 @@
     "db:audit:recovery-http": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-auth-recovery-routes-pages.ts",
     "db:audit:cart": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-foundation.ts",
     "db:audit:cart-services": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-services.ts",
-    "db:audit:cart-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-api-pages.ts"
+    "db:audit:cart-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-api-pages.ts",
+    "db:audit:live-catalog": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-live-catalog-cart-integration.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",

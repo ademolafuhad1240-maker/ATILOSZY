@@ -1,3 +1,4 @@
+import StorefrontLiveCatalogSection from '@/components/catalog/storefront-live-catalog-section';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
@@ -12,6 +13,8 @@ import {
   atiloszyCategories,
   atiloszyProducts,
 } from '@/data/atiloszy-store';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Shop All | ATILOSZY Varieties Store',
@@ -144,6 +147,8 @@ export default function AtiloszyShopPage() {
           </a>
         </div>
       </section>
-    </>
+
+      <StorefrontLiveCatalogSection storefrontCode="ATI" />
+</>
   );
 }

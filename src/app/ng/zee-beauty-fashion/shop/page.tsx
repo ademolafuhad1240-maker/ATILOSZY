@@ -1,3 +1,4 @@
+import StorefrontLiveCatalogSection from '@/components/catalog/storefront-live-catalog-section';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
@@ -8,6 +9,8 @@ import {
 } from 'lucide-react';
 import ZeeProductCard from '@/components/zee-nigeria/zee-product-card';
 import { zeeNigeriaProducts } from '@/data/zee-nigeria-store';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Shop All | ZEE Beauty & Fashion World',
@@ -142,6 +145,8 @@ export default function ZeeNigeriaShopPage() {
           </a>
         </div>
       </section>
-    </>
+
+      <StorefrontLiveCatalogSection storefrontCode="ZBF" />
+</>
   );
 }

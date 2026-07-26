@@ -1,0 +1,297 @@
+.section,
+.productPage {
+  --catalog-accent: #b48631;
+  --catalog-soft: #f4ead5;
+  color: #101827;
+}
+
+.section[data-storefront-code="ZBF"],
+.productPage[data-storefront-code="ZBF"],
+.section[data-storefront-code="ZCH"],
+.productPage[data-storefront-code="ZCH"] {
+  --catalog-accent: #8f2949;
+  --catalog-soft: #f7e4e9;
+}
+
+.section[data-storefront-code="DEN"],
+.productPage[data-storefront-code="DEN"] {
+  --catalog-accent: #176b62;
+  --catalog-soft: #ddf1ed;
+}
+
+.section {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 4rem auto;
+  border: 1px solid
+    rgba(16, 24, 39, 0.1);
+  border-radius: 2rem;
+  padding: clamp(
+    1.25rem,
+    4vw,
+    2.5rem
+  );
+  background:
+    radial-gradient(
+      circle at top right,
+      var(--catalog-soft),
+      transparent 32rem
+    ),
+    #faf8f3;
+  box-shadow:
+    0 28px 80px
+    rgba(16, 24, 39, 0.08);
+}
+
+.headingRow {
+  display: flex;
+  align-items: end;
+  justify-content:
+    space-between;
+  gap: 1rem;
+  margin-bottom: 1.7rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  color:
+    var(--catalog-accent);
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.heading {
+  margin: 0;
+  font-size: clamp(
+    1.8rem,
+    4vw,
+    3.4rem
+  );
+  letter-spacing: -0.045em;
+}
+
+.description {
+  max-width: 44rem;
+  margin: 0.8rem 0 0;
+  color: #606a78;
+  line-height: 1.65;
+}
+
+.cartLink,
+.backLink {
+  border-radius: 999px;
+  padding: 0.78rem 1rem;
+  background: #ffffff;
+  color: #101827;
+  box-shadow:
+    0 12px 35px
+    rgba(16, 24, 39, 0.09);
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(230px, 1fr)
+    );
+  gap: 1rem;
+}
+
+.card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid
+    rgba(16, 24, 39, 0.09);
+  border-radius: 1.35rem;
+  padding: 1.15rem;
+  background: rgba(
+    255,
+    255,
+    255,
+    0.94
+  );
+}
+
+.cardHeader {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.category {
+  margin: 0;
+  color:
+    var(--catalog-accent);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.productName {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.15;
+}
+
+.productLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.productLink:hover {
+  text-decoration: underline;
+}
+
+.productDescription {
+  margin: 0;
+  min-height: 3rem;
+  color: #69717e;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.variantSummary {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.variantTitle {
+  margin: 0;
+  color: #555f6c;
+  font-size: 0.85rem;
+}
+
+.price {
+  margin: 0;
+  font-size: 1.18rem;
+  font-weight: 900;
+}
+
+.comparePrice {
+  margin-left: 0.45rem;
+  color: #838b96;
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration:
+    line-through;
+}
+
+.stock {
+  margin: 0;
+  color: #606a78;
+  font-size: 0.8rem;
+}
+
+.empty {
+  border: 1px dashed
+    rgba(16, 24, 39, 0.2);
+  border-radius: 1.25rem;
+  padding: clamp(
+    1.5rem,
+    5vw,
+    3rem
+  );
+  text-align: center;
+  color: #69717e;
+}
+
+.productPage {
+  min-height: 100vh;
+  padding: 2rem 1rem 5rem;
+  background:
+    radial-gradient(
+      circle at top right,
+      var(--catalog-soft),
+      transparent 34rem
+    ),
+    #f7f3eb;
+}
+
+.productShell {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+}
+
+.productHeader {
+  display: grid;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.productTitle {
+  margin: 0;
+  max-width: 52rem;
+  font-size: clamp(
+    2.4rem,
+    7vw,
+    5.5rem
+  );
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.productLead {
+  max-width: 48rem;
+  margin: 0;
+  color: #606a78;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.variantGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(260px, 1fr)
+    );
+  gap: 1rem;
+}
+
+.variantCard {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid
+    rgba(16, 24, 39, 0.1);
+  border-radius: 1.5rem;
+  padding: 1.35rem;
+  background: #ffffff;
+  box-shadow:
+    0 20px 55px
+    rgba(16, 24, 39, 0.07);
+}
+
+.optionList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  border-radius: 999px;
+  padding: 0.45rem 0.65rem;
+  background:
+    var(--catalog-soft);
+  color: #414956;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+@media (max-width: 700px) {
+  .headingRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cartLink {
+    text-align: center;
+  }
+}

@@ -1,3 +1,4 @@
+import StorefrontLiveCatalogSection from '@/components/catalog/storefront-live-catalog-section';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
@@ -11,6 +12,8 @@ import {
   comfortCategories,
   comfortProducts,
 } from '@/data/zee-comfort-store';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Shop All | Zee COMFORT HUB',
@@ -140,6 +143,8 @@ export default function ComfortShopPage() {
           </a>
         </div>
       </section>
-    </>
+
+      <StorefrontLiveCatalogSection storefrontCode="ZCH" />
+</>
   );
 }
