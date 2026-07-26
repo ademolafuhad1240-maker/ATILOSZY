@@ -99,6 +99,7 @@ model Currency {
   carts         Cart[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
+  orders        Order[]
 
   @@map("currencies")
 }
@@ -155,6 +156,7 @@ model Storefront {
   carts              Cart[]
   createdAt          DateTime                      @default(now())
   updatedAt          DateTime                      @updatedAt
+  orders             Order[]
 
   @@unique([id, currencyCode])
   @@index([countryCode, status])
@@ -272,6 +274,7 @@ model StorefrontProduct {
   cartItems      CartItem[]
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
+  orderItems     OrderItem[]
 
   @@unique([id, storefrontId])
   @@unique([storefrontId, productId])
@@ -302,6 +305,7 @@ model ProductVariant {
   cartItems           CartItem[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+  orderItems          OrderItem[]
 
   @@unique([id, storefrontProductId])
   @@index([storefrontProductId, status])
@@ -357,6 +361,7 @@ model StorefrontPrice {
   cartItems        CartItem[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  orderItems       OrderItem[]
 
   @@unique([id, productVariantId, currencyCode])
   @@index([productVariantId, isActive, startsAt, endsAt])
@@ -428,6 +433,7 @@ model User {
   carts               Cart[]
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
+  orders              Order[]
 
   @@unique([storefrontId, normalizedEmail])
   @@unique([storefrontId, normalizedPhone])
@@ -588,6 +594,7 @@ model Cart {
   items        CartItem[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  order        Order?
 
   @@unique([id, storefrontId, currencyCode])
   @@index([storefrontId, userId, status])
@@ -623,4 +630,291 @@ model CartItem {
   @@index([productVariantId])
   @@index([storefrontPriceId])
   @@map("cart_items")
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_PROCESSING
+  PAID
+  CONFIRMED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  REFUND_PENDING
+  REFUNDED
+}
+
+enum OrderFulfilmentMethod {
+  PICKUP
+  DELIVERY
+  INSTALLATION
+  DELIVERY_AND_INSTALLATION
+}
+
+enum OrderFulfilmentStatus {
+  NOT_STARTED
+  AWAITING_DELIVERY_QUOTE
+  DELIVERY_QUOTED
+  SCHEDULED
+  PREPARING
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  INSTALLATION_IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderPaymentPurpose {
+  PRODUCT
+  DELIVERY_FEE
+  REFUND
+}
+
+enum OrderPaymentMethod {
+  CARD
+  BANK_TRANSFER
+  USSD
+  PAY_BY_BANK
+  CASH
+  PROVIDER_WALLET
+  MANUAL_ADJUSTMENT
+}
+
+enum OrderPaymentStatus {
+  NOT_REQUIRED
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+  PARTIALLY_REFUNDED
+  REFUNDED
+}
+
+enum OrderAddressType {
+  DELIVERY
+  BILLING
+  INSTALLATION
+}
+
+enum DeliveryFeeQuoteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
+  PAID
+}
+
+enum PickupReservationStatus {
+  ACTIVE
+  EXTENDED
+  COLLECTED
+  EXPIRED
+  CANCELLED
+}
+
+model Order {
+  id                    String                @id @default(cuid())
+  orderNumber           String                @unique @db.VarChar(40)
+  storefrontId          String
+  userId                String
+  currencyCode          String                @db.VarChar(3)
+  cartId                String                @unique
+  status                OrderStatus           @default(PENDING_PAYMENT)
+  fulfilmentMethod      OrderFulfilmentMethod
+  fulfilmentStatus      OrderFulfilmentStatus @default(NOT_STARTED)
+  productPaymentStatus  OrderPaymentStatus    @default(PENDING)
+  deliveryPaymentStatus OrderPaymentStatus    @default(NOT_REQUIRED)
+  productSubtotal       Decimal               @db.Decimal(18, 2)
+  discountTotal         Decimal               @default(0) @db.Decimal(18, 2)
+  productTotal          Decimal               @db.Decimal(18, 2)
+  deliveryFeeTotal      Decimal               @default(0) @db.Decimal(18, 2)
+  grandTotal            Decimal               @db.Decimal(18, 2)
+  customerName          String                @db.VarChar(160)
+  customerEmail         String                @db.VarChar(320)
+  customerPhone         String                @db.VarChar(32)
+  customerNote          String?
+  cancellationReason    String?
+  placedAt              DateTime              @default(now())
+  paidAt                DateTime?
+  confirmedAt           DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  storefront            Storefront            @relation(fields: [storefrontId, currencyCode], references: [id, currencyCode], onDelete: Restrict, onUpdate: Cascade)
+  user                  User                  @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
+  currency              Currency              @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  cart                  Cart                  @relation(fields: [cartId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
+  items                 OrderItem[]
+  addresses             OrderAddress[]
+  payments              OrderPayment[]
+  deliveryFeeQuotes     DeliveryFeeQuote[]
+  pickupReservation     PickupReservation?
+  deliveryVerification  DeliveryVerification?
+
+  @@unique([id, storefrontId, currencyCode])
+  @@unique([cartId, storefrontId, currencyCode])
+  @@index([storefrontId, createdAt])
+  @@index([storefrontId, status, createdAt])
+  @@index([userId, createdAt])
+  @@index([status, fulfilmentStatus])
+  @@index([productPaymentStatus, deliveryPaymentStatus])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String            @id @default(cuid())
+  orderId             String
+  storefrontId        String
+  currencyCode        String            @db.VarChar(3)
+  storefrontProductId String
+  productVariantId    String
+  storefrontPriceId   String
+  productName         String            @db.VarChar(240)
+  variantTitle        String            @db.VarChar(240)
+  sku                 String            @db.VarChar(120)
+  quantity            Int
+  unitPrice           Decimal           @db.Decimal(18, 2)
+  compareAtUnitPrice  Decimal?          @db.Decimal(18, 2)
+  lineSubtotal        Decimal           @db.Decimal(18, 2)
+  discountTotal       Decimal           @default(0) @db.Decimal(18, 2)
+  lineTotal           Decimal           @db.Decimal(18, 2)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  order               Order             @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+  storefrontProduct   StorefrontProduct @relation(fields: [storefrontProductId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
+  productVariant      ProductVariant    @relation(fields: [productVariantId, storefrontProductId], references: [id, storefrontProductId], onDelete: Restrict, onUpdate: Cascade)
+  storefrontPrice     StorefrontPrice   @relation(fields: [storefrontPriceId, productVariantId, currencyCode], references: [id, productVariantId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([orderId, productVariantId])
+  @@index([orderId, createdAt])
+  @@index([storefrontId, storefrontProductId])
+  @@index([productVariantId])
+  @@index([storefrontPriceId])
+  @@map("order_items")
+}
+
+model OrderAddress {
+  id            String           @id @default(cuid())
+  orderId       String
+  storefrontId  String
+  currencyCode  String           @db.VarChar(3)
+  type          OrderAddressType
+  recipientName String           @db.VarChar(160)
+  phone         String           @db.VarChar(32)
+  email         String?          @db.VarChar(320)
+  countryCode   String           @db.VarChar(2)
+  state         String?
+  city          String
+  postalCode    String?
+  addressLine1  String
+  addressLine2  String?
+  deliveryNotes String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  order         Order            @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([orderId, type])
+  @@index([storefrontId, countryCode, city])
+  @@map("order_addresses")
+}
+
+model OrderPayment {
+  id                String              @id @default(cuid())
+  orderId           String
+  storefrontId      String
+  currencyCode      String              @db.VarChar(3)
+  purpose           OrderPaymentPurpose
+  method            OrderPaymentMethod?
+  status            OrderPaymentStatus  @default(PENDING)
+  amount            Decimal             @db.Decimal(18, 2)
+  provider          String?             @db.VarChar(80)
+  providerReference String?             @db.VarChar(191)
+  idempotencyKey    String?             @db.VarChar(191)
+  failureCode       String?             @db.VarChar(120)
+  failureMessage    String?
+  providerMetadata  Json?
+  initiatedAt       DateTime            @default(now())
+  paidAt            DateTime?
+  failedAt          DateTime?
+  cancelledAt       DateTime?
+  refundedAt        DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  order             Order               @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([storefrontId, idempotencyKey])
+  @@unique([provider, providerReference])
+  @@index([orderId, purpose, status])
+  @@index([storefrontId, createdAt])
+  @@index([status, createdAt])
+  @@map("order_payments")
+}
+
+model DeliveryFeeQuote {
+  id           String                 @id @default(cuid())
+  orderId      String
+  storefrontId String
+  currencyCode String                 @db.VarChar(3)
+  amount       Decimal                @db.Decimal(18, 2)
+  status       DeliveryFeeQuoteStatus @default(PENDING)
+  note         String?
+  quotedAt     DateTime               @default(now())
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  rejectedAt   DateTime?
+  cancelledAt  DateTime?
+  paidAt       DateTime?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  order        Order                  @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([orderId, status, createdAt])
+  @@index([status, expiresAt])
+  @@map("delivery_fee_quotes")
+}
+
+model PickupReservation {
+  id                    String                  @id @default(cuid())
+  orderId               String                  @unique
+  storefrontId          String
+  currencyCode          String                  @db.VarChar(3)
+  status                PickupReservationStatus @default(ACTIVE)
+  originalReservedUntil DateTime
+  reservedUntil         DateTime
+  extensionCount        Int                     @default(0)
+  extendedAt            DateTime?
+  collectedAt           DateTime?
+  cancelledAt           DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  order                 Order                   @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([orderId, storefrontId, currencyCode])
+  @@index([storefrontId, status, reservedUntil])
+  @@index([status, reservedUntil])
+  @@map("pickup_reservations")
+}
+
+model DeliveryVerification {
+  id             String    @id @default(cuid())
+  orderId        String    @unique
+  storefrontId   String
+  currencyCode   String    @db.VarChar(3)
+  codeHash       String    @db.VarChar(128)
+  expiresAt      DateTime
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+  feeCollectedAt DateTime?
+  verifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  order          Order     @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([orderId, storefrontId, currencyCode])
+  @@index([storefrontId, expiresAt])
+  @@index([verifiedAt])
+  @@map("delivery_verifications")
 }
