@@ -76,3 +76,14 @@ export interface CartValidationResult {
   cart: CartView;
   issues: CartValidationIssue[];
 }
+
+export type PublicCartView = Omit<
+  CartView,
+  "storefrontId" | "userId"
+>;
+
+export interface PublicCartValidationResult {
+  valid: boolean;
+  cart: PublicCartView;
+  issues: CartValidationIssue[];
+}

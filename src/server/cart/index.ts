@@ -23,6 +23,8 @@ export type {
   CartValidationIssueCode,
   CartValidationResult,
   CartView,
+  PublicCartValidationResult,
+  PublicCartView,
   RemoveCartItemInput,
   UpdateCartItemQuantityInput,
 } from "./types";
