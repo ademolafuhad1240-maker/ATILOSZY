@@ -81,6 +81,13 @@ enum CustomerAddressType {
   BOTH
 }
 
+enum CartStatus {
+  ACTIVE
+  CHECKED_OUT
+  ABANDONED
+  EXPIRED
+}
+
 model Currency {
   code          String            @id @db.VarChar(3)
   name          String            @unique
@@ -89,6 +96,7 @@ model Currency {
   countries     Country[]
   storefronts   Storefront[]
   prices        StorefrontPrice[]
+  carts         Cart[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
@@ -144,9 +152,11 @@ model Storefront {
   customerSessions   Session[]
   emailVerifications EmailVerification[]
   phoneVerifications PhoneVerification[]
+  carts              Cart[]
   createdAt          DateTime                      @default(now())
   updatedAt          DateTime                      @updatedAt
 
+  @@unique([id, currencyCode])
   @@index([countryCode, status])
   @@index([currencyCode])
   @@map("storefronts")
@@ -259,9 +269,11 @@ model StorefrontProduct {
   category       Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   variants       ProductVariant[]
   images         ProductImage[]
+  cartItems      CartItem[]
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
 
+  @@unique([id, storefrontId])
   @@unique([storefrontId, productId])
   @@unique([storefrontId, slug])
   @@index([storefrontId, status, isFeatured])
@@ -287,9 +299,11 @@ model ProductVariant {
   images              ProductImage[]
   prices              StorefrontPrice[]
   inventory           Inventory?
+  cartItems           CartItem[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 
+  @@unique([id, storefrontProductId])
   @@index([storefrontProductId, status])
   @@map("product_variants")
 }
@@ -340,9 +354,11 @@ model StorefrontPrice {
   isActive         Boolean        @default(true)
   productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   currency         Currency       @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  cartItems        CartItem[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
+  @@unique([id, productVariantId, currencyCode])
   @@index([productVariantId, isActive, startsAt, endsAt])
   @@index([currencyCode])
   @@map("storefront_prices")
@@ -409,6 +425,7 @@ model User {
   sessions            Session[]
   emailVerifications  EmailVerification[]
   phoneVerifications  PhoneVerification[]
+  carts               Cart[]
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @updatedAt
 
@@ -554,4 +571,56 @@ model PhoneVerification {
   @@index([userId, storefrontId, purpose, expiresAt])
   @@index([phone, consumedAt])
   @@map("phone_verifications")
+}
+
+model Cart {
+  id           String     @id @default(cuid())
+  storefrontId String
+  userId       String
+  currencyCode String     @db.VarChar(3)
+  status       CartStatus @default(ACTIVE)
+  expiresAt    DateTime?
+  checkedOutAt DateTime?
+  abandonedAt  DateTime?
+  storefront   Storefront @relation(fields: [storefrontId, currencyCode], references: [id, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+  user         User       @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Cascade, onUpdate: Cascade)
+  currency     Currency   @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  items        CartItem[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([id, storefrontId, currencyCode])
+  @@index([storefrontId, userId, status])
+  @@index([userId, createdAt])
+  @@index([status, expiresAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id                   String            @id @default(cuid())
+  cartId               String
+  storefrontId         String
+  storefrontProductId  String
+  productVariantId     String
+  storefrontPriceId    String
+  currencyCode         String            @db.VarChar(3)
+  quantity             Int               @default(1)
+  unitPrice            Decimal           @db.Decimal(18, 2)
+  compareAtUnitPrice   Decimal?          @db.Decimal(18, 2)
+  productNameSnapshot  String
+  variantTitleSnapshot String
+  skuSnapshot          String            @db.VarChar(80)
+  cart                 Cart              @relation(fields: [cartId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+  storefrontProduct    StorefrontProduct @relation(fields: [storefrontProductId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
+  productVariant       ProductVariant    @relation(fields: [productVariantId, storefrontProductId], references: [id, storefrontProductId], onDelete: Restrict, onUpdate: Cascade)
+  storefrontPrice      StorefrontPrice   @relation(fields: [storefrontPriceId, productVariantId, currencyCode], references: [id, productVariantId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@unique([cartId, productVariantId])
+  @@index([cartId, createdAt])
+  @@index([storefrontId, storefrontProductId])
+  @@index([productVariantId])
+  @@index([storefrontPriceId])
+  @@map("cart_items")
 }
