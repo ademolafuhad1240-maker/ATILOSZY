@@ -16,3 +16,22 @@ export type {
   ProductPaymentEventResult,
   ProductPaymentTransitionView,
 } from "./types";
+
+export {
+  assertPaymentInitiationEnabled,
+  createDisabledPaymentInitiationProvider,
+  createServerPaymentAttemptIdentity,
+  getPaymentInitiationProvider,
+  isPaymentInitiationProviderError,
+  isPaymentInitiationUnavailableError,
+  PaymentInitiationProviderError,
+  PaymentInitiationUnavailableError,
+} from "./initiation";
+
+export type {
+  PaymentInitiationNextAction,
+  PaymentInitiationProvider,
+  PaymentInitiationProviderResult,
+  PaymentInitiationRequest,
+  ServerPaymentAttemptIdentity,
+} from "./initiation";

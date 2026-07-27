@@ -37,7 +37,8 @@
     "db:audit:checkout-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-checkout-api.ts",
     "db:audit:checkout-pages": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-checkout-pages.ts",
     "db:audit:payment-events": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-payment-provider-events.ts",
-    "db:audit:payment-transitions": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-payment-transitions.ts"
+    "db:audit:payment-transitions": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-payment-transitions.ts",
+    "db:audit:payment-initiation-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-payment-initiation-api.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
