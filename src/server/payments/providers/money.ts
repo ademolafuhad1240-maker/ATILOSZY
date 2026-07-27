@@ -136,3 +136,72 @@ export function normalizeProviderMajorAmount(
     currencyCode,
   ).majorAmount;
 }
+
+export function minorUnitsToMajorAmount(
+  amount: string,
+  currencyCode: string,
+): string {
+  const normalizedCurrency =
+    currencyCode
+      .trim()
+      .toUpperCase();
+
+  const fractionDigits =
+    currencyFractionDigits[
+      normalizedCurrency
+    ];
+
+  if (
+    fractionDigits ===
+      undefined
+  ) {
+    throw new PaymentInitiationProviderError(
+      "The payment currency is not supported by the configured provider.",
+      {
+        reason:
+          "UNSUPPORTED_CURRENCY",
+        currencyCode:
+          normalizedCurrency,
+      },
+    );
+  }
+
+  const normalizedAmount =
+    amount.trim();
+
+  if (
+    !/^[1-9]\d*$/.test(
+      normalizedAmount,
+    )
+  ) {
+    throw new PaymentInitiationProviderError(
+      "The server-derived payment amount is invalid.",
+      {
+        reason:
+          "INVALID_AMOUNT",
+      },
+    );
+  }
+
+  if (
+    fractionDigits === 0
+  ) {
+    return normalizedAmount;
+  }
+
+  const padded =
+    normalizedAmount.padStart(
+      fractionDigits + 1,
+      "0",
+    );
+
+  return (
+    `${padded.slice(
+      0,
+      -fractionDigits,
+    )}.` +
+    padded.slice(
+      -fractionDigits,
+    )
+  );
+}

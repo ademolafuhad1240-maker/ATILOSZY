@@ -59,10 +59,11 @@ Never commit test or live credentials.
 | --- | --- | --- |
 | `PAYMENT_INITIATION_PROVIDER` | Selects `disabled`, `paystack`, or `flutterwave` | Yes; defaults to `disabled` when absent |
 | `PAYSTACK_PUBLIC_KEY` | Reserved for a future Paystack browser SDK if one is deliberately added | No for hosted server initialization |
-| `PAYSTACK_SECRET_KEY` | Server bearer credential for Paystack transaction initialization | When `paystack` is selected |
+| `PAYSTACK_SECRET_KEY` | Server bearer credential for Paystack initialization, webhook signatures, and transaction verification | When Paystack initiation or webhooks are enabled |
 | `FLUTTERWAVE_PUBLIC_KEY` | Reserved for future client-side Flutterwave features | No for hosted server initialization |
-| `FLUTTERWAVE_SECRET_KEY` | Server bearer credential for Flutterwave Standard initialization | When `flutterwave` is selected |
+| `FLUTTERWAVE_SECRET_KEY` | Server bearer credential for Flutterwave Standard initialization and transaction verification | When Flutterwave initiation or webhooks are enabled |
 | `FLUTTERWAVE_ENCRYPTION_KEY` | Reserved for future operations that explicitly require payload encryption | No for hosted server initialization |
+| `FLUTTERWAVE_WEBHOOK_SECRET_HASH` | Random webhook signing secret configured identically in the Flutterwave dashboard | When Flutterwave webhooks are enabled |
 | `APP_ORIGIN` | Trusted application origin used to build the post-checkout return URL | Yes |
 
 The hosted flows implemented here do not require the
@@ -102,6 +103,46 @@ Both adapters:
 - preserve deterministic server references on repeated
   initialization attempts.
 
+## Verified payment webhooks
+
+The implemented webhook endpoints are:
+
+```text
+/api/payments/webhooks/paystack
+/api/payments/webhooks/flutterwave
+```
+
+They are external provider endpoints, so they do not use
+the storefront session or browser-origin checks. Instead,
+they authenticate the exact raw request body before JSON
+parsing:
+
+- Paystack requires `x-paystack-signature`, verified as an
+  HMAC-SHA512 digest with `PAYSTACK_SECRET_KEY`.
+- Flutterwave requires `flutterwave-signature`, verified as
+  an HMAC-SHA256 base64 digest with
+  `FLUTTERWAVE_WEBHOOK_SECRET_HASH`.
+
+After signature verification, the webhook adapter retrieves
+the transaction from the provider's server API using the
+provider secret key. The signed event and verified
+transaction must agree on transaction ID, merchant
+reference, amount, currency, and final outcome before the
+existing provider-neutral transition service is called.
+
+Only safe normalized fields are stored in the provider
+event ledger. Customer details, card data, authorization
+objects, raw provider responses, and credentials are
+discarded. Duplicate deliveries produce the same provider
+event ID and raw-payload hash, allowing the existing
+database uniqueness and conflict checks to enforce durable
+idempotency.
+
+Unsupported event types are acknowledged and ignored.
+Invalid signatures are rejected before provider lookup or
+database work. Verification outages return a retryable
+non-200 response and cannot mark an order paid.
+
 ## Local test-mode setup
 
 1. Run `npm ci`.
@@ -120,10 +161,13 @@ Both adapters:
    ```text
    npm run db:audit:payment-provider-adapters
    npm run db:audit:payment-initiation-api
+   npm run db:audit:payment-webhooks
    ```
 
-The adapter audit uses mocked HTTP calls and never contacts
-Paystack or Flutterwave.
+The adapter and webhook audits use mocked HTTP calls and
+never contact Paystack or Flutterwave. Use separate test
+credentials and a test-only Flutterwave webhook secret
+hash when manually exercising dashboard delivery.
 
 ## Railway readiness
 
@@ -150,17 +194,21 @@ Provider return URLs are generated from that origin and the
 authenticated storefront order page. A return URL only
 restores the customer journey; it does not confirm payment.
 
-The following provider webhook endpoints are reserved for
-the next payment milestone and are **not implemented yet**:
+After this code is deployed, configure the provider
+dashboards with:
 
 ```text
 https://shop.sorvyra.com/api/payments/webhooks/paystack
 https://shop.sorvyra.com/api/payments/webhooks/flutterwave
 ```
 
-Do not configure production webhooks to those paths until
-signature verification and provider-event normalization
-are implemented and deployed. Keep test and live provider
-credentials in separate Railway environments, and never
-place either credential set in Git, documentation, logs,
-fixtures, or audit scripts.
+The Flutterwave dashboard secret hash must exactly match
+`FLUTTERWAVE_WEBHOOK_SECRET_HASH` in the corresponding
+Railway environment. Configure test dashboards only
+against a test deployment and test credentials; configure
+live dashboard delivery only after production deployment
+is explicitly approved.
+
+Keep test and live provider credentials in separate Railway
+environments, and never place either credential set in Git,
+documentation, logs, fixtures, or audit scripts.

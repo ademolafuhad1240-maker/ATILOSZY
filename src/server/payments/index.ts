@@ -66,5 +66,6 @@ export type {
 
 export {
   amountToMinorUnits,
+  minorUnitsToMajorAmount,
   normalizeProviderMajorAmount,
 } from "./providers/money";
