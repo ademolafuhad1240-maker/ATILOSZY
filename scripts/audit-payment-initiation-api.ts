@@ -251,6 +251,14 @@ async function main(): Promise<void> {
           "order-audit",
         orderNumber:
           "ATI-AUDIT",
+        customer: {
+          email:
+            "audit@example.test",
+          name:
+            "Audit Customer",
+          phone:
+            "+2348000000000",
+        },
         currencyCode:
           "NGN",
         amount:
@@ -264,6 +272,8 @@ async function main(): Promise<void> {
         idempotencyKey:
           firstIdentity
             .idempotencyKey,
+        returnUrl:
+          `${getAppOrigin()}/ng/atiloszy/account/orders/ATI-AUDIT`,
       });
   } catch (error) {
     unavailableRejected =
@@ -559,6 +569,12 @@ async function main(): Promise<void> {
       "utf8",
     );
 
+  const registrySource =
+    await readFile(
+      "src/server/payments/registry.ts",
+      "utf8",
+    );
+
   for (
     const required of [
       "handleProductPaymentInitiation",
@@ -615,20 +631,20 @@ async function main(): Promise<void> {
   }
 
   assertCondition(
-    initiationSource.includes(
+    registrySource.includes(
       'PAYMENT_INITIATION_PROVIDER',
     ) &&
-      initiationSource.includes(
+      registrySource.includes(
         '"disabled"',
+      ) &&
+      registrySource.includes(
+        '"paystack"',
+      ) &&
+      registrySource.includes(
+        '"flutterwave"',
       ) &&
       !initiationSource.includes(
         "Stripe",
-      ) &&
-      !initiationSource.includes(
-        "Flutterwave",
-      ) &&
-      !initiationSource.includes(
-        "Paystack",
       ) &&
       !initiationSource.includes(
         "PayPal",

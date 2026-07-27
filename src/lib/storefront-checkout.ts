@@ -139,8 +139,27 @@ const configurations:
     },
   };
 
+const configurationIndex:
+  Readonly<
+    Record<
+      string,
+      StorefrontCheckoutConfig
+    >
+  > = configurations;
+
 export function getStorefrontCheckoutConfig(
   code: StorefrontCheckoutCode,
 ): StorefrontCheckoutConfig {
   return configurations[code];
+}
+
+export function findStorefrontCheckoutConfig(
+  code: string,
+): StorefrontCheckoutConfig | null {
+  return (
+    configurationIndex[
+      code
+    ] ??
+    null
+  );
 }

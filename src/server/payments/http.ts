@@ -12,11 +12,15 @@ import {
   type Prisma,
 } from "@/generated/prisma/client";
 import {
+  getAppOrigin,
   assertTrustedOrigin,
   authApiErrorResponse,
   authJsonResponse,
   readJsonObject,
 } from "@/server/auth/http";
+import {
+  findStorefrontCheckoutConfig,
+} from "@/lib/storefront-checkout";
 import {
   getCheckoutOrder,
 } from "@/server/checkout";
@@ -32,7 +36,6 @@ import {
 import {
   assertPaymentInitiationEnabled,
   createServerPaymentAttemptIdentity,
-  getPaymentInitiationProvider,
   isPaymentInitiationProviderError,
   isPaymentInitiationUnavailableError,
   PaymentInitiationProviderError,
@@ -40,6 +43,9 @@ import {
   type PaymentInitiationProvider,
   type PaymentInitiationProviderResult,
 } from "./initiation";
+import {
+  getPaymentInitiationProvider,
+} from "./registry";
 import {
   initiateProductPayment,
 } from "./service";
@@ -562,6 +568,30 @@ function buildProviderMetadata(
   };
 }
 
+function paymentReturnUrl(
+  storefrontCode: string,
+  orderNumber: string,
+): string {
+  const storefront =
+    findStorefrontCheckoutConfig(
+      storefrontCode,
+    );
+
+  if (!storefront) {
+    throw new PaymentServiceError(
+      "STOREFRONT_NOT_FOUND",
+      "The storefront was not found.",
+    );
+  }
+
+  return new URL(
+    `${storefront.ordersHref}/${encodeURIComponent(
+      orderNumber,
+    )}`,
+    getAppOrigin(),
+  ).toString();
+}
+
 export async function handleProductPaymentInitiation(
   request: NextRequest,
   context:
@@ -658,6 +688,14 @@ export async function handleProductPaymentInitiation(
           order.id,
         orderNumber:
           order.orderNumber,
+        customer: {
+          email:
+            order.customerEmail,
+          name:
+            order.customerName,
+          phone:
+            order.customerPhone,
+        },
         currencyCode:
           order.currencyCode,
         amount:
@@ -669,6 +707,11 @@ export async function handleProductPaymentInitiation(
         idempotencyKey:
           identity
             .idempotencyKey,
+        returnUrl:
+          paymentReturnUrl(
+            storefrontCode,
+            order.orderNumber,
+          ),
       });
 
     const providerResult =

@@ -14,11 +14,19 @@ export interface PaymentInitiationRequest {
   userId: string;
   orderId: string;
   orderNumber: string;
+  customer: {
+    email: string;
+    name: string;
+    phone:
+      string |
+      null;
+  };
   currencyCode: string;
   amount: string;
   method: OrderPaymentMethod;
   merchantReference: string;
   idempotencyKey: string;
+  returnUrl: string;
 }
 
 export type PaymentInitiationNextAction =
@@ -75,6 +83,18 @@ export class PaymentInitiationUnavailableError
 
     this.name =
       "PaymentInitiationUnavailableError";
+  }
+}
+
+export class PaymentInitiationConfigurationError
+  extends PaymentInitiationUnavailableError {
+  constructor() {
+    super(
+      "Product payment initiation is not configured correctly.",
+    );
+
+    this.name =
+      "PaymentInitiationConfigurationError";
   }
 }
 
@@ -135,28 +155,6 @@ export function createDisabledPaymentInitiationProvider(): PaymentInitiationProv
     initiate:
       unavailable,
   };
-}
-
-export function getPaymentInitiationProvider(): PaymentInitiationProvider {
-  const configuredProvider = (
-    process.env
-      .PAYMENT_INITIATION_PROVIDER ??
-    "disabled"
-  )
-    .trim()
-    .toLowerCase();
-
-  if (
-    configuredProvider === "" ||
-    configuredProvider ===
-      "disabled"
-  ) {
-    return createDisabledPaymentInitiationProvider();
-  }
-
-  throw new Error(
-    `Unsupported PAYMENT_INITIATION_PROVIDER: ${configuredProvider}`,
-  );
 }
 
 export function assertPaymentInitiationEnabled(
