@@ -41,6 +41,63 @@ export interface ProcessProductPaymentEventInput {
   failureMessage?: string;
 }
 
+export interface ReconcileProductPaymentInput {
+  storefrontCode: string;
+  userId: string;
+  orderNumber: string;
+}
+
+export interface ProductPaymentReconciliationAttempt {
+  kind: "ATTEMPT";
+  attemptEventId: string;
+  provider: string;
+  providerReference: string;
+  amount: string;
+  currencyCode: string;
+  method:
+    OrderPaymentMethod |
+    null;
+  checkedAt: string;
+  retryAfterSeconds: number;
+  payment:
+    ProductPaymentTransitionView;
+}
+
+export interface ProductPaymentReconciliationTerminal {
+  kind: "TERMINAL";
+  payment:
+    ProductPaymentTransitionView;
+}
+
+export interface ProductPaymentReconciliationRateLimited {
+  kind: "RATE_LIMITED";
+  checkedAt: string;
+  retryAfterSeconds: number;
+  payment:
+    ProductPaymentTransitionView;
+}
+
+export type ProductPaymentReconciliationStart =
+  | ProductPaymentReconciliationAttempt
+  | ProductPaymentReconciliationTerminal
+  | ProductPaymentReconciliationRateLimited;
+
+export interface CompleteProductPaymentReconciliationAttemptInput {
+  attemptEventId: string;
+  status:
+    | "PROCESSED"
+    | "IGNORED"
+    | "FAILED";
+  payloadHash: string;
+  payload:
+    Prisma.InputJsonValue;
+  providerVerified: boolean;
+  failureCode?:
+    string | null;
+  failureMessage?:
+    string | null;
+}
+
 export interface ProductPaymentTransitionView {
   paymentId: string;
   orderId: string;

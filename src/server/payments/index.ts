@@ -4,13 +4,21 @@ export {
 } from "./errors";
 
 export {
+  beginProductPaymentReconciliation,
+  completeProductPaymentReconciliationAttempt,
   initiateProductPayment,
   processProductPaymentEvent,
 } from "./service";
 
 export type {
   InitiateProductPaymentInput,
+  CompleteProductPaymentReconciliationAttemptInput,
   ProcessProductPaymentEventInput,
+  ProductPaymentReconciliationAttempt,
+  ProductPaymentReconciliationRateLimited,
+  ProductPaymentReconciliationStart,
+  ProductPaymentReconciliationTerminal,
+  ReconcileProductPaymentInput,
   ProductPaymentEventDisposition,
   ProductPaymentEventOutcome,
   ProductPaymentEventResult,

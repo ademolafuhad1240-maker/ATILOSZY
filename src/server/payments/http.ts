@@ -298,6 +298,7 @@ function paymentErrorStatus(
       return 404;
 
     case "ORDER_NOT_PAYABLE":
+    case "PAYMENT_NOT_RECONCILABLE":
     case "PAYMENT_ALREADY_PROCESSING":
     case "PAYMENT_IDEMPOTENCY_CONFLICT":
     case "PAYMENT_REFERENCE_CONFLICT":

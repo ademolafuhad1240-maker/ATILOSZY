@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "ATILOSZY - A premium variety store by SORVYRA",
   "private": true,
+  "engines": {
+    "node": "^20.19.0 || ^22.12.0 || ^24.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -40,11 +43,13 @@
     "db:audit:payment-transitions": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-payment-transitions.ts",
     "db:audit:payment-initiation-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-payment-initiation-api.ts",
     "db:audit:payment-provider-adapters": "node --conditions=react-server --import tsx scripts/audit-payment-provider-adapters.ts",
-    "db:audit:payment-webhooks": "node --conditions=react-server --import tsx scripts/audit-payment-webhooks.ts"
+    "db:audit:payment-webhooks": "node --conditions=react-server --import tsx scripts/audit-payment-webhooks.ts",
+    "db:audit:payment-reconciliation": "node --conditions=react-server --import tsx scripts/audit-payment-reconciliation.ts",
+    "audit:railway-readiness": "node --import tsx scripts/audit-railway-readiness.ts"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.9.0",
-    "@prisma/client": "^7.9.0",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
     "dotenv": "^17.4.2",
     "lucide-react": "^0.408.0",
     "next": "15.5.21",
@@ -63,7 +68,7 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "15.5.21",
     "postcss": "8.5.23",
-    "prisma": "^7.9.0",
+    "prisma": "^7.9.1",
     "tailwindcss": "^3.4.3",
     "tsx": "^4.23.1",
     "typescript": "^5.4.5"

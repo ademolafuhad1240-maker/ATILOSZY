@@ -10,8 +10,8 @@ import {
   createPaystackWebhookProvider,
 } from "./paystack";
 import type {
-  PaymentWebhookFetch,
-} from "./transport";
+  PaymentVerificationFetch,
+} from "../verification";
 import type {
   PaymentWebhookProvider,
 } from "./types";
@@ -36,7 +36,7 @@ export interface ResolvePaymentWebhookOptions {
   environment?:
     PaymentWebhookEnvironment;
   fetchImplementation?:
-    PaymentWebhookFetch;
+    PaymentVerificationFetch;
   timeoutMilliseconds?:
     number;
 }

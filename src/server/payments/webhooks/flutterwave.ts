@@ -1,9 +1,10 @@
 import "server-only";
 
 import {
-  OrderPaymentMethod,
-} from "@/generated/prisma/client";
-
+  createFlutterwavePaymentVerificationProvider,
+  type PaymentVerificationFetch,
+  type PaymentVerificationProvider,
+} from "../verification";
 import {
   sha256PayloadHash,
   verifyFlutterwaveWebhookSignature,
@@ -21,10 +22,6 @@ import {
   providerMajorAmount,
   requiredWebhookText,
 } from "./parsing";
-import {
-  getProviderVerificationJson,
-  type PaymentWebhookFetch,
-} from "./transport";
 import type {
   PaymentWebhookProvider,
   PaymentWebhookRequest,
@@ -34,20 +31,20 @@ export interface FlutterwaveWebhookProviderOptions {
   secretKey: string;
   webhookSecretHash: string;
   fetchImplementation?:
-    PaymentWebhookFetch;
+    PaymentVerificationFetch;
   timeoutMilliseconds?:
     number;
+  verificationProvider?:
+    PaymentVerificationProvider;
 }
 
-interface FlutterwaveTransaction {
+interface FlutterwaveSignedTransaction {
   id: string;
   reference: string;
   amount: string;
   currencyCode: string;
   status: string;
-  paymentType:
-    string |
-    null;
+  paymentType: string | null;
 }
 
 function requireConfiguredSecret(
@@ -60,9 +57,7 @@ function requireConfiguredSecret(
   if (
     normalized.length <
       minimumLength ||
-    /\s/.test(
-      normalized,
-    )
+    /\s/.test(normalized)
   ) {
     throw new PaymentWebhookError(
       "WEBHOOK_CONFIGURATION_ERROR",
@@ -74,14 +69,10 @@ function requireConfiguredSecret(
   return normalized;
 }
 
-function flutterwaveTransaction(
+function signedTransaction(
   value: unknown,
-): FlutterwaveTransaction {
-  if (
-    !isWebhookObject(
-      value,
-    )
-  ) {
+): FlutterwaveSignedTransaction {
+  if (!isWebhookObject(value)) {
     throw new PaymentWebhookError(
       "WEBHOOK_PROVIDER_DATA_INVALID",
       "The Flutterwave transaction data is invalid.",
@@ -112,84 +103,14 @@ function flutterwaveTransaction(
       requiredWebhookText(
         value.status,
         40,
-      )
-        .toLowerCase(),
+      ).toLowerCase(),
     paymentType:
       optionalWebhookText(
         value.payment_type,
         80,
-      )
-        ?.toLowerCase() ??
+      )?.toLowerCase() ??
       null,
   };
-}
-
-function flutterwavePaymentMethod(
-  paymentType:
-    string |
-    null,
-):
-  | OrderPaymentMethod
-  | undefined {
-  switch (
-    paymentType
-  ) {
-    case "card":
-      return OrderPaymentMethod
-        .CARD;
-
-    case "bank_transfer":
-    case "banktransfer":
-      return OrderPaymentMethod
-        .BANK_TRANSFER;
-
-    case "ussd":
-      return OrderPaymentMethod
-        .USSD;
-
-    case "account":
-      return OrderPaymentMethod
-        .PAY_BY_BANK;
-
-    case "barter":
-    case "mobilemoney":
-    case "mobile_money":
-      return OrderPaymentMethod
-        .PROVIDER_WALLET;
-
-    default:
-      return undefined;
-  }
-}
-
-function verifiedFlutterwaveTransaction(
-  response: unknown,
-): FlutterwaveTransaction {
-  if (
-    !isWebhookObject(
-      response,
-    ) ||
-    response.status !==
-      "success"
-  ) {
-    throw new PaymentWebhookError(
-      "WEBHOOK_PROVIDER_VERIFICATION_UNAVAILABLE",
-      "The Flutterwave transaction could not be verified.",
-      503,
-    );
-  }
-
-  try {
-    return flutterwaveTransaction(
-      response.data,
-    );
-  } catch {
-    throw new PaymentWebhookError(
-      "WEBHOOK_PROVIDER_VERIFICATION_UNAVAILABLE",
-      "The Flutterwave transaction could not be verified.",
-      503,
-    );
-  }
 }
 
 function finalOutcome(
@@ -199,56 +120,25 @@ function finalOutcome(
   | "FAILED"
   | null {
   if (
-    status ===
-      "successful" ||
-    status ===
-      "succeeded"
+    status === "successful" ||
+    status === "succeeded"
   ) {
     return "SUCCEEDED";
   }
 
-  if (
-    status === "failed"
-  ) {
+  if (status === "failed") {
     return "FAILED";
   }
 
   return null;
 }
 
-function assertTransactionsMatch(
-  webhook:
-    FlutterwaveTransaction,
-  verified:
-    FlutterwaveTransaction,
-): void {
-  if (
-    webhook.id !==
-      verified.id ||
-    webhook.reference !==
-      verified.reference ||
-    webhook.amount !==
-      verified.amount ||
-    webhook.currencyCode !==
-      verified.currencyCode ||
-    finalOutcome(
-      webhook.status,
-    ) !==
-      finalOutcome(
-        verified.status,
-      )
-  ) {
-    throw providerDataMismatch();
-  }
-}
-
 async function normalizeFlutterwaveWebhook(
   request:
     PaymentWebhookRequest,
-  secretKey: string,
   webhookSecretHash: string,
-  options:
-    FlutterwaveWebhookProviderOptions,
+  verificationProvider:
+    PaymentVerificationProvider,
 ) {
   if (
     !verifyFlutterwaveWebhookSignature(
@@ -276,137 +166,98 @@ async function normalizeFlutterwaveWebhook(
       120,
     );
 
-  if (
-    eventType !==
-      "charge.completed"
-  ) {
+  if (eventType !== "charge.completed") {
     return {
-      kind:
-        "IGNORED" as const,
+      kind: "IGNORED" as const,
       eventType,
     };
   }
 
-  const webhookTransaction =
-    flutterwaveTransaction(
+  const signed =
+    signedTransaction(
       payload.data,
     );
 
-  const webhookOutcome =
+  const signedOutcome =
     finalOutcome(
-      webhookTransaction
-        .status,
+      signed.status,
     );
 
-  if (
-    webhookOutcome ===
-      null
-  ) {
+  if (signedOutcome === null) {
     return {
-      kind:
-        "IGNORED" as const,
+      kind: "IGNORED" as const,
       eventType,
     };
   }
 
-  const verificationResponse =
-    await getProviderVerificationJson(
-      {
-        provider:
-          "flutterwave",
-        url:
-          "https://api.flutterwave.com/v3/transactions/" +
-          encodeURIComponent(
-            webhookTransaction
-              .id,
-          ) +
-          "/verify",
-        secretKey,
-        fetchImplementation:
-          options
-            .fetchImplementation,
-        timeoutMilliseconds:
-          options
-            .timeoutMilliseconds,
-      },
+  let verified;
+
+  try {
+    verified =
+      await verificationProvider
+        .verify({
+          providerReference:
+            signed.reference,
+          transactionId:
+            signed.id,
+        });
+  } catch {
+    throw new PaymentWebhookError(
+      "WEBHOOK_PROVIDER_VERIFICATION_UNAVAILABLE",
+      "The Flutterwave transaction could not be verified.",
+      503,
     );
-
-  const verifiedTransaction =
-    verifiedFlutterwaveTransaction(
-      verificationResponse,
-    );
-
-  assertTransactionsMatch(
-    webhookTransaction,
-    verifiedTransaction,
-  );
-
-  const outcome =
-    finalOutcome(
-      verifiedTransaction
-        .status,
-    );
-
-  if (
-    outcome === null
-  ) {
-    return {
-      kind:
-        "IGNORED" as const,
-      eventType,
-    };
   }
 
-  const method =
-    flutterwavePaymentMethod(
-      verifiedTransaction
-        .paymentType,
-    );
+  if (
+    verified.provider !==
+      "flutterwave" ||
+    verified.transactionId !==
+      signed.id ||
+    verified.providerReference !==
+      signed.reference ||
+    verified.amount !==
+      signed.amount ||
+    verified.currencyCode !==
+      signed.currencyCode ||
+    verified.outcome !==
+      signedOutcome
+  ) {
+    throw providerDataMismatch();
+  }
 
   return {
-    kind:
-      "EVENT" as const,
+    kind: "EVENT" as const,
     event: {
       providerEventId:
-        `charge.completed:${verifiedTransaction.id}:${verifiedTransaction.status}`,
+        `charge.completed:${verified.transactionId}:${verified.providerStatus}`,
       eventType,
       payloadHash:
         sha256PayloadHash(
           request.rawBody,
         ),
-      payload: {
-        transactionId:
-          verifiedTransaction
-            .id,
-        reference:
-          verifiedTransaction
-            .reference,
-        status:
-          verifiedTransaction
-            .status,
-        paymentType:
-          verifiedTransaction
-            .paymentType,
-      },
+      payload:
+        verified.payload,
       providerReference:
-        verifiedTransaction
-          .reference,
+        verified
+          .providerReference,
       amount:
-        verifiedTransaction
-          .amount,
+        verified.amount,
       currencyCode:
-        verifiedTransaction
-          .currencyCode,
-      outcome,
+        verified.currencyCode,
+      outcome:
+        signedOutcome,
       ...(
-        method === undefined
+        verified.method ===
+          undefined
           ? {}
           : {
-              method,
+              method:
+                verified.method,
             }
       ),
       ...(
-        outcome ===
+        signedOutcome ===
           "FAILED"
           ? {
               failureCode:
@@ -432,10 +283,19 @@ export function createFlutterwaveWebhookProvider(
 
   const webhookSecretHash =
     requireConfiguredSecret(
-      options
-        .webhookSecretHash,
+      options.webhookSecretHash,
       16,
     );
+
+  const verificationProvider =
+    options.verificationProvider ??
+    createFlutterwavePaymentVerificationProvider({
+      secretKey,
+      fetchImplementation:
+        options.fetchImplementation,
+      timeoutMilliseconds:
+        options.timeoutMilliseconds,
+    });
 
   return {
     name: "flutterwave",
@@ -448,9 +308,8 @@ export function createFlutterwaveWebhookProvider(
     ) {
       return normalizeFlutterwaveWebhook(
         request,
-        secretKey,
         webhookSecretHash,
-        options,
+        verificationProvider,
       );
     },
   };

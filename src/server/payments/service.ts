@@ -1,4 +1,9 @@
 import {
+  createHash,
+  randomUUID,
+} from "node:crypto";
+
+import {
   OrderPaymentPurpose,
   OrderPaymentStatus,
   OrderStatus,
@@ -13,7 +18,10 @@ import {
 } from "./errors";
 import type {
   InitiateProductPaymentInput,
+  CompleteProductPaymentReconciliationAttemptInput,
   ProcessProductPaymentEventInput,
+  ProductPaymentReconciliationStart,
+  ReconcileProductPaymentInput,
   ProductPaymentEventDisposition,
   ProductPaymentEventResult,
   ProductPaymentTransitionView,
@@ -110,6 +118,18 @@ interface NormalizedProviderEvent {
     string |
     undefined;
 }
+
+interface NormalizedReconciliation {
+  storefrontCode: string;
+  userId: string;
+  orderNumber: string;
+}
+
+const reconciliationAttemptEventType =
+  "payment.reconciliation.attempt";
+
+const reconciliationCooldownMilliseconds =
+  60_000;
 
 function isPrismaErrorCode(
   error: unknown,
@@ -362,6 +382,42 @@ function normalizeProviderEvent(
             2000,
           ),
   };
+}
+
+function normalizeReconciliation(
+  input:
+    ReconcileProductPaymentInput,
+): NormalizedReconciliation {
+  return {
+    storefrontCode:
+      normalizeStorefrontCode(
+        input.storefrontCode,
+      ),
+    userId:
+      requireText(
+        input.userId,
+        "User identifier",
+        191,
+      ),
+    orderNumber:
+      requireText(
+        input.orderNumber,
+        "Order number",
+        40,
+      ),
+  };
+}
+
+function reconciliationPayloadHash(
+  payload:
+    Prisma.InputJsonValue,
+): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify(payload),
+      "utf8",
+    )
+    .digest("hex");
 }
 
 function toPaymentView(
@@ -915,6 +971,404 @@ export async function initiateProductPayment(
 
     throw error;
   }
+}
+
+export async function beginProductPaymentReconciliation(
+  input:
+    ReconcileProductPaymentInput,
+): Promise<
+  ProductPaymentReconciliationStart
+> {
+  const normalized =
+    normalizeReconciliation(
+      input,
+    );
+
+  return runSerializable(
+    async (transaction) => {
+      const storefront =
+        await transaction.storefront
+          .findUnique({
+            where: {
+              code:
+                normalized
+                  .storefrontCode,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+      if (!storefront) {
+        throw new PaymentServiceError(
+          "STOREFRONT_NOT_FOUND",
+          "The storefront was not found.",
+        );
+      }
+
+      const order =
+        await transaction.order
+          .findFirst({
+            where: {
+              orderNumber:
+                normalized
+                  .orderNumber,
+              storefrontId:
+                storefront.id,
+              userId:
+                normalized.userId,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+      if (!order) {
+        throw new PaymentServiceError(
+          "ORDER_NOT_FOUND",
+          "The order was not found.",
+        );
+      }
+
+      await lockOrder(
+        transaction,
+        order.id,
+      );
+
+      const discoveredPayment =
+        await transaction
+          .orderPayment
+          .findFirst({
+            where: {
+              orderId:
+                order.id,
+              purpose:
+                OrderPaymentPurpose
+                  .PRODUCT,
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+            select: {
+              id: true,
+            },
+          });
+
+      if (!discoveredPayment) {
+        throw new PaymentServiceError(
+          "PRODUCT_PAYMENT_NOT_FOUND",
+          "The order does not contain a product payment record.",
+        );
+      }
+
+      const lockedPayment =
+        await transaction
+          .$queryRaw<
+            Array<{
+              id: string;
+            }>
+          >(Prisma.sql`
+            SELECT id
+            FROM order_payments
+            WHERE id =
+              ${discoveredPayment.id}
+            FOR UPDATE
+          `);
+
+      if (!lockedPayment[0]) {
+        throw new PaymentServiceError(
+          "PAYMENT_CONFLICT",
+          "The product payment could not be locked.",
+        );
+      }
+
+      const payment =
+        await loadPayment(
+          transaction,
+          discoveredPayment.id,
+        );
+
+      if (
+        payment.status ===
+          OrderPaymentStatus.PAID ||
+        payment.status ===
+          OrderPaymentStatus.FAILED ||
+        payment.status ===
+          OrderPaymentStatus.CANCELLED ||
+        payment.status ===
+          OrderPaymentStatus
+            .PARTIALLY_REFUNDED ||
+        payment.status ===
+          OrderPaymentStatus.REFUNDED ||
+        payment.order.status ===
+          OrderStatus.CANCELLED ||
+        payment.order.status ===
+          OrderStatus.REFUND_PENDING ||
+        payment.order.status ===
+          OrderStatus.REFUNDED
+      ) {
+        return {
+          kind:
+            "TERMINAL",
+          payment:
+            toPaymentView(
+              payment,
+            ),
+        };
+      }
+
+      if (
+        payment.status !==
+          OrderPaymentStatus
+            .PROCESSING ||
+        payment.provider === null ||
+        payment.providerReference ===
+          null
+      ) {
+        throw new PaymentServiceError(
+          "PAYMENT_NOT_RECONCILABLE",
+          "The product payment is not awaiting provider verification.",
+        );
+      }
+
+      const now =
+        new Date();
+
+      const latestAttempt =
+        await transaction
+          .paymentProviderEvent
+          .findFirst({
+            where: {
+              orderPaymentId:
+                payment.id,
+              eventType:
+                reconciliationAttemptEventType,
+              receivedAt: {
+                gt:
+                  new Date(
+                    now.getTime() -
+                      reconciliationCooldownMilliseconds,
+                  ),
+              },
+            },
+            orderBy: {
+              receivedAt:
+                "desc",
+            },
+          });
+
+      if (latestAttempt) {
+        const elapsed =
+          now.getTime() -
+          latestAttempt
+            .receivedAt
+            .getTime();
+
+        return {
+          kind:
+            "RATE_LIMITED",
+          checkedAt:
+            latestAttempt
+              .receivedAt
+              .toISOString(),
+          retryAfterSeconds:
+            Math.max(
+              1,
+              Math.ceil(
+                (
+                  reconciliationCooldownMilliseconds -
+                  elapsed
+                ) / 1000,
+              ),
+            ),
+          payment:
+            toPaymentView(
+              payment,
+            ),
+        };
+      }
+
+      const payload = {
+        source:
+          "SERVER_RECONCILIATION",
+        paymentId:
+          payment.id,
+        startedAt:
+          now.toISOString(),
+      };
+
+      const attempt =
+        await transaction
+          .paymentProviderEvent
+          .create({
+            data: {
+              provider:
+                payment.provider,
+              providerEventId:
+                `reconciliation-attempt:${randomUUID()}`,
+              eventType:
+                reconciliationAttemptEventType,
+              status:
+                PaymentProviderEventStatus
+                  .PROCESSING,
+              payloadHash:
+                reconciliationPayloadHash(
+                  payload,
+                ),
+              payload,
+              signatureVerified:
+                false,
+              storefrontId:
+                payment.storefrontId,
+              orderPaymentId:
+                payment.id,
+              attemptCount: 1,
+              processingStartedAt:
+                now,
+            },
+          });
+
+      return {
+        kind: "ATTEMPT",
+        attemptEventId:
+          attempt.id,
+        provider:
+          payment.provider,
+        providerReference:
+          payment
+            .providerReference,
+        amount:
+          payment.amount.toFixed(
+            2,
+          ),
+        currencyCode:
+          payment.currencyCode,
+        method:
+          payment.method,
+        checkedAt:
+          now.toISOString(),
+        retryAfterSeconds:
+          reconciliationCooldownMilliseconds /
+          1000,
+        payment:
+          toPaymentView(
+            payment,
+          ),
+      };
+    },
+  );
+}
+
+export async function completeProductPaymentReconciliationAttempt(
+  input:
+    CompleteProductPaymentReconciliationAttemptInput,
+): Promise<void> {
+  const attemptEventId =
+    requireText(
+      input.attemptEventId,
+      "Reconciliation attempt identifier",
+      191,
+    );
+
+  const payloadHash =
+    requireText(
+      input.payloadHash,
+      "Reconciliation payload hash",
+      128,
+    );
+
+  const failureCode =
+    input.failureCode ===
+      undefined ||
+    input.failureCode === null
+      ? null
+      : requireText(
+          input.failureCode,
+          "Reconciliation failure code",
+          120,
+        );
+
+  const failureMessage =
+    input.failureMessage ===
+      undefined ||
+    input.failureMessage === null
+      ? null
+      : requireText(
+          input.failureMessage,
+          "Reconciliation failure message",
+          2000,
+        );
+
+  const status =
+    PaymentProviderEventStatus[
+      input.status
+    ];
+
+  await runSerializable(
+    async (transaction) => {
+      const completedAt =
+        new Date();
+
+      const updated =
+        await transaction
+          .paymentProviderEvent
+          .updateMany({
+            where: {
+              id:
+                attemptEventId,
+              eventType:
+                reconciliationAttemptEventType,
+              status:
+                PaymentProviderEventStatus
+                  .PROCESSING,
+            },
+            data: {
+              status,
+              payloadHash,
+              payload:
+                input.payload,
+              signatureVerified:
+                input
+                  .providerVerified,
+              processedAt:
+                completedAt,
+              failureCode,
+              failureMessage,
+            },
+          });
+
+      if (updated.count === 1) {
+        return;
+      }
+
+      const existing =
+        await transaction
+          .paymentProviderEvent
+          .findUnique({
+            where: {
+              id:
+                attemptEventId,
+            },
+          });
+
+      if (
+        existing &&
+        existing.eventType ===
+          reconciliationAttemptEventType &&
+        existing.status ===
+          status &&
+        existing.payloadHash ===
+          payloadHash
+      ) {
+        return;
+      }
+
+      throw new PaymentServiceError(
+        "PAYMENT_CONFLICT",
+        "The reconciliation attempt could not be completed.",
+      );
+    },
+  );
 }
 
 async function processProviderEventOnce(

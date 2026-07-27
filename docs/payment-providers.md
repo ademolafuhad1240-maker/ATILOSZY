@@ -143,6 +143,38 @@ Invalid signatures are rejected before provider lookup or
 database work. Verification outages return a retryable
 non-200 response and cannot mark an order paid.
 
+## Authenticated payment reconciliation
+
+The authenticated reconciliation endpoint is:
+
+```text
+POST /api/orders/{orderNumber}/payment/reconcile
+```
+
+It accepts only the storefront code needed to resolve the
+authenticated session. Provider identity, provider
+reference, amount, currency, transaction identifier,
+idempotency identity, and desired status remain
+server-controlled.
+
+Reconciliation resolves the provider stored on the payment
+and uses the same Paystack or Flutterwave server
+verification layer used by verified webhooks. Paystack is
+queried by its stored transaction reference. Flutterwave is
+queried by its stored merchant `tx_ref`. A final result must
+match the stored provider, reference, exact amount, and
+currency before it enters the existing payment transition
+service.
+
+Each attempt is recorded in the provider-event ledger. A
+database-backed 60-second cooldown prevents tight
+customer-driven polling across multiple application
+instances. Pending results are visible in the ledger but do
+not change payment state. Provider/network errors are stored
+as safe failure codes and never include credentials or raw
+responses. Stable final-event identity preserves transition
+idempotency if a result is reconciled more than once.
+
 ## Local test-mode setup
 
 1. Run `npm ci`.
@@ -162,12 +194,15 @@ non-200 response and cannot mark an order paid.
    npm run db:audit:payment-provider-adapters
    npm run db:audit:payment-initiation-api
    npm run db:audit:payment-webhooks
+   npm run db:audit:payment-reconciliation
+   npm run audit:railway-readiness
    ```
 
-The adapter and webhook audits use mocked HTTP calls and
-never contact Paystack or Flutterwave. Use separate test
-credentials and a test-only Flutterwave webhook secret
-hash when manually exercising dashboard delivery.
+The adapter, webhook, and reconciliation audits use mocked
+HTTP calls and never contact Paystack or Flutterwave. Use
+separate test credentials and a test-only Flutterwave
+webhook secret hash when manually exercising dashboard
+delivery.
 
 ## Railway readiness
 
@@ -212,3 +247,6 @@ is explicitly approved.
 Keep test and live provider credentials in separate Railway
 environments, and never place either credential set in Git,
 documentation, logs, fixtures, or audit scripts.
+
+The complete staging connection checklist and production
+gate are documented in `docs/railway-readiness.md`.

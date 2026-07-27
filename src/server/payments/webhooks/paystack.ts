@@ -1,12 +1,13 @@
 import "server-only";
 
 import {
-  OrderPaymentMethod,
-} from "@/generated/prisma/client";
-
-import {
   minorUnitsToMajorAmount,
 } from "../providers/money";
+import {
+  createPaystackPaymentVerificationProvider,
+  type PaymentVerificationFetch,
+  type PaymentVerificationProvider,
+} from "../verification";
 import {
   sha256PayloadHash,
   verifyPaystackWebhookSignature,
@@ -24,10 +25,6 @@ import {
   providerIntegerAmount,
   requiredWebhookText,
 } from "./parsing";
-import {
-  getProviderVerificationJson,
-  type PaymentWebhookFetch,
-} from "./transport";
 import type {
   PaymentWebhookProvider,
   PaymentWebhookRequest,
@@ -36,20 +33,20 @@ import type {
 export interface PaystackWebhookProviderOptions {
   secretKey: string;
   fetchImplementation?:
-    PaymentWebhookFetch;
+    PaymentVerificationFetch;
   timeoutMilliseconds?:
     number;
+  verificationProvider?:
+    PaymentVerificationProvider;
 }
 
-interface PaystackTransaction {
+interface PaystackSignedTransaction {
   id: string;
   reference: string;
   amountMinor: string;
   currencyCode: string;
   status: string;
-  channel:
-    string |
-    null;
+  channel: string | null;
 }
 
 function requireSecret(
@@ -60,9 +57,7 @@ function requireSecret(
 
   if (
     normalized.length < 12 ||
-    /\s/.test(
-      normalized,
-    )
+    /\s/.test(normalized)
   ) {
     throw new PaymentWebhookError(
       "WEBHOOK_CONFIGURATION_ERROR",
@@ -74,14 +69,10 @@ function requireSecret(
   return normalized;
 }
 
-function paystackTransaction(
+function signedTransaction(
   value: unknown,
-): PaystackTransaction {
-  if (
-    !isWebhookObject(
-      value,
-    )
-  ) {
+): PaystackSignedTransaction {
+  if (!isWebhookObject(value)) {
     throw new PaymentWebhookError(
       "WEBHOOK_PROVIDER_DATA_INVALID",
       "The Paystack transaction data is invalid.",
@@ -111,93 +102,24 @@ function paystackTransaction(
       requiredWebhookText(
         value.status,
         40,
-      )
-        .toLowerCase(),
+      ).toLowerCase(),
     channel:
       optionalWebhookText(
         value.channel,
         60,
-      )
-        ?.toLowerCase() ??
+      )?.toLowerCase() ??
       null,
   };
 }
 
-function paystackPaymentMethod(
-  channel:
-    string |
-    null,
-):
-  | OrderPaymentMethod
-  | undefined {
-  switch (
-    channel
-  ) {
-    case "card":
-      return OrderPaymentMethod
-        .CARD;
-
-    case "bank_transfer":
-      return OrderPaymentMethod
-        .BANK_TRANSFER;
-
-    case "ussd":
-      return OrderPaymentMethod
-        .USSD;
-
-    case "bank":
-      return OrderPaymentMethod
-        .PAY_BY_BANK;
-
-    case "mobile_money":
-    case "payattitude":
-      return OrderPaymentMethod
-        .PROVIDER_WALLET;
-
-    default:
-      return undefined;
-  }
-}
-
-function verifiedPaystackTransaction(
-  response: unknown,
-): PaystackTransaction {
-  if (
-    !isWebhookObject(
-      response,
-    ) ||
-    response.status !== true
-  ) {
-    throw new PaymentWebhookError(
-      "WEBHOOK_PROVIDER_VERIFICATION_UNAVAILABLE",
-      "The Paystack transaction could not be verified.",
-      503,
-    );
-  }
-
-  try {
-    return paystackTransaction(
-      response.data,
-    );
-  } catch {
-    throw new PaymentWebhookError(
-      "WEBHOOK_PROVIDER_VERIFICATION_UNAVAILABLE",
-      "The Paystack transaction could not be verified.",
-      503,
-    );
-  }
-}
-
-function paystackMajorAmount(
+function signedMajorAmount(
   transaction:
-    PaystackTransaction,
+    PaystackSignedTransaction,
 ): string {
   try {
     return minorUnitsToMajorAmount(
-      transaction
-        .amountMinor,
-      transaction
-        .currencyCode,
+      transaction.amountMinor,
+      transaction.currencyCode,
     );
   } catch {
     throw new PaymentWebhookError(
@@ -208,32 +130,12 @@ function paystackMajorAmount(
   }
 }
 
-function assertTransactionsMatch(
-  webhook:
-    PaystackTransaction,
-  verified:
-    PaystackTransaction,
-): void {
-  if (
-    webhook.id !==
-      verified.id ||
-    webhook.reference !==
-      verified.reference ||
-    webhook.amountMinor !==
-      verified.amountMinor ||
-    webhook.currencyCode !==
-      verified.currencyCode
-  ) {
-    throw providerDataMismatch();
-  }
-}
-
 async function normalizePaystackWebhook(
   request:
     PaymentWebhookRequest,
   secretKey: string,
-  options:
-    PaystackWebhookProviderOptions,
+  verificationProvider:
+    PaymentVerificationProvider,
 ) {
   if (
     !verifyPaystackWebhookSignature(
@@ -260,115 +162,88 @@ async function normalizePaystackWebhook(
       120,
     );
 
-  if (
-    eventType !==
-      "charge.success"
-  ) {
+  if (eventType !== "charge.success") {
     return {
-      kind:
-        "IGNORED" as const,
+      kind: "IGNORED" as const,
       eventType,
     };
   }
 
-  const webhookTransaction =
-    paystackTransaction(
+  const signed =
+    signedTransaction(
       payload.data,
     );
 
-  if (
-    webhookTransaction
-      .status !== "success"
-  ) {
+  if (signed.status !== "success") {
     throw providerDataMismatch();
   }
 
-  const verificationResponse =
-    await getProviderVerificationJson(
-      {
-        provider:
-          "paystack",
-        url:
-          "https://api.paystack.co/transaction/verify/" +
-          encodeURIComponent(
-            webhookTransaction
-              .reference,
-          ),
-        secretKey,
-        fetchImplementation:
-          options
-            .fetchImplementation,
-        timeoutMilliseconds:
-          options
-            .timeoutMilliseconds,
-      },
-    );
+  let verified;
 
-  const verifiedTransaction =
-    verifiedPaystackTransaction(
-      verificationResponse,
+  try {
+    verified =
+      await verificationProvider
+        .verify({
+          providerReference:
+            signed.reference,
+          transactionId:
+            signed.id,
+        });
+  } catch {
+    throw new PaymentWebhookError(
+      "WEBHOOK_PROVIDER_VERIFICATION_UNAVAILABLE",
+      "The Paystack transaction could not be verified.",
+      503,
     );
-
-  assertTransactionsMatch(
-    webhookTransaction,
-    verifiedTransaction,
-  );
+  }
 
   if (
-    verifiedTransaction
-      .status !== "success"
+    verified.provider !==
+      "paystack" ||
+    verified.transactionId !==
+      signed.id ||
+    verified.providerReference !==
+      signed.reference ||
+    verified.amount !==
+      signedMajorAmount(
+        signed,
+      ) ||
+    verified.currencyCode !==
+      signed.currencyCode ||
+    verified.outcome !==
+      "SUCCEEDED"
   ) {
     throw providerDataMismatch();
   }
-
-  const method =
-    paystackPaymentMethod(
-      verifiedTransaction
-        .channel,
-    );
 
   return {
-    kind:
-      "EVENT" as const,
+    kind: "EVENT" as const,
     event: {
       providerEventId:
-        `charge.success:${verifiedTransaction.id}`,
+        `charge.success:${verified.transactionId}`,
       eventType,
       payloadHash:
         sha256PayloadHash(
           request.rawBody,
         ),
-      payload: {
-        transactionId:
-          verifiedTransaction
-            .id,
-        reference:
-          verifiedTransaction
-            .reference,
-        status:
-          verifiedTransaction
-            .status,
-        channel:
-          verifiedTransaction
-            .channel,
-      },
+      payload:
+        verified.payload,
       providerReference:
-        verifiedTransaction
-          .reference,
+        verified
+          .providerReference,
       amount:
-        paystackMajorAmount(
-          verifiedTransaction,
-        ),
+        verified.amount,
       currencyCode:
-        verifiedTransaction
-          .currencyCode,
+        verified.currencyCode,
       outcome:
         "SUCCEEDED" as const,
       ...(
-        method === undefined
+        verified.method ===
+          undefined
           ? {}
           : {
-              method,
+              method:
+                verified.method,
             }
       ),
     },
@@ -384,6 +259,16 @@ export function createPaystackWebhookProvider(
       options.secretKey,
     );
 
+  const verificationProvider =
+    options.verificationProvider ??
+    createPaystackPaymentVerificationProvider({
+      secretKey,
+      fetchImplementation:
+        options.fetchImplementation,
+      timeoutMilliseconds:
+        options.timeoutMilliseconds,
+    });
+
   return {
     name: "paystack",
     signatureHeader:
@@ -396,7 +281,7 @@ export function createPaystackWebhookProvider(
       return normalizePaystackWebhook(
         request,
         secretKey,
-        options,
+        verificationProvider,
       );
     },
   };

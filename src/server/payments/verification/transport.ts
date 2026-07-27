@@ -1,18 +1,18 @@
 import "server-only";
 
 import {
-  PaymentWebhookError,
+  PaymentVerificationError,
 } from "./errors";
 
-export type PaymentWebhookFetch =
+export type PaymentVerificationFetch =
   typeof fetch;
 
-export interface ProviderVerificationRequest {
+export interface PaymentVerificationHttpRequest {
   provider: string;
   url: string;
   secretKey: string;
   fetchImplementation?:
-    PaymentWebhookFetch;
+    PaymentVerificationFetch;
   timeoutMilliseconds?:
     number;
 }
@@ -23,37 +23,38 @@ const defaultTimeoutMilliseconds =
 const maximumResponseLength =
   1_000_000;
 
-function verificationUnavailable(): PaymentWebhookError {
-  return new PaymentWebhookError(
-    "WEBHOOK_PROVIDER_VERIFICATION_UNAVAILABLE",
-    "The provider transaction could not be verified.",
-    503,
+function unavailable(
+  provider: string,
+): PaymentVerificationError {
+  return new PaymentVerificationError(
+    "PAYMENT_VERIFICATION_UNAVAILABLE",
+    "The payment provider could not verify this transaction.",
+    provider,
   );
 }
 
 function validTimeout(
   value: number,
+  provider: string,
 ): number {
   if (
-    !Number.isInteger(
-      value,
-    ) ||
+    !Number.isInteger(value) ||
     value < 1 ||
     value > 60_000
   ) {
-    throw new PaymentWebhookError(
-      "WEBHOOK_CONFIGURATION_ERROR",
-      "Payment webhook verification is not configured correctly.",
-      503,
+    throw new PaymentVerificationError(
+      "PAYMENT_VERIFICATION_CONFIGURATION_ERROR",
+      "Payment verification is not configured correctly.",
+      provider,
     );
   }
 
   return value;
 }
 
-export async function getProviderVerificationJson(
+export async function getPaymentVerificationJson(
   input:
-    ProviderVerificationRequest,
+    PaymentVerificationHttpRequest,
 ): Promise<unknown> {
   const fetchImplementation =
     input.fetchImplementation ??
@@ -70,6 +71,7 @@ export async function getProviderVerificationJson(
       validTimeout(
         input.timeoutMilliseconds ??
           defaultTimeoutMilliseconds,
+        input.provider,
       ),
     );
 
@@ -87,8 +89,7 @@ export async function getProviderVerificationJson(
           },
           cache: "no-store",
           signal:
-            abortController
-              .signal,
+            abortController.signal,
         },
       );
 
@@ -99,12 +100,12 @@ export async function getProviderVerificationJson(
 
     if (
       contentLength !== null &&
-      Number(
-        contentLength,
-      ) >
+      Number(contentLength) >
         maximumResponseLength
     ) {
-      throw verificationUnavailable();
+      throw unavailable(
+        input.provider,
+      );
     }
 
     const responseText =
@@ -112,12 +113,13 @@ export async function getProviderVerificationJson(
 
     if (
       !response.ok ||
-      responseText.length ===
-        0 ||
+      responseText.length === 0 ||
       responseText.length >
         maximumResponseLength
     ) {
-      throw verificationUnavailable();
+      throw unavailable(
+        input.provider,
+      );
     }
 
     try {
@@ -125,20 +127,24 @@ export async function getProviderVerificationJson(
         responseText,
       ) as unknown;
     } catch {
-      throw verificationUnavailable();
+      throw unavailable(
+        input.provider,
+      );
     }
   } catch (error) {
     if (
       error instanceof
-        PaymentWebhookError
+        PaymentVerificationError &&
+      error.code ===
+        "PAYMENT_VERIFICATION_CONFIGURATION_ERROR"
     ) {
-      throw verificationUnavailable();
+      throw error;
     }
 
-    throw verificationUnavailable();
-  } finally {
-    clearTimeout(
-      timeout,
+    throw unavailable(
+      input.provider,
     );
+  } finally {
+    clearTimeout(timeout);
   }
 }
