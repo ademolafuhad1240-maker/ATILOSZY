@@ -337,10 +337,6 @@ function buildOrderView(
             payment.amount.toFixed(
               2,
             ),
-          provider:
-            payment.provider,
-          providerReference:
-            payment.providerReference,
           initiatedAt:
             payment.initiatedAt
               .toISOString(),
@@ -1503,13 +1499,20 @@ export async function cancelPendingCheckoutOrder(
         order.status !==
           OrderStatus
             .PENDING_PAYMENT ||
-        order.productPaymentStatus !==
-          OrderPaymentStatus
-            .PENDING
+        (
+          order
+            .productPaymentStatus !==
+            OrderPaymentStatus
+              .PENDING &&
+          order
+            .productPaymentStatus !==
+            OrderPaymentStatus
+              .FAILED
+        )
       ) {
         throw new CheckoutServiceError(
           "ORDER_NOT_CANCELLABLE",
-          "Only an unpaid pending checkout order can be cancelled.",
+          "Only an unpaid order without an active payment can be cancelled.",
         );
       }
 

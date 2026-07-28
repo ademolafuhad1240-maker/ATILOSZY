@@ -104,6 +104,7 @@
 .statusPanel,
 .panel,
 .paymentNotice,
+.paymentSuccess,
 .summary,
 .state {
   border: 1px solid
@@ -149,6 +150,7 @@
 }
 
 .paymentNotice,
+.paymentSuccess,
 .panel,
 .state {
   padding:
@@ -162,18 +164,122 @@
     rgba(255, 197, 72, 0.075);
 }
 
+.paymentSuccess {
+  border-color:
+    rgba(77, 214, 158, 0.3);
+  background:
+    rgba(33, 181, 121, 0.09);
+}
+
 .paymentNotice h2,
+.paymentSuccess h2,
 .state h2 {
   margin: 0;
   font-size: 1.65rem;
 }
 
-.paymentNotice > p:last-child,
+.paymentNotice > p:not(.stateLabel),
+.paymentSuccess > p:not(.stateLabel),
 .state > p {
   max-width: 720px;
   margin: 0.75rem 0 0;
   color: rgba(255, 255, 255, 0.65);
   line-height: 1.7;
+}
+
+.paymentWarning {
+  padding: 0.9rem 1rem;
+  border: 1px solid
+    rgba(255, 169, 89, 0.3);
+  background:
+    rgba(255, 139, 45, 0.09);
+  color: #ffe0bd !important;
+}
+
+.paymentControls {
+  max-width: 680px;
+  margin-top: 1.3rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.paymentControls label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.paymentControls label span {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.paymentControls select {
+  width: 100%;
+  min-height: 3.2rem;
+  padding: 0 0.9rem;
+  border: 1px solid
+    rgba(255, 255, 255, 0.2);
+  border-radius: 0;
+  background: #111d28;
+  color: #ffffff;
+  font: inherit;
+}
+
+.paymentControls select:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.paymentControls p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.paymentButton {
+  width: fit-content;
+  min-height: 3.2rem;
+  padding: 0.8rem 1.2rem;
+  border: 1px solid
+    rgba(255, 255, 255, 0.18);
+  border-radius: 0;
+  background: #ffffff;
+  color: #07111b;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.paymentButton:hover:not(:disabled) {
+  background: #f2c76e;
+}
+
+.paymentButton:focus-visible,
+.paymentControls select:focus-visible {
+  outline: 3px solid
+    rgba(242, 199, 110, 0.72);
+  outline-offset: 3px;
+}
+
+.paymentButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.paymentMessage {
+  margin: 0;
+  padding: 1rem 1.15rem;
+  border: 1px solid
+    rgba(122, 191, 255, 0.3);
+  background:
+    rgba(64, 145, 222, 0.1);
+  color: #d9ecff;
+  line-height: 1.6;
 }
 
 .panelHeading,

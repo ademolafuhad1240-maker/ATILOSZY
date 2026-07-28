@@ -175,6 +175,45 @@ as safe failure codes and never include credentials or raw
 responses. Stable final-event identity preserves transition
 idempotency if a result is reconciled more than once.
 
+## Authenticated customer payment experience
+
+The storefront order page connects customers to the
+provider-neutral initiation and reconciliation APIs. It
+never contains Paystack or Flutterwave request logic and
+never submits a provider name, amount, currency, merchant
+reference, provider reference, idempotency key, or desired
+payment state.
+
+For an unpaid order, the customer may select an available
+payment method and continue to the configured provider's
+hosted HTTPS checkout. The order total and currency shown
+on the page are informational; the server reloads the
+authenticated order and supplies the authoritative values
+to the provider. A cryptographically random, ephemeral
+request token lets the server derive its durable payment
+identity without accepting a customer-supplied merchant
+reference or idempotency key. The order page keeps that
+token in browser-session storage for the current attempt so
+an ambiguous network retry remains idempotent. It clears
+attempt tokens after a verified terminal result or order
+cancellation.
+
+An order in payment processing exposes a **Check payment
+status** action. That action sends only the storefront code
+to the authenticated reconciliation endpoint. The server
+uses the stored provider and reference, applies the
+database-backed cooldown, and reloads the public order
+view. A redirect back to the order page is explicitly not
+treated as payment proof.
+
+When server verification records a failed payment, the
+customer may retry with a new provider attempt or cancel
+the unpaid order. Cancellation remains unavailable while
+payment is still processing. Cancelling a pending or
+verified-failed unpaid order releases its reserved
+inventory. Public order responses omit provider references
+and provider metadata.
+
 ## Local test-mode setup
 
 1. Run `npm ci`.
@@ -195,6 +234,7 @@ idempotency if a result is reconciled more than once.
    npm run db:audit:payment-initiation-api
    npm run db:audit:payment-webhooks
    npm run db:audit:payment-reconciliation
+   npm run audit:customer-payment-ui
    npm run audit:railway-readiness
    ```
 

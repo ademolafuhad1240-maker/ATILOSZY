@@ -10,6 +10,12 @@ import {
 import {
   randomInt,
 } from "node:crypto";
+import {
+  tmpdir,
+} from "node:os";
+import {
+  join,
+} from "node:path";
 
 function assertCondition(
   condition: unknown,
@@ -18,13 +24,6 @@ function assertCondition(
   if (!condition) {
     throw new Error(message);
   }
-}
-
-function npmCommand(): string {
-  return process.platform ===
-    "win32"
-    ? "npm.cmd"
-    : "npm";
 }
 
 async function waitForServer(
@@ -191,7 +190,10 @@ async function main(): Promise<void> {
       "/api/orders/",
       "cancelOrder",
       "Cancel unpaid order",
-      "No charge has been",
+      "beginPayment",
+      "reconcilePayment",
+      "Continue to secure payment",
+      "Check payment status",
     ]
   ) {
     assertCondition(
@@ -214,7 +216,7 @@ async function main(): Promise<void> {
   );
 
   console.log(
-    "PASS: Checkout and order clients use authenticated APIs without fake payment controls.",
+    "PASS: Checkout and order clients use authenticated APIs with secure payment actions.",
   );
 
   const port =
@@ -234,16 +236,25 @@ async function main(): Promise<void> {
 
   try {
     logFd = openSync(
-      "/tmp/sorvyra-phase-2g-d-next-server.log",
+      join(
+        tmpdir(),
+        "sorvyra-phase-2g-d-next-server.log",
+      ),
       "w",
     );
 
     server = spawn(
-      npmCommand(),
+      process.execPath,
       [
-        "run",
+        join(
+          process.cwd(),
+          "node_modules",
+          "next",
+          "dist",
+          "bin",
+          "next",
+        ),
         "start",
-        "--",
         "-p",
         String(port),
         "-H",

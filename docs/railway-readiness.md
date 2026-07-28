@@ -118,6 +118,20 @@ Do not configure both providers as automatic fallbacks.
 The stored provider identity controls later verification
 and reconciliation.
 
+For the staging customer smoke test:
+
+1. Sign in to the matching storefront account and prepare
+   an unpaid order.
+2. Open the private order page and use **Continue to secure
+   payment** with the provider's documented test details.
+3. Confirm the hosted page uses the expected test account
+   and exact server-derived order total and currency.
+4. Return to the order page and use **Check payment
+   status** if the webhook has not already updated it.
+5. Confirm that a browser redirect alone never changes the
+   order to paid, a verified failure can be retried or
+   cancelled, and a verified success cannot be cancelled.
+
 ## Production gate
 
 Do not connect `shop.sorvyra.com`, use live provider keys,

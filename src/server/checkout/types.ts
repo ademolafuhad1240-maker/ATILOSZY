@@ -101,10 +101,6 @@ export interface CheckoutOrderPaymentView {
     | null;
   status: OrderPaymentStatus;
   amount: string;
-  provider: string | null;
-  providerReference:
-    | string
-    | null;
   initiatedAt: string;
   paidAt: string | null;
 }

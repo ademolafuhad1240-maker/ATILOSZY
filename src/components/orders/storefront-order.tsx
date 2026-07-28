@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -23,6 +24,80 @@ interface OrderEnvelope {
   };
 }
 
+type CustomerPaymentMethod =
+  | "CARD"
+  | "BANK_TRANSFER"
+  | "USSD"
+  | "PAY_BY_BANK";
+
+interface PaymentEnvelope {
+  ok?: boolean;
+  payment?: {
+    paymentStatus?: string;
+    orderStatus?: string;
+    productPaymentStatus?:
+      string;
+  };
+  nextAction?:
+    | {
+        type: "REDIRECT";
+        url: string;
+        expiresAt?:
+          | string
+          | null;
+      }
+    | {
+        type: "PENDING";
+        message: string;
+      };
+  reconciliation?: {
+    disposition?: string;
+    checkedAt?:
+      | string
+      | null;
+    retryAfterSeconds?:
+      number;
+  };
+  error?: {
+    code?: string;
+    message?: string;
+  };
+}
+
+const paymentMethods:
+  Array<{
+    value:
+      CustomerPaymentMethod;
+    label: string;
+    description: string;
+  }> = [
+    {
+      value: "CARD",
+      label: "Card",
+      description:
+        "Complete payment on the provider's secure card page.",
+    },
+    {
+      value:
+        "BANK_TRANSFER",
+      label: "Bank transfer",
+      description:
+        "Receive provider-controlled transfer instructions.",
+    },
+    {
+      value: "USSD",
+      label: "USSD",
+      description:
+        "Use an available provider USSD flow.",
+    },
+    {
+      value: "PAY_BY_BANK",
+      label: "Pay by bank",
+      description:
+        "Continue through a supported bank authorization flow.",
+    },
+  ];
+
 async function readPayload(
   response: Response,
 ): Promise<OrderEnvelope> {
@@ -32,6 +107,175 @@ async function readPayload(
   } catch {
     return {};
   }
+}
+
+async function readPaymentPayload(
+  response: Response,
+): Promise<PaymentEnvelope> {
+  try {
+    return await response.json() as
+      PaymentEnvelope;
+  } catch {
+    return {};
+  }
+}
+
+async function requestOrder(
+  storefrontCode: string,
+  orderNumber: string,
+) {
+  const response =
+    await fetch(
+      `/api/orders/${encodeURIComponent(
+        orderNumber,
+      )}?storefrontCode=${encodeURIComponent(
+        storefrontCode,
+      )}`,
+      {
+        method: "GET",
+        credentials:
+          "same-origin",
+        cache: "no-store",
+        headers: {
+          Accept:
+            "application/json",
+        },
+      },
+    );
+
+  return {
+    response,
+    payload:
+      await readPayload(
+        response,
+      ),
+  };
+}
+
+function newPaymentRequestToken(): string {
+  const bytes =
+    new Uint8Array(24);
+
+  window.crypto
+    .getRandomValues(bytes);
+
+  return Array.from(
+    bytes,
+    (value) =>
+      value
+        .toString(16)
+        .padStart(2, "0"),
+  ).join("");
+}
+
+function paymentRequestTokenKey(
+  storefrontCode: string,
+  orderNumber: string,
+  method:
+    CustomerPaymentMethod,
+): string {
+  return [
+    "sorvyra",
+    "payment-attempt",
+    storefrontCode,
+    orderNumber,
+    method,
+  ].join(":");
+}
+
+function paymentRequestToken(
+  storefrontCode: string,
+  orderNumber: string,
+  method:
+    CustomerPaymentMethod,
+): string {
+  const key =
+    paymentRequestTokenKey(
+      storefrontCode,
+      orderNumber,
+      method,
+    );
+
+  try {
+    const existing =
+      window.sessionStorage
+        .getItem(key);
+
+    if (
+      existing &&
+      /^[a-f0-9]{48}$/u.test(
+        existing,
+      )
+    ) {
+      return existing;
+    }
+
+    const created =
+      newPaymentRequestToken();
+
+    window.sessionStorage
+      .setItem(
+        key,
+        created,
+      );
+
+    return created;
+  } catch {
+    return newPaymentRequestToken();
+  }
+}
+
+function clearPaymentRequestTokens(
+  storefrontCode: string,
+  orderNumber: string,
+): void {
+  try {
+    for (
+      const method of paymentMethods
+    ) {
+      window.sessionStorage
+        .removeItem(
+          paymentRequestTokenKey(
+            storefrontCode,
+            orderNumber,
+            method.value,
+          ),
+        );
+    }
+  } catch {
+    // Storage can be unavailable without blocking payment state handling.
+  }
+}
+
+function safeRedirectUrl(
+  value: string,
+): string | null {
+  try {
+    const parsed =
+      new URL(value);
+
+    if (
+      parsed.protocol ===
+        "https:" ||
+      (
+        parsed.protocol ===
+          "http:" &&
+        [
+          "localhost",
+          "127.0.0.1",
+          "[::1]",
+        ].includes(
+          parsed.hostname,
+        )
+      )
+    ) {
+      return parsed.toString();
+    }
+  } catch {
+    // The server response did not contain a usable redirect.
+  }
+
+  return null;
 }
 
 function money(
@@ -129,6 +373,33 @@ export default function StorefrontOrder({
   ] = useState(false);
 
   const [
+    initiatingPayment,
+    setInitiatingPayment,
+  ] = useState(false);
+
+  const [
+    reconcilingPayment,
+    setReconcilingPayment,
+  ] = useState(false);
+
+  const [
+    paymentMethod,
+    setPaymentMethod,
+  ] = useState<
+    CustomerPaymentMethod
+  >("CARD");
+
+  const [
+    paymentMessage,
+    setPaymentMessage,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const paymentAttemptInFlight =
+    useRef(false);
+
+  const [
     authRequired,
     setAuthRequired,
   ] = useState(false);
@@ -150,29 +421,13 @@ export default function StorefrontOrder({
         setAuthRequired(false);
 
         try {
-          const response =
-            await fetch(
-              `/api/orders/${encodeURIComponent(
-                orderNumber,
-              )}?storefrontCode=${encodeURIComponent(
-                storefront.code,
-              )}`,
-              {
-                method: "GET",
-                credentials:
-                  "same-origin",
-                cache:
-                  "no-store",
-                headers: {
-                  Accept:
-                    "application/json",
-                },
-              },
-            );
-
-          const payload =
-            await readPayload(
-              response,
+          const {
+            response,
+            payload,
+          } =
+            await requestOrder(
+              storefront.code,
+              orderNumber,
             );
 
           if (!active) {
@@ -202,6 +457,22 @@ export default function StorefrontOrder({
           setOrder(
             payload.order,
           );
+
+          if (
+            [
+              "PAID",
+              "FAILED",
+              "CANCELLED",
+            ].includes(
+              payload.order
+                .productPaymentStatus,
+            )
+          ) {
+            clearPaymentRequestTokens(
+              storefront.code,
+              orderNumber,
+            );
+          }
         } catch {
           if (active) {
             setError(
@@ -227,10 +498,333 @@ export default function StorefrontOrder({
     ],
   );
 
+  async function refreshOrder(): Promise<
+    CheckoutOrderView | null
+  > {
+    try {
+      const {
+        response,
+        payload,
+      } =
+        await requestOrder(
+          storefront.code,
+          orderNumber,
+        );
+
+      if (
+        response.status === 401
+      ) {
+        setAuthRequired(true);
+        setError(
+          "Your session expired. Sign in again to manage this order.",
+        );
+        return null;
+      }
+
+      if (
+        !response.ok ||
+        !payload.order
+      ) {
+        setError(
+          payload.error
+            ?.message ??
+            "The order could not be refreshed.",
+        );
+        return null;
+      }
+
+      setOrder(payload.order);
+
+      if (
+        [
+          "PAID",
+          "FAILED",
+          "CANCELLED",
+        ].includes(
+          payload.order
+            .productPaymentStatus,
+        )
+      ) {
+        clearPaymentRequestTokens(
+          storefront.code,
+          orderNumber,
+        );
+      }
+
+      return payload.order;
+    } catch {
+      setError(
+        "The order could not be refreshed. Check your connection and try again.",
+      );
+      return null;
+    }
+  }
+
+  async function beginPayment() {
+    if (
+      !order ||
+      initiatingPayment ||
+      reconcilingPayment ||
+      paymentAttemptInFlight
+        .current
+    ) {
+      return;
+    }
+
+    paymentAttemptInFlight.current =
+      true;
+    setInitiatingPayment(true);
+    setError(null);
+    setPaymentMessage(null);
+
+    try {
+      const response =
+        await fetch(
+          `/api/orders/${encodeURIComponent(
+            order.orderNumber,
+          )}/payment/initiate`,
+          {
+            method: "POST",
+            credentials:
+              "same-origin",
+            headers: {
+              Accept:
+                "application/json",
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify({
+                storefrontCode:
+                  storefront.code,
+                method:
+                  paymentMethod,
+                requestToken:
+                  paymentRequestToken(
+                    storefront.code,
+                    order.orderNumber,
+                    paymentMethod,
+                  ),
+              }),
+          },
+        );
+
+      const payload =
+        await readPaymentPayload(
+          response,
+        );
+
+      if (
+        response.status === 401
+      ) {
+        setAuthRequired(true);
+        setError(
+          "Your session expired. Sign in again before starting payment.",
+        );
+        return;
+      }
+
+      if (
+        !response.ok ||
+        !payload.payment ||
+        !payload.nextAction
+      ) {
+        setError(
+          payload.error
+            ?.message ??
+            "The secure payment could not be started.",
+        );
+        return;
+      }
+
+      if (
+        payload.nextAction
+          .type ===
+        "REDIRECT"
+      ) {
+        const redirectUrl =
+          safeRedirectUrl(
+            payload
+              .nextAction.url,
+          );
+
+        if (!redirectUrl) {
+          setError(
+            "The payment provider returned an unsafe redirect.",
+          );
+          return;
+        }
+
+        setPaymentMessage(
+          "Opening the secure payment provider. Returning to this page does not by itself confirm payment.",
+        );
+
+        window.location.assign(
+          redirectUrl,
+        );
+        return;
+      }
+
+      setPaymentMessage(
+        payload.nextAction
+          .message,
+      );
+
+      await refreshOrder();
+    } catch {
+      setError(
+        "The secure payment could not be started. Check your connection and try again.",
+      );
+    } finally {
+      paymentAttemptInFlight.current =
+        false;
+      setInitiatingPayment(
+        false,
+      );
+    }
+  }
+
+  async function reconcilePayment() {
+    if (
+      !order ||
+      reconcilingPayment ||
+      initiatingPayment
+    ) {
+      return;
+    }
+
+    setReconcilingPayment(true);
+    setError(null);
+    setPaymentMessage(null);
+
+    try {
+      const response =
+        await fetch(
+          `/api/orders/${encodeURIComponent(
+            order.orderNumber,
+          )}/payment/reconcile`,
+          {
+            method: "POST",
+            credentials:
+              "same-origin",
+            headers: {
+              Accept:
+                "application/json",
+              "Content-Type":
+                "application/json",
+            },
+            body:
+              JSON.stringify({
+                storefrontCode:
+                  storefront.code,
+              }),
+          },
+        );
+
+      const payload =
+        await readPaymentPayload(
+          response,
+        );
+
+      if (
+        response.status === 401
+      ) {
+        setAuthRequired(true);
+        setError(
+          "Your session expired. Sign in again to verify this payment.",
+        );
+        return;
+      }
+
+      if (
+        response.status === 429
+      ) {
+        const retryAfter =
+          payload
+            .reconciliation
+            ?.retryAfterSeconds ??
+          Number(
+            response.headers.get(
+              "Retry-After",
+            ) ?? "0",
+          );
+
+        setError(
+          retryAfter > 0
+            ? `Payment verification was checked recently. Try again in ${retryAfter} seconds.`
+            : "Payment verification was checked recently. Try again shortly.",
+        );
+        return;
+      }
+
+      if (
+        !response.ok ||
+        !payload.payment
+      ) {
+        setError(
+          payload.error
+            ?.message ??
+            "The payment status could not be verified.",
+        );
+        return;
+      }
+
+      const refreshed =
+        await refreshOrder();
+
+      const disposition =
+        payload
+          .reconciliation
+          ?.disposition;
+
+      if (
+        disposition === "PAID" ||
+        refreshed
+          ?.productPaymentStatus ===
+          "PAID"
+      ) {
+        setPaymentMessage(
+          "Payment verified successfully.",
+        );
+      } else if (
+        disposition ===
+          "FAILED" ||
+        refreshed
+          ?.productPaymentStatus ===
+          "FAILED"
+      ) {
+        clearPaymentRequestTokens(
+          storefront.code,
+          order.orderNumber,
+        );
+
+        setPaymentMessage(
+          "The provider reported that this payment was not completed. You can safely try again or cancel the order.",
+        );
+      } else {
+        setPaymentMessage(
+          "The provider has not confirmed payment yet. No paid status has been applied.",
+        );
+      }
+    } catch {
+      setError(
+        "The payment status could not be verified. Check your connection and try again.",
+      );
+    } finally {
+      setReconcilingPayment(
+        false,
+      );
+    }
+  }
+
   async function cancelOrder() {
     if (
       !order ||
-      cancelling
+      cancelling ||
+      initiatingPayment ||
+      reconcilingPayment ||
+      paymentAttemptInFlight
+        .current
     ) {
       return;
     }
@@ -304,6 +898,11 @@ export default function StorefrontOrder({
       setOrder(
         payload.order,
       );
+
+      clearPaymentRequestTokens(
+        storefront.code,
+        order.orderNumber,
+      );
     } catch {
       setError(
         "The order could not be cancelled. Check your connection and try again.",
@@ -313,11 +912,26 @@ export default function StorefrontOrder({
     }
   }
 
-  const canCancel =
+  const canStartPayment =
     order?.status ===
       "PENDING_PAYMENT" &&
-    order.productPaymentStatus ===
-      "PENDING";
+    [
+      "PENDING",
+      "FAILED",
+    ].includes(
+      order
+        .productPaymentStatus,
+    );
+
+  const canReconcile =
+    order?.status ===
+      "PAYMENT_PROCESSING" ||
+    order
+      ?.productPaymentStatus ===
+      "PROCESSING";
+
+  const canCancel =
+    canStartPayment;
 
   return (
     <main
@@ -543,11 +1157,199 @@ export default function StorefrontOrder({
               </div>
             </section>
 
-            {order.status ===
-              "PENDING_PAYMENT" ? (
+            {canStartPayment ? (
               <section
                 className={
                   styles.paymentNotice
+                }
+                data-payment-actions
+              >
+                <p
+                  className={
+                    styles.stateLabel
+                  }
+                >
+                  Secure product
+                  payment
+                </p>
+
+                <h2>
+                  Pay{" "}
+                  {money(
+                    order.productTotal,
+                    order.currencyCode,
+                  )}
+                </h2>
+
+                <p>
+                  The server controls
+                  the provider,
+                  amount, currency and
+                  payment reference.
+                  You will continue on
+                  the configured
+                  provider&apos;s
+                  secure page.
+                </p>
+
+                {order
+                  .productPaymentStatus ===
+                "FAILED" ? (
+                  <p
+                    className={
+                      styles
+                        .paymentWarning
+                    }
+                  >
+                    The previous
+                    payment was not
+                    completed. No paid
+                    status was applied.
+                    You may retry or
+                    cancel this order.
+                  </p>
+                ) : null}
+
+                <div
+                  className={
+                    styles
+                      .paymentControls
+                  }
+                >
+                  <label>
+                    <span>
+                      Payment method
+                    </span>
+
+                    <select
+                      value={
+                        paymentMethod
+                      }
+                      disabled={
+                        initiatingPayment ||
+                        reconcilingPayment
+                      }
+                      onChange={(
+                        event,
+                      ) => {
+                        setPaymentMethod(
+                          event.target
+                            .value as
+                            CustomerPaymentMethod,
+                        );
+                      }}
+                    >
+                      {paymentMethods.map(
+                        (method) => (
+                          <option
+                            key={
+                              method.value
+                            }
+                            value={
+                              method.value
+                            }
+                          >
+                            {
+                              method.label
+                            }
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+
+                  <p>
+                    {
+                      paymentMethods.find(
+                        (method) =>
+                          method.value ===
+                          paymentMethod,
+                      )
+                        ?.description
+                    }
+                  </p>
+
+                  <button
+                    className={
+                      styles
+                        .paymentButton
+                    }
+                    type="button"
+                    disabled={
+                      initiatingPayment ||
+                      reconcilingPayment
+                    }
+                    onClick={() => {
+                      void beginPayment();
+                    }}
+                  >
+                    {initiatingPayment
+                      ? "Opening secure payment…"
+                      : "Continue to secure payment"}
+                  </button>
+                </div>
+              </section>
+            ) : null}
+
+            {canReconcile ? (
+              <section
+                className={
+                  styles.paymentNotice
+                }
+                data-payment-reconciliation
+              >
+                <p
+                  className={
+                    styles.stateLabel
+                  }
+                >
+                  Payment verification
+                </p>
+
+                <h2>
+                  Waiting for provider
+                  confirmation
+                </h2>
+
+                <p>
+                  Returning from a
+                  payment page is not
+                  proof of payment.
+                  This check asks the
+                  server to verify the
+                  stored provider
+                  reference and exact
+                  order amount.
+                </p>
+
+                <button
+                  className={
+                    styles
+                      .paymentButton
+                  }
+                  type="button"
+                  disabled={
+                    reconcilingPayment ||
+                    initiatingPayment
+                  }
+                  onClick={() => {
+                    void reconcilePayment();
+                  }}
+                >
+                  {reconcilingPayment
+                    ? "Verifying payment…"
+                    : "Check payment status"}
+                </button>
+              </section>
+            ) : null}
+
+            {order
+              .productPaymentStatus ===
+            "PAID" ? (
+              <section
+                className={
+                  styles
+                    .paymentSuccess
                 }
               >
                 <p
@@ -555,25 +1357,34 @@ export default function StorefrontOrder({
                     styles.stateLabel
                   }
                 >
-                  Payment not yet
-                  connected
+                  Payment confirmed
                 </p>
 
                 <h2>
-                  No charge has been
-                  made
+                  Product payment
+                  received
                 </h2>
 
                 <p>
-                  This order currently
-                  reserves the listed
-                  products. The secure
-                  payment-provider
-                  connection will be
-                  introduced in the
-                  next payment phase.
+                  This order was
+                  marked paid only
+                  after server-side
+                  provider
+                  verification.
                 </p>
               </section>
+            ) : null}
+
+            {paymentMessage ? (
+              <p
+                className={
+                  styles
+                    .paymentMessage
+                }
+                role="status"
+              >
+                {paymentMessage}
+              </p>
             ) : null}
 
             <section
@@ -918,7 +1729,9 @@ export default function StorefrontOrder({
                 }
                 type="button"
                 disabled={
-                  cancelling
+                  cancelling ||
+                  initiatingPayment ||
+                  reconcilingPayment
                 }
                 onClick={() => {
                   void cancelOrder();

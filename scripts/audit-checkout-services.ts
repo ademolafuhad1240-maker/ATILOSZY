@@ -6,6 +6,7 @@ import {
 import {
   CartStatus,
   OrderFulfilmentMethod,
+  OrderPaymentPurpose,
   OrderPaymentStatus,
   OrderStatus,
   ProductStatus,
@@ -518,6 +519,112 @@ async function main(): Promise<void> {
 
     console.log(
       "PASS: Cancelling an unpaid checkout releases reserved inventory.",
+    );
+
+    const failedPaymentCart =
+      await getOrCreateActiveCart({
+        storefrontCode: "ATI",
+        userId: atiUser.id,
+      });
+
+    await addCartItem({
+      storefrontCode: "ATI",
+      userId: atiUser.id,
+      productVariantId:
+        product.variantId,
+      quantity: 1,
+    });
+
+    const failedPaymentOrder =
+      await createCheckoutOrder({
+        storefrontCode: "ATI",
+        userId: atiUser.id,
+        cartId:
+          failedPaymentCart.id,
+        fulfilmentMethod:
+          OrderFulfilmentMethod
+            .PICKUP,
+      });
+
+    const failedAt =
+      new Date();
+
+    await prisma.$transaction([
+      prisma.orderPayment.updateMany(
+        {
+          where: {
+            orderId:
+              failedPaymentOrder.id,
+            purpose:
+              OrderPaymentPurpose
+                .PRODUCT,
+          },
+          data: {
+            status:
+              OrderPaymentStatus
+                .FAILED,
+            failedAt,
+            failureCode:
+              "AUDIT_PROVIDER_FAILURE",
+            failureMessage:
+              "Temporary checkout audit failure.",
+          },
+        },
+      ),
+      prisma.order.update({
+        where: {
+          id:
+            failedPaymentOrder.id,
+        },
+        data: {
+          status:
+            OrderStatus
+              .PENDING_PAYMENT,
+          productPaymentStatus:
+            OrderPaymentStatus
+              .FAILED,
+        },
+      }),
+    ]);
+
+    const cancelledFailure =
+      await cancelPendingCheckoutOrder(
+        {
+          storefrontCode: "ATI",
+          userId: atiUser.id,
+          orderNumber:
+            failedPaymentOrder
+              .orderNumber,
+          reason:
+            "Cancelled after a verified failed payment.",
+        },
+      );
+
+    const inventoryAfterFailedCancellation =
+      await prisma.inventory
+        .findFirstOrThrow({
+          where: {
+            productVariantId:
+              product.variantId,
+          },
+        });
+
+    assertCondition(
+      cancelledFailure.status ===
+        OrderStatus.CANCELLED &&
+        cancelledFailure
+          .productPaymentStatus ===
+          OrderPaymentStatus
+            .CANCELLED &&
+        inventoryAfterFailedCancellation
+          .quantityReserved ===
+          inventoryBefore
+            .quantityReserved,
+      "A verified failed payment could not be cancelled safely.",
+    );
+
+    console.log(
+      "PASS: Cancelling a verified failed payment releases reserved inventory.",
     );
 
     const secondCart =
