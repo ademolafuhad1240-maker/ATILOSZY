@@ -71,6 +71,7 @@ AUTH_TOKEN_SECRET=<at-least-32-random-characters>
 AUTH_TRUSTED_ORIGINS=
 AUTH_REGISTRATION_API_ENABLED=false
 AUTH_DELIVERY_PROVIDER=disabled
+STAFF_PROVISIONING_ENABLED=false
 PAYMENT_INITIATION_PROVIDER=disabled
 ```
 
@@ -81,6 +82,12 @@ variable picker rather than typing the example literally.
 Generate `AUTH_TOKEN_SECRET` outside the repository and save
 it as a sealed Railway variable. Never paste it into source,
 documentation, build logs, or GitHub.
+
+Staff order pages remain inaccessible until an existing
+verified storefront account receives an explicit staff
+membership. Keep `STAFF_PROVISIONING_ENABLED=false` during
+normal deployment. The protected one-off process is
+documented in `docs/staff-order-operations.md`.
 
 ## Test payment enablement gate
 

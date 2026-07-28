@@ -47,6 +47,9 @@
     "db:audit:payment-webhooks": "node --conditions=react-server --import tsx scripts/audit-payment-webhooks.ts",
     "db:audit:payment-reconciliation": "node --conditions=react-server --import tsx scripts/audit-payment-reconciliation.ts",
     "audit:customer-payment-ui": "node --import tsx scripts/audit-customer-payment-ui.ts",
+    "audit:staff-order-operations": "node --import tsx scripts/audit-staff-order-operations.ts",
+    "db:audit:staff-order-services": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-staff-order-services.ts",
+    "staff:provision": "node --env-file=.env --conditions=react-server --import tsx scripts/provision-storefront-staff.ts",
     "audit:railway-readiness": "node --import tsx scripts/audit-railway-readiness.ts"
   },
   "dependencies": {

@@ -17,6 +17,7 @@ export interface StorefrontCheckoutConfig {
   accountHref: string;
   loginHref: string;
   ordersHref: string;
+  operationsHref: string;
   pickupEnabled: boolean;
   deliveryEnabled: boolean;
   installationEnabled: boolean;
@@ -48,6 +49,8 @@ const configurations:
         "/ng/atiloszy/account/login",
       ordersHref:
         "/ng/atiloszy/account/orders",
+      operationsHref:
+        "/ng/atiloszy/staff/orders",
       pickupEnabled: true,
       deliveryEnabled: true,
       installationEnabled: false,
@@ -76,6 +79,8 @@ const configurations:
         "/ng/zee-beauty-fashion/account/login",
       ordersHref:
         "/ng/zee-beauty-fashion/account/orders",
+      operationsHref:
+        "/ng/zee-beauty-fashion/staff/orders",
       pickupEnabled: true,
       deliveryEnabled: true,
       installationEnabled: false,
@@ -103,6 +108,8 @@ const configurations:
         "/ng/denald/account/login",
       ordersHref:
         "/ng/denald/account/orders",
+      operationsHref:
+        "/ng/denald/staff/orders",
       pickupEnabled: true,
       deliveryEnabled: true,
       installationEnabled: true,
@@ -131,6 +138,8 @@ const configurations:
         "/qa/zee-comfort-hub/account/login",
       ordersHref:
         "/qa/zee-comfort-hub/account/orders",
+      operationsHref:
+        "/qa/zee-comfort-hub/staff/orders",
       pickupEnabled: true,
       deliveryEnabled: true,
       installationEnabled: false,

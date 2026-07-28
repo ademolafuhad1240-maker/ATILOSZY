@@ -67,6 +67,18 @@ enum UserStatus {
   DELETED
 }
 
+enum StorefrontStaffRole {
+  MANAGER
+  FULFILMENT
+  VIEWER
+}
+
+enum StorefrontStaffStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
 enum VerificationPurpose {
   REGISTRATION
   EMAIL_CHANGE
@@ -151,6 +163,7 @@ model Storefront {
   customerSecurity      CustomerSecuritySettings[]
   customerAddresses     CustomerAddress[]
   customerSessions      Session[]
+  staffMemberships      StorefrontStaffMembership[]
   emailVerifications    EmailVerification[]
   phoneVerifications    PhoneVerification[]
   carts                 Cart[]
@@ -409,22 +422,22 @@ model StockMovement {
 }
 
 model User {
-  id                  String                    @id @default(cuid())
+  id                  String                     @id @default(cuid())
   storefrontId        String
-  email               String                    @db.VarChar(254)
-  normalizedEmail     String                    @db.VarChar(254)
-  phone               String                    @db.VarChar(32)
-  normalizedPhone     String                    @db.VarChar(32)
-  passwordHash        String                    @db.VarChar(255)
-  status              UserStatus                @default(PENDING_VERIFICATION)
+  email               String                     @db.VarChar(254)
+  normalizedEmail     String                     @db.VarChar(254)
+  phone               String                     @db.VarChar(32)
+  normalizedPhone     String                     @db.VarChar(32)
+  passwordHash        String                     @db.VarChar(255)
+  status              UserStatus                 @default(PENDING_VERIFICATION)
   emailVerifiedAt     DateTime?
   phoneVerifiedAt     DateTime?
   lastLoginAt         DateTime?
-  failedLoginAttempts Int                       @default(0)
+  failedLoginAttempts Int                        @default(0)
   lockedUntil         DateTime?
-  sessionVersion      Int                       @default(1)
+  sessionVersion      Int                        @default(1)
   deletedAt           DateTime?
-  storefront          Storefront                @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  storefront          Storefront                 @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   customer            StorefrontCustomer?
   security            CustomerSecuritySettings?
   addresses           CustomerAddress[]
@@ -432,8 +445,9 @@ model User {
   emailVerifications  EmailVerification[]
   phoneVerifications  PhoneVerification[]
   carts               Cart[]
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
+  staffMembership     StorefrontStaffMembership?
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
   orders              Order[]
 
   @@unique([storefrontId, normalizedEmail])
@@ -444,6 +458,27 @@ model User {
   @@index([normalizedPhone])
   @@index([emailVerifiedAt, phoneVerifiedAt])
   @@map("users")
+}
+
+model StorefrontStaffMembership {
+  id               String                 @id @default(cuid())
+  userId           String
+  storefrontId     String
+  role             StorefrontStaffRole
+  status           StorefrontStaffStatus  @default(ACTIVE)
+  grantedAt        DateTime               @default(now())
+  suspendedAt      DateTime?
+  revokedAt        DateTime?
+  user             User                   @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
+  storefront       Storefront             @relation(fields: [storefrontId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fulfilmentEvents OrderFulfilmentEvent[]
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@unique([userId, storefrontId])
+  @@unique([id, storefrontId])
+  @@index([storefrontId, status, role])
+  @@map("storefront_staff_memberships")
 }
 
 model StorefrontCustomer {
@@ -665,6 +700,15 @@ enum OrderFulfilmentStatus {
   CANCELLED
 }
 
+enum OrderFulfilmentAction {
+  CONFIRM
+  START_PREPARING
+  MARK_READY_FOR_PICKUP
+  MARK_OUT_FOR_DELIVERY
+  START_INSTALLATION
+  COMPLETE
+}
+
 enum OrderPaymentPurpose {
   PRODUCT
   DELIVERY_FEE
@@ -724,44 +768,45 @@ enum PaymentProviderEventStatus {
 }
 
 model Order {
-  id                    String                @id @default(cuid())
-  orderNumber           String                @unique @db.VarChar(40)
+  id                    String                 @id @default(cuid())
+  orderNumber           String                 @unique @db.VarChar(40)
   storefrontId          String
   userId                String
-  currencyCode          String                @db.VarChar(3)
-  cartId                String                @unique
-  status                OrderStatus           @default(PENDING_PAYMENT)
+  currencyCode          String                 @db.VarChar(3)
+  cartId                String                 @unique
+  status                OrderStatus            @default(PENDING_PAYMENT)
   fulfilmentMethod      OrderFulfilmentMethod
-  fulfilmentStatus      OrderFulfilmentStatus @default(NOT_STARTED)
-  productPaymentStatus  OrderPaymentStatus    @default(PENDING)
-  deliveryPaymentStatus OrderPaymentStatus    @default(NOT_REQUIRED)
-  productSubtotal       Decimal               @db.Decimal(18, 2)
-  discountTotal         Decimal               @default(0) @db.Decimal(18, 2)
-  productTotal          Decimal               @db.Decimal(18, 2)
-  deliveryFeeTotal      Decimal               @default(0) @db.Decimal(18, 2)
-  grandTotal            Decimal               @db.Decimal(18, 2)
-  customerName          String                @db.VarChar(160)
-  customerEmail         String                @db.VarChar(320)
-  customerPhone         String                @db.VarChar(32)
+  fulfilmentStatus      OrderFulfilmentStatus  @default(NOT_STARTED)
+  productPaymentStatus  OrderPaymentStatus     @default(PENDING)
+  deliveryPaymentStatus OrderPaymentStatus     @default(NOT_REQUIRED)
+  productSubtotal       Decimal                @db.Decimal(18, 2)
+  discountTotal         Decimal                @default(0) @db.Decimal(18, 2)
+  productTotal          Decimal                @db.Decimal(18, 2)
+  deliveryFeeTotal      Decimal                @default(0) @db.Decimal(18, 2)
+  grandTotal            Decimal                @db.Decimal(18, 2)
+  customerName          String                 @db.VarChar(160)
+  customerEmail         String                 @db.VarChar(320)
+  customerPhone         String                 @db.VarChar(32)
   customerNote          String?
   cancellationReason    String?
-  placedAt              DateTime              @default(now())
+  placedAt              DateTime               @default(now())
   paidAt                DateTime?
   confirmedAt           DateTime?
   completedAt           DateTime?
   cancelledAt           DateTime?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  storefront            Storefront            @relation(fields: [storefrontId, currencyCode], references: [id, currencyCode], onDelete: Restrict, onUpdate: Cascade)
-  user                  User                  @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
-  currency              Currency              @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
-  cart                  Cart                  @relation(fields: [cartId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  storefront            Storefront             @relation(fields: [storefrontId, currencyCode], references: [id, currencyCode], onDelete: Restrict, onUpdate: Cascade)
+  user                  User                   @relation(fields: [userId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
+  currency              Currency               @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  cart                  Cart                   @relation(fields: [cartId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
   items                 OrderItem[]
   addresses             OrderAddress[]
   payments              OrderPayment[]
   deliveryFeeQuotes     DeliveryFeeQuote[]
   pickupReservation     PickupReservation?
   deliveryVerification  DeliveryVerification?
+  fulfilmentEvents      OrderFulfilmentEvent[]
 
   @@unique([id, storefrontId, currencyCode])
   @@unique([cartId, storefrontId, currencyCode])
@@ -771,6 +816,30 @@ model Order {
   @@index([status, fulfilmentStatus])
   @@index([productPaymentStatus, deliveryPaymentStatus])
   @@map("orders")
+}
+
+model OrderFulfilmentEvent {
+  id                   String                    @id @default(cuid())
+  orderId              String
+  storefrontId         String
+  currencyCode         String                    @db.VarChar(3)
+  actorMembershipId    String
+  actorEmail           String                    @db.VarChar(254)
+  actorRole            StorefrontStaffRole
+  action               OrderFulfilmentAction
+  fromOrderStatus      OrderStatus
+  toOrderStatus        OrderStatus
+  fromFulfilmentStatus OrderFulfilmentStatus
+  toFulfilmentStatus   OrderFulfilmentStatus
+  note                 String?
+  order                Order                     @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
+  actorMembership      StorefrontStaffMembership @relation(fields: [actorMembershipId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
+  createdAt            DateTime                  @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([storefrontId, createdAt])
+  @@index([actorMembershipId, createdAt])
+  @@map("order_fulfilment_events")
 }
 
 model OrderItem {

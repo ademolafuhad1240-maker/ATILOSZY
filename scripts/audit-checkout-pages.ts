@@ -162,6 +162,12 @@ async function main(): Promise<void> {
       "utf-8",
     );
 
+  const staffOrderSource =
+    readFileSync(
+      "src/components/operations/storefront-orders.tsx",
+      "utf-8",
+    );
+
   const normalizedCheckoutSource =
     checkoutSource.replace(
       /\s+/g,
@@ -217,6 +223,23 @@ async function main(): Promise<void> {
 
   console.log(
     "PASS: Checkout and order clients use authenticated APIs with secure payment actions.",
+  );
+
+  assertCondition(
+    staffOrderSource.includes(
+      "data-staff-orders",
+    ) &&
+      staffOrderSource.includes(
+        "/api/staff/orders",
+      ) &&
+      staffOrderSource.includes(
+        "Staff access required",
+      ),
+    "Staff order pages do not expose the protected storefront order queue.",
+  );
+
+  console.log(
+    "PASS: Staff order clients use the protected storefront operations API.",
   );
 
   const port =
@@ -331,6 +354,29 @@ async function main(): Promise<void> {
       },
     ];
 
+    const staffOrderRoutes = [
+      {
+        code: "ATI",
+        path:
+          "/ng/atiloszy/staff/orders",
+      },
+      {
+        code: "ZBF",
+        path:
+          "/ng/zee-beauty-fashion/staff/orders",
+      },
+      {
+        code: "DEN",
+        path:
+          "/ng/denald/staff/orders",
+      },
+      {
+        code: "ZCH",
+        path:
+          "/qa/zee-comfort-hub/staff/orders",
+      },
+    ];
+
     for (
       const route of checkoutRoutes
     ) {
@@ -391,6 +437,37 @@ async function main(): Promise<void> {
 
     console.log(
       "PASS: All four customer-order detail pages render.",
+    );
+
+    for (
+      const route of staffOrderRoutes
+    ) {
+      const response =
+        await fetch(
+          `${baseUrl}${route.path}`,
+          {
+            redirect: "manual",
+          },
+        );
+
+      const html =
+        await response.text();
+
+      assertCondition(
+        response.status === 200,
+        `${route.path} returned ${response.status}.`,
+      );
+
+      assertCondition(
+        html.includes(
+          `data-staff-orders="${route.code}"`,
+        ),
+        `${route.path} did not render the correct staff storefront.`,
+      );
+    }
+
+    console.log(
+      "PASS: All four storefront staff-order pages render.",
     );
 
     console.log(
