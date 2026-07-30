@@ -37,6 +37,7 @@ export default function PortalLogin({
   destination:
     | "portal"
     | "apply"
+    | "catalogue"
     | "admin";
 }) {
   const router = useRouter();
@@ -132,6 +133,9 @@ export default function PortalLogin({
           ? "/admin"
           : destination === "apply"
             ? "/manager/apply"
+            : destination ===
+                "catalogue"
+              ? "/manager/catalogue"
             : "/manager";
 
       router.replace(

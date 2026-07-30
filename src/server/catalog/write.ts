@@ -13,6 +13,7 @@ import type {
   CreatedCatalogProduct,
 } from "@/server/catalog/types";
 import {
+  normalizeImageUrl,
   normalizeSku,
   normalizeSlug,
   optionalText,
@@ -235,10 +236,8 @@ export async function createCatalogProduct(
 
   const image = input.image
     ? {
-        url: requireText(
+        url: normalizeImageUrl(
           input.image.url,
-          "Product image URL",
-          2048,
         ),
         altText: optionalText(
           input.image.altText,
@@ -249,6 +248,28 @@ export async function createCatalogProduct(
         isPrimary: true,
       }
     : null;
+  const openingStockReason =
+    optionalText(
+      input.variant
+        .openingStockReason,
+      "Opening stock reason",
+      500,
+    ) ??
+    "Opening stock created with product";
+  const openingStockReferenceType =
+    optionalText(
+      input.variant
+        .openingStockReferenceType,
+      "Opening stock reference type",
+      80,
+    ) ?? "PRODUCT_CREATION";
+  const openingStockReferenceId =
+    optionalText(
+      input.variant
+        .openingStockReferenceId,
+      "Opening stock reference",
+      160,
+    ) ?? globalProductSlug;
 
   try {
     const createdProduct = await prisma.product.create({
@@ -360,11 +381,11 @@ export async function createCatalogProduct(
                               quantityReservedAfter:
                                 quantityReserved,
                               reason:
-                                "Opening stock created with product",
+                                openingStockReason,
                               referenceType:
-                                "PRODUCT_CREATION",
+                                openingStockReferenceType,
                               referenceId:
-                                globalProductSlug,
+                                openingStockReferenceId,
                             },
                           }
                         : undefined,

@@ -53,6 +53,9 @@ export default function GovernanceShell({
           <Link href="/manager">
             Manager portal
           </Link>
+          <Link href="/manager/catalogue">
+            Catalogue
+          </Link>
           <Link href="/manager/apply">
             Apply
           </Link>

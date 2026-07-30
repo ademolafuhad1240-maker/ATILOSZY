@@ -36,6 +36,10 @@ membership for that storefront only.
 
 Managers can:
 
+- create, edit and publish products in their approved storefront;
+- update storefront prices while preserving price history;
+- record auditable inventory purchases, returns, damage and count
+  adjustments without changing quantities reserved by orders;
 - open their storefront order and fulfilment queue;
 - grant `FULFILMENT` or `VIEWER` access to another verified account
   in the same storefront;
@@ -66,6 +70,7 @@ The central pages are:
 /manager/login
 /manager/apply
 /manager
+/manager/catalogue
 /admin/login
 /admin
 ```
@@ -77,8 +82,10 @@ resolves the active platform administrator, creates a separate
 HTTP-only platform session cookie and never accepts a storefront
 from the administrator browser.
 
-The manager portal links to the existing storefront-specific order
-queues after the server confirms an active manager membership.
+The manager portal links to the storefront-scoped catalogue,
+inventory controls and order queues after the server confirms an
+active manager membership. Catalogue architecture and validation
+are documented in `docs/catalogue-management.md`.
 
 ## Manager application lifecycle
 
@@ -148,6 +155,7 @@ Static security and page checks:
 
 ```text
 npm run audit:staff-governance
+npm run audit:catalog-management
 npm run lint
 npm run build
 ```
@@ -156,6 +164,7 @@ Database-backed lifecycle audit:
 
 ```text
 npm run db:audit:staff-governance-services
+npm run db:audit:catalog-management
 ```
 
 The database audit creates temporary verified accounts,

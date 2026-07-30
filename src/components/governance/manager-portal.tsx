@@ -533,7 +533,7 @@ export default function ManagerPortal({
       description={
         applicationMode
           ? "Applications are reviewed by the SORVYRA owner. Approval never grants access to any other storefront."
-          : "Orders, staff and permissions remain scoped to the storefront selected below."
+          : "Catalogue, inventory, orders, staff and permissions remain scoped to the storefront selected below."
       }
     >
       <section
@@ -834,10 +834,23 @@ export default function ManagerPortal({
                       Store operations
                     </span>
                     <h2>
-                      Orders and fulfilment
+                      Catalogue, orders and fulfilment
                     </h2>
                   </div>
-                  {checkoutConfig ? (
+                  <div
+                    className={
+                      styles.actions
+                    }
+                  >
+                    <Link
+                      className={
+                        styles.secondaryLink
+                      }
+                      href={`/manager/catalogue?storefrontCode=${storefrontCode}`}
+                    >
+                      Manage catalogue
+                    </Link>
+                    {checkoutConfig ? (
                     <Link
                       className={
                         styles.primaryLink
@@ -849,7 +862,8 @@ export default function ManagerPortal({
                     >
                       Open order queue
                     </Link>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
               </section>
 

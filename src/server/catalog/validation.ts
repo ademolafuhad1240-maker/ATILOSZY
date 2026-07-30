@@ -139,3 +139,80 @@ export function optionalText(
 
   return normalized;
 }
+
+export function normalizeStorefrontCode(
+  value: string,
+): string {
+  const normalized = requireText(
+    value,
+    "Storefront code",
+    12,
+  ).toUpperCase();
+
+  if (!/^[A-Z0-9_-]+$/u.test(normalized)) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "Storefront code is invalid.",
+    );
+  }
+
+  return normalized;
+}
+
+export function normalizeImageUrl(
+  value: string,
+): string {
+  const normalized = requireText(
+    value,
+    "Product image URL",
+    2048,
+  );
+
+  if (normalized.startsWith("/")) {
+    if (
+      normalized.startsWith("//") ||
+      normalized.includes("\\") ||
+      !/^\/[A-Za-z0-9][A-Za-z0-9/_.-]*$/u.test(
+        normalized,
+      ) ||
+      normalized
+        .split("/")
+        .some(
+          (segment) =>
+            segment === ".." ||
+            segment === ".",
+        )
+    ) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        "Product image paths must be safe SORVYRA asset paths.",
+      );
+    }
+
+    return normalized;
+  }
+
+  let parsed: URL;
+
+  try {
+    parsed = new URL(normalized);
+  } catch {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "Product image URL must be a valid secure URL.",
+    );
+  }
+
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.username !== "" ||
+    parsed.password !== ""
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "External product images must use HTTPS and cannot contain credentials.",
+    );
+  }
+
+  return parsed.toString();
+}

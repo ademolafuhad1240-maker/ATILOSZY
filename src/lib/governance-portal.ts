@@ -49,6 +49,7 @@ export function loginDestinationFromSearch(
 ):
   | "portal"
   | "apply"
+  | "catalogue"
   | "admin" {
   const destination =
     firstValue(
@@ -59,6 +60,7 @@ export function loginDestinationFromSearch(
 
   if (
     destination === "apply" ||
+    destination === "catalogue" ||
     destination === "admin"
   ) {
     return destination;

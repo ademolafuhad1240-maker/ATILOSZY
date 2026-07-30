@@ -1,5 +1,7 @@
 export type CatalogErrorCode =
   | "VALIDATION"
+  | "MANAGER_ACCESS_REQUIRED"
+  | "STOREFRONT_UNAVAILABLE"
   | "NOT_FOUND"
   | "CONFLICT"
   | "CURRENCY_MISMATCH"

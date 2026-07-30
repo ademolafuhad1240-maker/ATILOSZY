@@ -117,6 +117,46 @@
   );
 }
 
+.productMedia,
+.productHeroMedia {
+  display: grid;
+  place-items: center;
+  background:
+    linear-gradient(
+      135deg,
+      var(--catalog-soft),
+      #ffffff
+    )
+    center / cover no-repeat;
+  color: var(--catalog-accent);
+  font-family: Georgia, serif;
+  font-size: 3rem;
+  font-weight: 800;
+}
+
+.productMedia {
+  min-height: 190px;
+  margin: -1.15rem -1.15rem 0;
+  border-radius: 1.35rem 1.35rem
+    0.9rem 0.9rem;
+}
+
+.productHeroMedia {
+  min-height: clamp(
+    260px,
+    45vw,
+    520px
+  );
+  margin-top: 2rem;
+  border: 1px solid
+    rgba(16, 24, 39, 0.1);
+  border-radius: 2rem;
+  box-shadow:
+    0 24px 70px
+    rgba(16, 24, 39, 0.08);
+  font-size: 6rem;
+}
+
 .cardHeader {
   display: grid;
   gap: 0.4rem;

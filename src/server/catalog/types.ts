@@ -1,6 +1,8 @@
 import type {
+  CategoryStatus,
   PriceType,
   ProductStatus,
+  ProductVariantStatus,
   StockMovementType,
   StorefrontProductStatus,
 } from "@/generated/prisma/client";
@@ -55,6 +57,9 @@ export interface CreateCatalogProductInput {
     isTracked?: boolean;
     allowBackorder?: boolean;
     weightGrams?: number | null;
+    openingStockReason?: string | null;
+    openingStockReferenceType?: string | null;
+    openingStockReferenceId?: string | null;
   };
 }
 
@@ -129,4 +134,122 @@ export interface AdjustedInventory {
   quantityOnHand: number;
   quantityReserved: number;
   availableQuantity: number;
+}
+
+export interface ManagerCatalogCategory {
+  id: string;
+  slug: string;
+  name: string;
+  status: CategoryStatus;
+}
+
+export interface ManagerCatalogStockMovement {
+  id: string;
+  type: StockMovementType;
+  quantityDelta: number;
+  quantityOnHandAfter: number;
+  quantityReservedAfter: number;
+  reason: string | null;
+  createdAt: string;
+}
+
+export interface ManagerCatalogProduct {
+  id: string;
+  productId: string;
+  slug: string;
+  name: string;
+  shortDescription: string | null;
+  description: string | null;
+  brand: string | null;
+  categorySlug: string;
+  listingStatus: StorefrontProductStatus;
+  productStatus: ProductStatus;
+  isFeatured: boolean;
+  maxPerOrder: number | null;
+  publishedAt: string | null;
+  updatedAt: string;
+  image: {
+    url: string;
+    altText: string | null;
+  } | null;
+  variant: {
+    id: string;
+    sku: string;
+    title: string;
+    status: ProductVariantStatus;
+    price: {
+      amount: string;
+      compareAtAmount: string | null;
+      costAmount: string | null;
+      currencyCode: string;
+    };
+    inventory: {
+      quantityOnHand: number;
+      quantityReserved: number;
+      availableQuantity: number;
+      reorderLevel: number;
+      isTracked: boolean;
+      allowBackorder: boolean;
+      movements: ManagerCatalogStockMovement[];
+    };
+  };
+}
+
+export interface ManagerCatalogView {
+  manager: {
+    email: string;
+  };
+  storefront: {
+    code: string;
+    key: string;
+    name: string;
+    currencyCode: string;
+  };
+  categories: ManagerCatalogCategory[];
+  products: ManagerCatalogProduct[];
+}
+
+export interface ManagedCatalogProductFields {
+  categorySlug: string;
+  name: string;
+  shortDescription?: string | null;
+  description?: string | null;
+  brand?: string | null;
+  listingStatus: StorefrontProductStatus;
+  isFeatured: boolean;
+  maxPerOrder?: number | null;
+  imageUrl?: string | null;
+  imageAltText?: string | null;
+  variantTitle: string;
+  priceAmount: string;
+  compareAtAmount?: string | null;
+  costAmount?: string | null;
+  reorderLevel: number;
+  isTracked: boolean;
+  allowBackorder: boolean;
+}
+
+export interface CreateManagedCatalogProductInput
+  extends ManagedCatalogProductFields {
+  storefrontCode: string;
+  userId: string;
+  listingSlug: string;
+  sku: string;
+  initialStock: number;
+}
+
+export interface UpdateManagedCatalogProductInput
+  extends ManagedCatalogProductFields {
+  storefrontCode: string;
+  userId: string;
+  storefrontProductId: string;
+}
+
+export interface AdjustManagedCatalogStockInput {
+  storefrontCode: string;
+  userId: string;
+  storefrontProductId: string;
+  quantityDelta: number;
+  type: StockMovementType;
+  reason: string;
 }

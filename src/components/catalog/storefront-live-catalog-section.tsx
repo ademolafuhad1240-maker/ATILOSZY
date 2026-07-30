@@ -131,6 +131,39 @@ export default async function StorefrontLiveCatalogSection({
                   product.slug
                 }
               >
+                <div
+                  className={
+                    styles.productMedia
+                  }
+                  style={
+                    product.primaryImageUrl
+                      ? {
+                          backgroundImage: `url("${product.primaryImageUrl.replace(/"/gu, "%22")}")`,
+                        }
+                      : undefined
+                  }
+                  role={
+                    product.primaryImageUrl
+                      ? "img"
+                      : undefined
+                  }
+                  aria-label={
+                    product.primaryImageUrl
+                      ? product.name
+                      : undefined
+                  }
+                >
+                  {!product.primaryImageUrl
+                    ? (
+                        product.name
+                          .trim()
+                          .charAt(0)
+                          .toUpperCase() ||
+                        "S"
+                      )
+                    : null}
+                </div>
+
                 <header
                   className={
                     styles.cardHeader

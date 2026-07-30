@@ -58,6 +58,13 @@ Next.js start command reads it without a hardcoded port.
 10. Run database-backed payment audits against the staging
     database before enabling a test payment provider.
 
+The approved manager catalogue at `/manager/catalogue` requires no
+additional Railway variables or schema migration. Run
+`npm run db:audit:catalog-management` in the staging service before
+creating a manual staging product. Product images must use durable
+HTTPS media URLs or existing application asset paths; do not use
+Railway's service filesystem as uploaded-product storage.
+
 ## Required initial variables
 
 Use Railway reference variables instead of copying database
@@ -167,9 +174,10 @@ are true:
 - committed migrations have been applied successfully to a
   disposable staging database;
 - database-backed payment event and transition audits pass;
-- the Resend and Twilio authentication-delivery adapters pass
-  mocked audits and registration, verification resend and
-  password recovery pass end to end with staging credentials;
+- the Resend email authentication-delivery adapter passes mocked
+  audits and registration, verification resend and password
+  recovery pass end to end with staging credentials (Twilio SMS
+  remains an optional later enhancement);
 - Paystack and/or Flutterwave sandbox initiation, webhook,
   reconciliation, duplicate delivery, and failure scenarios
   pass end to end;
