@@ -94,6 +94,7 @@ function main(): void {
       "StorefrontStatus.ACTIVE",
       "StorefrontStaffStatus",
       'requiredArgument(\n      "confirm"',
+      "Manager access requires an approved manager application.",
     ]
   ) {
     assertCondition(

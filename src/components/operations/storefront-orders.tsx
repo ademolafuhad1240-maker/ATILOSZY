@@ -458,6 +458,12 @@ export default function StorefrontOrders({
           >
             Account
           </Link>
+
+          <Link
+            href={`/manager?storefrontCode=${storefront.code}`}
+          >
+            Manager portal
+          </Link>
         </nav>
       </header>
 
@@ -506,7 +512,7 @@ export default function StorefrontOrders({
               styles.primaryLink
             }
             href={
-              storefront.loginHref
+              `/manager/login?storefrontCode=${storefront.code}`
             }
           >
             Sign in
@@ -531,13 +537,22 @@ export default function StorefrontOrders({
           </h2>
 
           <p>
-            Public registration
-            cannot grant staff
-            access. A manager must
-            provision membership
-            through the protected
-            server command.
+            Public registration cannot
+            grant staff access. Apply
+            for manager access or ask
+            the approved manager for
+            this storefront to add your
+            verified account.
           </p>
+
+          <Link
+            className={
+              styles.primaryLink
+            }
+            href={`/manager/apply?storefrontCode=${storefront.code}`}
+          >
+            Open manager portal
+          </Link>
         </section>
       ) : error && !staff ? (
         <section

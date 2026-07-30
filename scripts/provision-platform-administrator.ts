@@ -1,6 +1,6 @@
 import {
-  StorefrontStaffRole,
-  StorefrontStaffStatus,
+  PlatformAdministratorRole,
+  PlatformAdministratorStatus,
   StorefrontStatus,
   UserStatus,
 } from "../src/generated/prisma/client";
@@ -15,12 +15,9 @@ function requiredArgument(
     process.argv.indexOf(
       `--${name}`,
     );
-
   const value =
     index >= 0
-      ? process.argv[
-          index + 1
-        ]
+      ? process.argv[index + 1]
       : undefined;
 
   if (
@@ -39,7 +36,7 @@ function normalizeStorefrontCode(
   value: string,
 ): string {
   const normalized =
-    value.toUpperCase();
+    value.trim().toUpperCase();
 
   if (
     !/^[A-Z]{3}$/u.test(
@@ -47,7 +44,7 @@ function normalizeStorefrontCode(
     )
   ) {
     throw new Error(
-      "The storefront code is invalid.",
+      "The account storefront code is invalid.",
     );
   }
 
@@ -66,7 +63,7 @@ function normalizeEmail(
     !normalized.includes("@")
   ) {
     throw new Error(
-      "The staff account email is invalid.",
+      "The administrator account email is invalid.",
     );
   }
 
@@ -75,34 +72,34 @@ function normalizeEmail(
 
 function normalizeRole(
   value: string,
-): StorefrontStaffRole {
+): PlatformAdministratorRole {
   const normalized =
-    value.toUpperCase();
+    value.trim().toUpperCase();
 
   if (
     normalized ===
-      StorefrontStaffRole
-        .FULFILMENT ||
+      PlatformAdministratorRole
+        .OWNER ||
     normalized ===
-      StorefrontStaffRole
-        .VIEWER
+      PlatformAdministratorRole
+        .ADMIN
   ) {
     return normalized;
   }
 
   throw new Error(
-    "The role must be FULFILMENT or VIEWER. Manager access requires an approved manager application.",
+    "The role must be OWNER or ADMIN.",
   );
 }
 
 async function main(): Promise<void> {
   if (
     process.env
-      .STAFF_PROVISIONING_ENABLED !==
+      .PLATFORM_ADMIN_PROVISIONING_ENABLED !==
     "true"
   ) {
     throw new Error(
-      "Staff provisioning is disabled. Set STAFF_PROVISIONING_ENABLED=true only for the one-off command.",
+      "Platform administrator provisioning is disabled. Enable it only for this one-off command.",
     );
   }
 
@@ -112,21 +109,18 @@ async function main(): Promise<void> {
         "storefront",
       ),
     );
-
   const email =
     normalizeEmail(
       requiredArgument(
         "email",
       ),
     );
-
   const role =
     normalizeRole(
       requiredArgument(
         "role",
       ),
     );
-
   const confirmation =
     requiredArgument(
       "confirm",
@@ -144,8 +138,7 @@ async function main(): Promise<void> {
   const user =
     await prisma.user.findFirst({
       where: {
-        normalizedEmail:
-          email,
+        normalizedEmail: email,
         status:
           UserStatus.ACTIVE,
         deletedAt: null,
@@ -163,7 +156,6 @@ async function main(): Promise<void> {
       },
       select: {
         id: true,
-        storefrontId: true,
       },
     });
 
@@ -173,33 +165,26 @@ async function main(): Promise<void> {
     );
   }
 
-  const membership =
+  const administrator =
     await prisma
-      .storefrontStaffMembership
+      .platformAdministrator
       .upsert({
         where: {
-          userId_storefrontId: {
-            userId: user.id,
-            storefrontId:
-              user.storefrontId,
-          },
+          userId: user.id,
         },
         create: {
           userId: user.id,
-          storefrontId:
-            user.storefrontId,
           role,
           status:
-            StorefrontStaffStatus
+            PlatformAdministratorStatus
               .ACTIVE,
         },
         update: {
           role,
           status:
-            StorefrontStaffStatus
+            PlatformAdministratorStatus
               .ACTIVE,
-          grantedAt:
-            new Date(),
+          grantedAt: new Date(),
           suspendedAt: null,
           revokedAt: null,
         },
@@ -211,15 +196,16 @@ async function main(): Promise<void> {
       });
 
   console.log(
-    "Storefront staff membership provisioned.",
+    "SORVYRA platform administrator provisioned.",
     {
-      membershipId:
-        membership.id,
-      storefrontCode,
+      administratorId:
+        administrator.id,
+      accountStorefront:
+        storefrontCode,
       role:
-        membership.role,
+        administrator.role,
       status:
-        membership.status,
+        administrator.status,
     },
   );
 }
@@ -229,7 +215,7 @@ main()
     console.error(
       error instanceof Error
         ? error.message
-        : "Staff provisioning failed.",
+        : "Platform administrator provisioning failed.",
     );
     process.exitCode = 1;
   })

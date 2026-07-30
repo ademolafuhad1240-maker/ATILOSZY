@@ -377,6 +377,14 @@ async function main(): Promise<void> {
       },
     ];
 
+    const governanceRoutes = [
+      "/manager/login?storefrontCode=ATI",
+      "/manager/apply?storefrontCode=ATI",
+      "/manager?storefrontCode=ATI",
+      "/admin/login?storefrontCode=ATI",
+      "/admin?storefrontCode=ATI",
+    ];
+
     for (
       const route of checkoutRoutes
     ) {
@@ -468,6 +476,35 @@ async function main(): Promise<void> {
 
     console.log(
       "PASS: All four storefront staff-order pages render.",
+    );
+
+    for (
+      const path of governanceRoutes
+    ) {
+      const response =
+        await fetch(
+          `${baseUrl}${path}`,
+          {
+            redirect: "manual",
+          },
+        );
+      const html =
+        await response.text();
+
+      assertCondition(
+        response.status === 200,
+        `${path} returned ${response.status}.`,
+      );
+      assertCondition(
+        html.includes(
+          "data-governance-shell",
+        ),
+        `${path} did not render the SORVYRA governance shell.`,
+      );
+    }
+
+    console.log(
+      "PASS: Central manager application, login and owner portal pages render.",
     );
 
     console.log(

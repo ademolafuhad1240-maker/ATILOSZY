@@ -88,9 +88,13 @@ state checks prevent duplicate stock settlement.
 
 ## Provisioning a staff member
 
-There is no public staff-signup endpoint. Create and verify
-the storefront account normally, then run the protected
-one-off command from an environment that can reach the
+There is no public staff-signup endpoint. The preferred workflow is
+the manager application, SORVYRA owner approval and manager staff
+controls documented in `docs/staff-governance.md`.
+
+The command below remains available for emergency or migration use.
+Create and verify the storefront account normally, then run the
+protected one-off command from an environment that can reach the
 database.
 
 Temporarily set:
@@ -105,12 +109,14 @@ Then run:
 npm run staff:provision -- \
   --storefront ATI \
   --email staff-account@example.test \
-  --role MANAGER \
-  --confirm ATI:staff-account@example.test:MANAGER
+  --role FULFILMENT \
+  --confirm ATI:staff-account@example.test:FULFILMENT
 ```
 
 On Windows PowerShell, place the command on one line.
-Supported roles are `MANAGER`, `FULFILMENT`, and `VIEWER`.
+Supported roles are `FULFILMENT` and `VIEWER`. Manager access
+cannot be granted with this command; it requires a manager
+application approved by a SORVYRA platform administrator.
 The exact confirmation value prevents an accidental
 cross-store grant.
 

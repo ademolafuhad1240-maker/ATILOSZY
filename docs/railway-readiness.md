@@ -72,6 +72,7 @@ AUTH_TRUSTED_ORIGINS=
 AUTH_REGISTRATION_API_ENABLED=false
 AUTH_DELIVERY_PROVIDER=disabled
 STAFF_PROVISIONING_ENABLED=false
+PLATFORM_ADMIN_PROVISIONING_ENABLED=false
 PAYMENT_INITIATION_PROVIDER=disabled
 ```
 
@@ -88,6 +89,13 @@ verified storefront account receives an explicit staff
 membership. Keep `STAFF_PROVISIONING_ENABLED=false` during
 normal deployment. The protected one-off process is
 documented in `docs/staff-order-operations.md`.
+
+The SORVYRA owner portal remains inaccessible until one verified
+storefront account receives an explicit platform administrator
+membership. Keep `PLATFORM_ADMIN_PROVISIONING_ENABLED=false` during
+normal deployment. Provisioning, manager applications and
+storefront staff controls are documented in
+`docs/staff-governance.md`.
 
 ## Test payment enablement gate
 

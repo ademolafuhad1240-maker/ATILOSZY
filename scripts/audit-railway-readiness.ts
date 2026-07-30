@@ -205,6 +205,7 @@ async function main(): Promise<void> {
       "AUTH_REGISTRATION_API_ENABLED=false",
       "AUTH_DELIVERY_PROVIDER=disabled",
       "STAFF_PROVISIONING_ENABLED=false",
+      "PLATFORM_ADMIN_PROVISIONING_ENABLED=false",
       "PAYMENT_INITIATION_PROVIDER=disabled",
       "PAYSTACK_SECRET_KEY=",
       "FLUTTERWAVE_SECRET_KEY=",
@@ -244,6 +245,7 @@ async function main(): Promise<void> {
       "APP_ORIGIN=https://${{RAILWAY_PUBLIC_DOMAIN}}",
       "PAYMENT_INITIATION_PROVIDER=disabled",
       "STAFF_PROVISIONING_ENABLED=false",
+      "PLATFORM_ADMIN_PROVISIONING_ENABLED=false",
       "Do not connect `shop.sorvyra.com`",
     ]
   ) {

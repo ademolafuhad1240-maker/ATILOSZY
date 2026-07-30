@@ -50,6 +50,9 @@
     "audit:staff-order-operations": "node --import tsx scripts/audit-staff-order-operations.ts",
     "db:audit:staff-order-services": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-staff-order-services.ts",
     "staff:provision": "node --env-file=.env --conditions=react-server --import tsx scripts/provision-storefront-staff.ts",
+    "platform-admin:provision": "node --env-file=.env --conditions=react-server --import tsx scripts/provision-platform-administrator.ts",
+    "audit:staff-governance": "node --import tsx scripts/audit-staff-governance.ts",
+    "db:audit:staff-governance-services": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-staff-governance-services.ts",
     "audit:railway-readiness": "node --import tsx scripts/audit-railway-readiness.ts"
   },
   "dependencies": {

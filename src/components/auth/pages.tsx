@@ -283,6 +283,13 @@ export function GlobalAccountPortalPage() {
           >
             Shop
           </Link>
+
+          <Link
+            href="/manager/login"
+            className={styles.headerLink}
+          >
+            Manager sign in
+          </Link>
         </nav>
       </header>
 

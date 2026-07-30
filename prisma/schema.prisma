@@ -79,6 +79,45 @@ enum StorefrontStaffStatus {
   REVOKED
 }
 
+enum PlatformAdministratorRole {
+  OWNER
+  ADMIN
+}
+
+enum PlatformAdministratorStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum ManagerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum GovernanceActorKind {
+  APPLICANT
+  PLATFORM_ADMINISTRATOR
+  STORE_MANAGER
+}
+
+enum GovernanceAction {
+  MANAGER_APPLICATION_SUBMITTED
+  MANAGER_APPLICATION_APPROVED
+  MANAGER_APPLICATION_REJECTED
+  MANAGER_APPLICATION_WITHDRAWN
+  MANAGER_SUSPENDED
+  MANAGER_REACTIVATED
+  MANAGER_REVOKED
+  STAFF_ACCESS_GRANTED
+  STAFF_ROLE_CHANGED
+  STAFF_SUSPENDED
+  STAFF_REACTIVATED
+  STAFF_REVOKED
+}
+
 enum VerificationPurpose {
   REGISTRATION
   EMAIL_CHANGE
@@ -164,6 +203,8 @@ model Storefront {
   customerAddresses     CustomerAddress[]
   customerSessions      Session[]
   staffMemberships      StorefrontStaffMembership[]
+  managerApplications   ManagerApplication[]
+  governanceEvents      GovernanceAuditEvent[]
   emailVerifications    EmailVerification[]
   phoneVerifications    PhoneVerification[]
   carts                 Cart[]
@@ -422,33 +463,37 @@ model StockMovement {
 }
 
 model User {
-  id                  String                     @id @default(cuid())
-  storefrontId        String
-  email               String                     @db.VarChar(254)
-  normalizedEmail     String                     @db.VarChar(254)
-  phone               String                     @db.VarChar(32)
-  normalizedPhone     String                     @db.VarChar(32)
-  passwordHash        String                     @db.VarChar(255)
-  status              UserStatus                 @default(PENDING_VERIFICATION)
-  emailVerifiedAt     DateTime?
-  phoneVerifiedAt     DateTime?
-  lastLoginAt         DateTime?
-  failedLoginAttempts Int                        @default(0)
-  lockedUntil         DateTime?
-  sessionVersion      Int                        @default(1)
-  deletedAt           DateTime?
-  storefront          Storefront                 @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  customer            StorefrontCustomer?
-  security            CustomerSecuritySettings?
-  addresses           CustomerAddress[]
-  sessions            Session[]
-  emailVerifications  EmailVerification[]
-  phoneVerifications  PhoneVerification[]
-  carts               Cart[]
-  staffMembership     StorefrontStaffMembership?
-  createdAt           DateTime                   @default(now())
-  updatedAt           DateTime                   @updatedAt
-  orders              Order[]
+  id                       String                     @id @default(cuid())
+  storefrontId             String
+  email                    String                     @db.VarChar(254)
+  normalizedEmail          String                     @db.VarChar(254)
+  phone                    String                     @db.VarChar(32)
+  normalizedPhone          String                     @db.VarChar(32)
+  passwordHash             String                     @db.VarChar(255)
+  status                   UserStatus                 @default(PENDING_VERIFICATION)
+  emailVerifiedAt          DateTime?
+  phoneVerifiedAt          DateTime?
+  lastLoginAt              DateTime?
+  failedLoginAttempts      Int                        @default(0)
+  lockedUntil              DateTime?
+  sessionVersion           Int                        @default(1)
+  deletedAt                DateTime?
+  storefront               Storefront                 @relation(fields: [storefrontId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  customer                 StorefrontCustomer?
+  security                 CustomerSecuritySettings?
+  addresses                CustomerAddress[]
+  sessions                 Session[]
+  emailVerifications       EmailVerification[]
+  phoneVerifications       PhoneVerification[]
+  carts                    Cart[]
+  staffMembership          StorefrontStaffMembership?
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  orders                   Order[]
+  platformAdministrator    PlatformAdministrator?
+  managerApplications      ManagerApplication[]
+  governanceEventsActed    GovernanceAuditEvent[]     @relation("GovernanceActor")
+  governanceEventsTargeted GovernanceAuditEvent[]     @relation("GovernanceTarget")
 
   @@unique([storefrontId, normalizedEmail])
   @@unique([storefrontId, normalizedPhone])
@@ -479,6 +524,73 @@ model StorefrontStaffMembership {
   @@unique([id, storefrontId])
   @@index([storefrontId, status, role])
   @@map("storefront_staff_memberships")
+}
+
+model PlatformAdministrator {
+  id                   String                      @id @default(cuid())
+  userId               String                      @unique
+  role                 PlatformAdministratorRole
+  status               PlatformAdministratorStatus @default(ACTIVE)
+  grantedAt            DateTime                    @default(now())
+  suspendedAt          DateTime?
+  revokedAt            DateTime?
+  user                 User                        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  applicationsReviewed ManagerApplication[]
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+
+  @@index([status, role])
+  @@map("platform_administrators")
+}
+
+model ManagerApplication {
+  id                        String                   @id @default(cuid())
+  applicantUserId           String
+  storefrontId              String
+  status                    ManagerApplicationStatus @default(PENDING)
+  statement                 String
+  submittedAt               DateTime                 @default(now())
+  reviewedAt                DateTime?
+  reviewedByAdministratorId String?
+  reviewNote                String?
+  withdrawnAt               DateTime?
+  applicant                 User                     @relation(fields: [applicantUserId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
+  storefront                Storefront               @relation(fields: [storefrontId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  reviewedByAdministrator   PlatformAdministrator?   @relation(fields: [reviewedByAdministratorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  governanceEvents          GovernanceAuditEvent[]
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+
+  @@index([storefrontId, status, submittedAt])
+  @@index([applicantUserId, submittedAt])
+  @@index([reviewedByAdministratorId, reviewedAt])
+  @@map("manager_applications")
+}
+
+model GovernanceAuditEvent {
+  id                   String              @id @default(cuid())
+  storefrontId         String?
+  managerApplicationId String?
+  actorUserId          String
+  actorKind            GovernanceActorKind
+  actorEmail           String              @db.VarChar(254)
+  action               GovernanceAction
+  targetUserId         String?
+  targetEmail          String?             @db.VarChar(254)
+  fromValue            String?             @db.VarChar(80)
+  toValue              String?             @db.VarChar(80)
+  note                 String?
+  storefront           Storefront?         @relation(fields: [storefrontId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  managerApplication   ManagerApplication? @relation(fields: [managerApplicationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  actorUser            User                @relation("GovernanceActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  targetUser           User?               @relation("GovernanceTarget", fields: [targetUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdAt            DateTime            @default(now())
+
+  @@index([storefrontId, createdAt])
+  @@index([managerApplicationId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@map("governance_audit_events")
 }
 
 model StorefrontCustomer {
