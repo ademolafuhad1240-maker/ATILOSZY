@@ -28,6 +28,7 @@ export interface PasswordResetDelivery
 export interface AuthDeliveryProvider {
   readonly name: string;
   readonly enabled: boolean;
+  readonly phoneVerificationEnabled: boolean;
 
   sendEmailVerification(
     delivery: EmailVerificationDelivery,

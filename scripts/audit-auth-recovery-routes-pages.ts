@@ -34,6 +34,8 @@ class CaptureDeliveryProvider
   implements AuthDeliveryProvider {
   readonly name = "recovery-http-audit";
   readonly enabled = true;
+  readonly phoneVerificationEnabled =
+    true;
 
   readonly passwordResets:
     PasswordResetDelivery[] = [];

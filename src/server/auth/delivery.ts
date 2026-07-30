@@ -11,6 +11,9 @@ import {
 import {
   createResendTwilioAuthDeliveryProvider,
 } from "./delivery/resend-twilio";
+import {
+  createResendOnlyAuthDeliveryProvider,
+} from "./delivery/resend-only";
 import type {
   AuthDeliveryProvider,
 } from "./delivery/types";
@@ -18,6 +21,7 @@ import type {
 export {
   AuthDeliveryProviderError,
   AuthDeliveryUnavailableError,
+  createResendOnlyAuthDeliveryProvider,
   createResendTwilioAuthDeliveryProvider,
   isAuthDeliveryUnavailableError,
 };
@@ -38,6 +42,10 @@ export type {
 export type {
   ResendTwilioAuthDeliveryProviderOptions,
 } from "./delivery/resend-twilio";
+
+export type {
+  ResendOnlyAuthDeliveryProviderOptions,
+} from "./delivery/resend-only";
 
 export type {
   TwilioSmsSender,
@@ -99,6 +107,7 @@ export function createDisabledAuthDeliveryProvider(): AuthDeliveryProvider {
   return {
     name: "disabled",
     enabled: false,
+    phoneVerificationEnabled: false,
     sendEmailVerification: unavailable,
     sendPhoneVerification: unavailable,
     sendPasswordReset: unavailable,
@@ -118,6 +127,31 @@ export function getAuthDeliveryProvider(): AuthDeliveryProvider {
     configuredProvider === "disabled"
   ) {
     return createDisabledAuthDeliveryProvider();
+  }
+
+  if (
+    configuredProvider === "resend"
+  ) {
+    const timeoutMs =
+      configuredTimeout();
+
+    return createResendOnlyAuthDeliveryProvider(
+      {
+        apiKey:
+          requiredEnvironmentValue(
+            "RESEND_API_KEY",
+          ),
+        from:
+          requiredEnvironmentValue(
+            "AUTH_EMAIL_FROM",
+          ),
+        appOrigin:
+          requiredEnvironmentValue(
+            "APP_ORIGIN",
+          ),
+        timeoutMs,
+      },
+    );
   }
 
   if (

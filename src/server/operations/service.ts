@@ -443,9 +443,6 @@ async function resolveStaffContext(
             emailVerifiedAt: {
               not: null,
             },
-            phoneVerifiedAt: {
-              not: null,
-            },
           },
         },
         select: {

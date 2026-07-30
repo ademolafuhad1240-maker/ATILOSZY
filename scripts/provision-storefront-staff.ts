@@ -152,9 +152,6 @@ async function main(): Promise<void> {
         emailVerifiedAt: {
           not: null,
         },
-        phoneVerifiedAt: {
-          not: null,
-        },
         storefront: {
           code: storefrontCode,
           status:

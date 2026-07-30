@@ -136,7 +136,7 @@ export function AuthShell({
               <span
                 className={styles.trustItem}
               >
-                Email + phone verification
+                Verified email
               </span>
 
               <span

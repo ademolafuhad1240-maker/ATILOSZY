@@ -105,7 +105,7 @@ export function StorefrontVerifyPage({
       storefront={storefront}
       title="Confirm it is really you."
       description={
-        "Complete both verification channels to protect your account and unlock checkout, pickup reservations and order tracking."
+        "Verify your email to protect your account and unlock checkout, pickup reservations and order tracking."
       }
     >
       <VerificationForm
@@ -113,11 +113,6 @@ export function StorefrontVerifyPage({
         initialEmailToken={
           firstSearchValue(
             searchParams.token,
-          )
-        }
-        initialPhoneChallengeId={
-          firstSearchValue(
-            searchParams.challengeId,
           )
         }
       />
@@ -195,7 +190,7 @@ export async function StorefrontAccountPage({
       storefront={storefront}
       title="Your account, secured."
       description={
-        "Review your verified storefront identity and continue managing purchases from one protected place."
+        "Review your email-verified storefront identity and continue managing purchases from one protected place."
       }
     >
       <AccountPanel
@@ -203,6 +198,8 @@ export async function StorefrontAccountPage({
         summary={{
           email: summary.email,
           phone: summary.phone,
+          phoneVerified:
+            summary.phoneVerified,
           status: summary.status,
           createdAt:
             summary.createdAt

@@ -235,6 +235,8 @@ export async function resendRegistrationVerification(
     });
 
   const sendPhone =
+    deliveryProvider
+      .phoneVerificationEnabled &&
     user.phoneVerifiedAt === null &&
     await channelMaySend({
       userId: user.id,

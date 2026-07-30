@@ -257,9 +257,35 @@ export async function loginCustomer(
   }
 
   if (
+    user.status ===
+      "PENDING_VERIFICATION" &&
+    user.emailVerifiedAt !== null
+  ) {
+    user = await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        storefrontId: true,
+        email: true,
+        passwordHash: true,
+        status: true,
+        emailVerifiedAt: true,
+        phoneVerifiedAt: true,
+        failedLoginAttempts: true,
+        lockedUntil: true,
+        deletedAt: true,
+      },
+    });
+  }
+
+  if (
     user.status !== "ACTIVE" ||
-    user.emailVerifiedAt === null ||
-    user.phoneVerifiedAt === null
+    user.emailVerifiedAt === null
   ) {
     await prisma.user.update({
       where: {
@@ -273,7 +299,7 @@ export async function loginCustomer(
 
     throw new AuthServiceError(
       "VERIFICATION_REQUIRED",
-      "Email and phone verification are required.",
+      "Email verification is required.",
     );
   }
 
@@ -320,8 +346,6 @@ export async function loginCustomer(
         !currentUser ||
         currentUser.status !== "ACTIVE" ||
         currentUser.emailVerifiedAt ===
-          null ||
-        currentUser.phoneVerifiedAt ===
           null ||
         currentUser.deletedAt !== null
       ) {
@@ -429,9 +453,6 @@ export async function loginPlatformAdministrator(
             normalizedEmail,
             status: "ACTIVE",
             emailVerifiedAt: {
-              not: null,
-            },
-            phoneVerifiedAt: {
               not: null,
             },
             deletedAt: null,
@@ -553,7 +574,6 @@ export async function validateSession(
     session.expiresAt <= now ||
     session.user.status !== "ACTIVE" ||
     session.user.emailVerifiedAt === null ||
-    session.user.phoneVerifiedAt === null ||
     session.user.deletedAt !== null
   ) {
     throw new AuthServiceError(
@@ -638,8 +658,6 @@ export async function validatePlatformSession(
     session.expiresAt <= now ||
     session.user.status !== "ACTIVE" ||
     session.user.emailVerifiedAt ===
-      null ||
-    session.user.phoneVerifiedAt ===
       null ||
     session.user.deletedAt !== null ||
     session.user.storefront.status !==

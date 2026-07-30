@@ -14,8 +14,19 @@ Authentication delivery is disabled by default:
 AUTH_DELIVERY_PROVIDER=disabled
 ```
 
-The implemented live adapter combines Resend for transactional email
-and Twilio Programmable Messaging for SMS:
+The recommended live adapter uses Resend for transactional email:
+
+```text
+AUTH_DELIVERY_PROVIDER=resend
+```
+
+Customer account activation requires verified email. A phone number is
+still collected for delivery contact, but an SMS code is not required
+and `phoneVerifiedAt` remains empty unless a real phone challenge is
+completed.
+
+An optional combined adapter retains Twilio Programmable Messaging for
+future phone verification:
 
 ```text
 AUTH_DELIVERY_PROVIDER=resend-twilio
@@ -27,16 +38,21 @@ timeout fails closed.
 
 ## Required variables
 
-The combined provider requires:
+The Resend-only provider requires:
 
 ```text
 APP_ORIGIN=https://<staging-domain>
-AUTH_DELIVERY_PROVIDER=resend-twilio
+AUTH_DELIVERY_PROVIDER=resend
 AUTH_DELIVERY_TIMEOUT_MS=8000
 
 AUTH_EMAIL_FROM=SORVYRA STORE <accounts@<verified-email-domain>>
 RESEND_API_KEY=<sealed-resend-sending-key>
+```
 
+The optional combined provider additionally requires:
+
+```text
+AUTH_DELIVERY_PROVIDER=resend-twilio
 TWILIO_ACCOUNT_SID=<sealed-account-sid>
 TWILIO_API_KEY=<sealed-api-key-sid>
 TWILIO_API_KEY_SECRET=<sealed-api-key-secret>
@@ -71,8 +87,11 @@ sending email is sufficient.
   delivery. It does not prove that the recipient received or opened it.
 - Email verification links point to the selected storefront's
   `/account/verify` page.
-- Phone messages contain the server-generated code and a storefront
-  verification link carrying only the challenge identifier.
+- Email verification activates a pending account without writing a
+  false phone-verification timestamp.
+- Phone messages are optional. When the combined provider is selected,
+  they contain the server-generated code and a storefront verification
+  link carrying only the challenge identifier.
 - Password-reset links point to the selected storefront's
   `/account/reset-password` page.
 - Resend requests use the verification database record as their
@@ -87,25 +106,24 @@ sending email is sufficient.
 
 ## Staging setup
 
-Keep the provider disabled until both sandbox accounts and approved
-senders are ready. In Railway staging:
+Keep the provider disabled until the Resend domain and sending key are
+ready. In Railway staging:
 
 1. Use the Railway staging origin for `APP_ORIGIN`.
-2. Add Resend and Twilio credentials as sealed variables.
-3. Use a Resend testing or verified staging domain.
-4. Use a Twilio trial-approved recipient or an approved staging sender.
-5. Configure exactly one Twilio sender variable.
-6. Change `AUTH_DELIVERY_PROVIDER` to `resend-twilio`.
-7. Redeploy and create a temporary storefront account.
-8. Confirm the email link and SMS challenge both activate only that
-   storefront account.
-9. Confirm password recovery sends a single-use storefront-specific
+2. Add the Resend credential as a sealed variable.
+3. Use a verified Resend staging domain.
+4. Change `AUTH_DELIVERY_PROVIDER` to `resend`.
+5. Redeploy and create a temporary storefront account.
+6. Confirm the email link activates only that storefront account.
+7. Confirm the stored phone remains unverified.
+8. Confirm password recovery sends a single-use storefront-specific
    link.
-10. Remove the temporary account and return the provider to `disabled`
+9. Remove the temporary account and return the provider to `disabled`
     if staging delivery should not remain available.
 
-Do not use live customer lists for staging tests. Twilio trial mode may
-require the recipient number to be verified in the Twilio console.
+Do not use live customer lists for staging tests. If optional Twilio
+delivery is tested later, use an approved sender and recipient that
+meet the destination country's rules.
 
 ## Local and automated tests
 
@@ -117,7 +135,8 @@ npm run audit:auth-delivery-adapters
 
 The audit mocks all provider HTTP requests. It covers disabled-default
 behaviour, provider selection, incomplete configuration, normalized
-Resend and Twilio success responses, storefront links, Resend
+Resend-only and combined-provider selection, normalized Resend and
+Twilio success responses, storefront links, Resend
 idempotency, HTTP rejection, malformed responses, network failures,
 timeouts and credential-safe errors. It never sends a live message.
 
@@ -135,8 +154,8 @@ npm run db:audit:auth-api
 Before enabling production delivery:
 
 - connect and verify the production email-sending domain;
-- confirm the production Twilio sender is permitted in every customer
-  region;
+- if SMS is enabled later, confirm its sender is permitted in every
+  customer region;
 - use production API keys stored only in Railway;
 - set `APP_ORIGIN=https://shop.sorvyra.com`;
 - exercise registration, verification resend and password recovery

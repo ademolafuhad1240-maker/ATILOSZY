@@ -90,7 +90,6 @@ function main(): void {
     const required of [
       "STAFF_PROVISIONING_ENABLED",
       "emailVerifiedAt",
-      "phoneVerifiedAt",
       "StorefrontStatus.ACTIVE",
       "StorefrontStaffStatus",
       'requiredArgument(\n      "confirm"',

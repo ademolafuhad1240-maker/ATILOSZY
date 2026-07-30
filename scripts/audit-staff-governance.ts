@@ -245,7 +245,6 @@ function main(): void {
       'requiredArgument(\n      "confirm",',
       "UserStatus.ACTIVE",
       "emailVerifiedAt",
-      "phoneVerifiedAt",
     ]) &&
       envExample.includes(
         "PLATFORM_ADMIN_PROVISIONING_ENABLED=false",
@@ -253,7 +252,7 @@ function main(): void {
     "Platform administrator provisioning is not disabled by default.",
   );
   console.log(
-    "PASS: Platform administrator provisioning is one-off, verified-account-only and disabled by default.",
+    "PASS: Platform administrator provisioning is one-off, email-verified-account-only and disabled by default.",
   );
 
   console.log(

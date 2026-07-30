@@ -29,6 +29,8 @@ class CaptureDeliveryProvider
   implements AuthDeliveryProvider {
   readonly name = "audit-capture";
   readonly enabled = true;
+  readonly phoneVerificationEnabled =
+    true;
 
   readonly emailVerifications:
     EmailVerificationDelivery[] = [];

@@ -116,7 +116,9 @@ export async function registerCustomer(
   );
 
   const phoneChallenge =
-    createPhoneChallenge(input.tokenSecret);
+    createPhoneChallenge(
+      input.tokenSecret,
+    );
 
   const now = new Date();
 
@@ -233,6 +235,12 @@ export async function registerCustomer(
                   "REGISTRATION",
                 expiresAt:
                   phoneExpiresAt,
+                consumedAt:
+                  deliveryProvider
+                    ?.phoneVerificationEnabled ===
+                  false
+                    ? now
+                    : null,
                 maxAttempts: 5,
               },
               select: {
@@ -292,44 +300,50 @@ export async function registerCustomer(
         );
       }
 
-      try {
-        await deliveryProvider.sendPhoneVerification(
-          {
-            deliveryId:
-              records.phoneVerificationId,
-            storefrontCode:
-              storefront.code,
-            storefrontName:
-              storefront.name,
-            storefrontRoute:
-              storefront.route,
-            recipientPhone:
-              normalizedPhone,
-            challengeId:
-              phoneChallenge
-                .challengeId,
-            code:
-              phoneChallenge.code,
-            expiresAt:
-              phoneExpiresAt,
-          },
-        );
-      } catch (error) {
-        firstDeliveryError ??= error;
-
-        await prisma.phoneVerification.updateMany(
-          {
-            where: {
-              id:
+      if (
+        deliveryProvider
+          .phoneVerificationEnabled &&
+        records.phoneVerificationId
+      ) {
+        try {
+          await deliveryProvider.sendPhoneVerification(
+            {
+              deliveryId:
                 records.phoneVerificationId,
-              consumedAt: null,
+              storefrontCode:
+                storefront.code,
+              storefrontName:
+                storefront.name,
+              storefrontRoute:
+                storefront.route,
+              recipientPhone:
+                normalizedPhone,
+              challengeId:
+                phoneChallenge
+                  .challengeId,
+              code:
+                phoneChallenge.code,
+              expiresAt:
+                phoneExpiresAt,
             },
-            data: {
-              consumedAt:
-                new Date(),
+          );
+        } catch (error) {
+          firstDeliveryError ??= error;
+
+          await prisma.phoneVerification.updateMany(
+            {
+              where: {
+                id:
+                  records.phoneVerificationId,
+                consumedAt: null,
+              },
+              data: {
+                consumedAt:
+                  new Date(),
+              },
             },
-          },
-        );
+          );
+        }
       }
 
       if (firstDeliveryError) {

@@ -112,8 +112,7 @@ export async function verifyCustomerEmail(
       if (
         user.status ===
           "PENDING_VERIFICATION" &&
-        user.emailVerifiedAt !== null &&
-        user.phoneVerifiedAt !== null
+        user.emailVerifiedAt !== null
       ) {
         user = await transaction.user.update({
           where: {
@@ -270,8 +269,7 @@ export async function verifyCustomerPhone(
       if (
         user.status ===
           "PENDING_VERIFICATION" &&
-        user.emailVerifiedAt !== null &&
-        user.phoneVerifiedAt !== null
+        user.emailVerifiedAt !== null
       ) {
         user = await transaction.user.update({
           where: {

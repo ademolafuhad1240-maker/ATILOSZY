@@ -294,9 +294,6 @@ async function resolveCustomerContext(
         emailVerifiedAt: {
           not: null,
         },
-        phoneVerifiedAt: {
-          not: null,
-        },
       },
       select: {
         id: true,

@@ -1,5 +1,6 @@
 import {
   AuthDeliveryProviderError,
+  AuthDeliveryUnavailableError,
   type AuthDeliveryFetch,
   type EmailVerificationDelivery,
   type PasswordResetDelivery,
@@ -183,7 +184,10 @@ async function main(): Promise<void> {
 
     assertCondition(
       disabled.name === "disabled" &&
-        disabled.enabled === false,
+        disabled.enabled === false &&
+        disabled
+          .phoneVerificationEnabled ===
+          false,
       "Disabled delivery was not the default.",
     );
 
@@ -212,7 +216,7 @@ async function main(): Promise<void> {
 
     process.env
       .AUTH_DELIVERY_PROVIDER =
-      "resend-twilio";
+      "resend";
     process.env.APP_ORIGIN =
       "https://staging.example.test";
 
@@ -235,6 +239,52 @@ async function main(): Promise<void> {
       TEST_RESEND_KEY;
     process.env.AUTH_EMAIL_FROM =
       "SORVYRA STORE <accounts@example.test>";
+
+    const resendOnly =
+      getAuthDeliveryProvider();
+
+    assertCondition(
+      resendOnly.name === "resend" &&
+        resendOnly.enabled &&
+        !resendOnly
+          .phoneVerificationEnabled,
+      "The Resend-only provider was not selected safely.",
+    );
+
+    try {
+      await resendOnly.sendPhoneVerification(
+        phoneDelivery,
+      );
+      throw new Error(
+        "Resend-only delivery accepted an SMS request.",
+      );
+    } catch (error) {
+      assertCondition(
+        error instanceof
+          AuthDeliveryUnavailableError,
+        "Resend-only SMS did not fail safely.",
+      );
+    }
+
+    process.env
+      .AUTH_DELIVERY_PROVIDER =
+      "resend-twilio";
+
+    try {
+      getAuthDeliveryProvider();
+      throw new Error(
+        "Missing Twilio credentials were accepted.",
+      );
+    } catch (error) {
+      assertCondition(
+        error instanceof
+          AuthDeliveryProviderError &&
+          error.reason ===
+            "CONFIGURATION",
+        "Incomplete combined provider configuration did not fail closed.",
+      );
+    }
+
     process.env.TWILIO_ACCOUNT_SID =
       TEST_ACCOUNT_SID;
     process.env.TWILIO_API_KEY =
@@ -252,7 +302,9 @@ async function main(): Promise<void> {
     assertCondition(
       configured.name ===
         "resend-twilio" &&
-        configured.enabled,
+        configured.enabled &&
+        configured
+          .phoneVerificationEnabled,
       "The configured delivery provider was not selected.",
     );
 

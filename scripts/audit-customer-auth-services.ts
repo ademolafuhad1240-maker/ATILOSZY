@@ -282,7 +282,7 @@ async function main(): Promise<void> {
     );
 
     console.log(
-      "PASS: Login was blocked before both verifications.",
+      "PASS: Login was blocked before email verification.",
     );
 
     const incorrectPhoneCode =
@@ -348,9 +348,56 @@ async function main(): Promise<void> {
 
     assertCondition(
       emailVerification.status ===
-        "PENDING_VERIFICATION",
-      "The account activated before phone verification.",
+        "ACTIVE",
+      "Email verification did not activate the account.",
     );
+
+    await prisma.user.update({
+      where: {
+        id:
+          atiloszyRegistration.user.id,
+      },
+      data: {
+        status:
+          "PENDING_VERIFICATION",
+      },
+    });
+
+    const emailOnlyLogin =
+      await loginCustomer({
+        storefrontCode: "ATI",
+        email: emailInput,
+        password,
+        tokenSecret:
+          AUDIT_TOKEN_SECRET,
+      });
+
+    const migratedUser =
+      await prisma.user.findUnique({
+        where: {
+          id:
+            atiloszyRegistration.user.id,
+        },
+        select: {
+          status: true,
+        },
+      });
+
+    assertCondition(
+      migratedUser?.status ===
+        "ACTIVE",
+      "A legacy email-verified pending account did not activate during login.",
+    );
+
+    await revokeSession({
+      storefrontCode: "ATI",
+      sessionToken:
+        emailOnlyLogin.sessionToken,
+      tokenSecret:
+        AUDIT_TOKEN_SECRET,
+      reason:
+        "EMAIL_ONLY_AUDIT_COMPLETE",
+    });
 
     await expectAuthError(
       verifyCustomerEmail({
@@ -366,7 +413,7 @@ async function main(): Promise<void> {
     );
 
     console.log(
-      "PASS: Email verification tokens are single use.",
+      "PASS: Email verification activates the account and its tokens are single use.",
     );
 
     const phoneVerification =
@@ -385,7 +432,7 @@ async function main(): Promise<void> {
     assertCondition(
       phoneVerification.emailVerified &&
         phoneVerification.phoneVerified,
-      "Both verification requirements were not completed.",
+      "Optional phone verification did not complete.",
     );
 
     assertCondition(
@@ -394,7 +441,7 @@ async function main(): Promise<void> {
     );
 
     console.log(
-      "PASS: Account activation requires email and phone verification.",
+      "PASS: Optional phone verification remains available without controlling account activation.",
     );
 
     for (

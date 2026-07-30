@@ -138,7 +138,7 @@ const authErrorResponses: Record<
   VERIFICATION_REQUIRED: {
     status: 403,
     message:
-      "Email and phone verification are required.",
+      "Email verification is required.",
   },
   VERIFICATION_INVALID: {
     status: 400,

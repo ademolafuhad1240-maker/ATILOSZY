@@ -124,7 +124,7 @@ export async function POST(
           },
           verification: {
             emailRequired: true,
-            phoneRequired: true,
+            phoneRequired: false,
             delivery:
               "PROVIDER_ACCEPTED",
           },

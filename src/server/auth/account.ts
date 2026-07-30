@@ -70,8 +70,7 @@ export async function getCustomerAccountSummary(
     !user ||
     !user.customer ||
     !user.security ||
-    user.emailVerifiedAt === null ||
-    user.phoneVerifiedAt === null
+    user.emailVerifiedAt === null
   ) {
     throw new AuthServiceError(
       "ACCOUNT_UNAVAILABLE",

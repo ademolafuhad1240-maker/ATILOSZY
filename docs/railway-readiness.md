@@ -101,10 +101,12 @@ controls are documented in `docs/staff-governance.md`.
 
 Customer registration, verification resend and password recovery
 remain closed while `AUTH_DELIVERY_PROVIDER=disabled`. The implemented
-`resend-twilio` adapter, its sealed Railway variables and staged
-enablement procedure are documented in
-`docs/authentication-delivery.md`. Do not enable public registration
-until both delivery channels pass a staging smoke test.
+`resend` email adapter is the recommended low-cost configuration.
+The optional `resend-twilio` adapter remains available for future SMS
+verification. Sealed Railway variables and the staged enablement
+procedure are documented in `docs/authentication-delivery.md`. Do not
+enable public registration until email verification and password
+recovery pass a staging smoke test.
 
 ## Test payment enablement gate
 

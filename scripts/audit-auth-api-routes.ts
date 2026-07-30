@@ -506,7 +506,7 @@ async function main(): Promise<void> {
     );
 
     console.log(
-      "PASS: HTTP login is blocked before both verifications.",
+      "PASS: HTTP login is blocked before email verification.",
     );
 
     const emailVerification =
@@ -526,6 +526,16 @@ async function main(): Promise<void> {
     assertCondition(
       emailVerification.status === 200,
       "Email verification route failed.",
+    );
+
+    assertCondition(
+      emailVerification.text.includes(
+        "\"status\":\"ACTIVE\"",
+      ) &&
+        emailVerification.text.includes(
+          "\"phoneVerified\":false",
+        ),
+      "Email verification did not activate the account independently.",
     );
 
     const phoneVerification =
@@ -567,7 +577,7 @@ async function main(): Promise<void> {
     );
 
     console.log(
-      "PASS: Email and phone verification routes completed safely.",
+      "PASS: Email-only activation and optional phone verification routes completed safely.",
     );
 
     const login =

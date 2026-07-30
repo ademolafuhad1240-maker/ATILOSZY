@@ -260,9 +260,6 @@ async function resolveActiveAccount(
         emailVerifiedAt: {
           not: null,
         },
-        phoneVerifiedAt: {
-          not: null,
-        },
         deletedAt: null,
       },
       select: {
@@ -348,8 +345,6 @@ async function resolvePlatformContext(
       UserStatus.ACTIVE ||
     administrator.user
         .emailVerifiedAt === null ||
-    administrator.user
-        .phoneVerifiedAt === null ||
     administrator.user
         .deletedAt !== null
   ) {
@@ -1370,8 +1365,6 @@ export async function manageStorefrontStaff(
         target.status !==
           UserStatus.ACTIVE ||
         target.emailVerifiedAt ===
-          null ||
-        target.phoneVerifiedAt ===
           null ||
         target.deletedAt !== null
       ) {

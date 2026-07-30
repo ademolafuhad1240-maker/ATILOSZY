@@ -336,7 +336,7 @@ export function RegistrationForm({
       setNotice({
         kind: "success",
         message:
-          "Account created. Complete both verification steps when your email and phone messages arrive.",
+          "Account created. Open the verification link sent to your email, then sign in.",
       });
     } catch (error) {
       setNotice({
@@ -367,11 +367,10 @@ export function RegistrationForm({
       </div>
 
       <div className={styles.notice}>
-        Registration remains unavailable
-        until verified email and SMS
-        delivery providers are connected.
-        This form is ready for activation
-        afterward.
+        We verify your email to protect
+        the account. Your phone number is
+        kept for delivery contact and does
+        not require an SMS code.
       </div>
 
       <form

@@ -13,6 +13,7 @@ import styles from "./auth.module.css";
 export interface AccountPanelSummary {
   email: string;
   phone: string;
+  phoneVerified: boolean;
   status: string;
   createdAt: string;
   lastLoginAt: string | null;
@@ -141,7 +142,7 @@ export function AccountPanel({
           <span
             className={styles.statusPill}
           >
-            Verified account
+            Email verified
           </span>
         </div>
 
@@ -195,6 +196,9 @@ export function AccountPanel({
             }
           >
             {summary.phone}
+            {summary.phoneVerified
+              ? " · Verified"
+              : " · Not SMS-verified"}
           </p>
         </section>
 

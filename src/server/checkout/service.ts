@@ -458,9 +458,6 @@ async function resolveCheckoutContext(
         emailVerifiedAt: {
           not: null,
         },
-        phoneVerifiedAt: {
-          not: null,
-        },
       },
       select: {
         id: true,

@@ -33,6 +33,7 @@ export function createResendTwilioAuthDeliveryProvider(
   return {
     name: "resend-twilio",
     enabled: true,
+    phoneVerificationEnabled: true,
     sendEmailVerification:
       email.sendEmailVerification,
     sendPhoneVerification:
