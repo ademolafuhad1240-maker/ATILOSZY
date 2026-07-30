@@ -30,9 +30,9 @@ export default function PortalLogin({
   destination,
 }: {
   mode: "manager" | "admin";
-  storefronts:
+  storefronts?:
     StorefrontAuthConfig[];
-  initialStorefrontCode:
+  initialStorefrontCode?:
     StorefrontAuthCode;
   destination:
     | "portal"
@@ -44,7 +44,9 @@ export default function PortalLogin({
     storefrontCode,
     setStorefrontCode,
   ] = useState(
-    initialStorefrontCode,
+    initialStorefrontCode ??
+      storefronts?.[0]?.code ??
+      "ATI",
   );
   const [
     notice,
@@ -71,8 +73,12 @@ export default function PortalLogin({
     setNotice(null);
 
     try {
+      const isAdmin =
+        mode === "admin";
       const response = await fetch(
-        "/api/auth/login",
+        isAdmin
+          ? "/api/governance/admin/login"
+          : "/api/auth/login",
         {
           method: "POST",
           headers: {
@@ -80,15 +86,30 @@ export default function PortalLogin({
               "application/json",
           },
           credentials: "same-origin",
-          body: JSON.stringify({
-            storefrontCode,
-            email:
-              formData.get("email"),
-            password:
-              formData.get(
-                "password",
-              ),
-          }),
+          body: JSON.stringify(
+            isAdmin
+              ? {
+                  email:
+                    formData.get(
+                      "email",
+                    ),
+                  password:
+                    formData.get(
+                      "password",
+                    ),
+                }
+              : {
+                  storefrontCode,
+                  email:
+                    formData.get(
+                      "email",
+                    ),
+                  password:
+                    formData.get(
+                      "password",
+                    ),
+                },
+          ),
         },
       );
       const payload =
@@ -114,7 +135,9 @@ export default function PortalLogin({
             : "/manager";
 
       router.replace(
-        `${destinationPath}?storefrontCode=${storefrontCode}`,
+        destination === "admin"
+          ? destinationPath
+          : `${destinationPath}?storefrontCode=${storefrontCode}`,
       );
       router.refresh();
     } catch (error) {
@@ -145,7 +168,7 @@ export default function PortalLogin({
       }
       description={
         isAdmin
-          ? "Use the verified storefront account that has been provisioned as a SORVYRA administrator."
+          ? "Use your protected SORVYRA platform credentials. The server resolves your global administrator identity without asking you to choose a storefront."
           : "Manager access is attached to a verified storefront account after SORVYRA approval."
       }
     >
@@ -174,44 +197,46 @@ export default function PortalLogin({
             </h2>
           </div>
 
-          <label
-            className={styles.field}
-          >
-            <span>
-              Account storefront
-            </span>
-            <select
-              value={storefrontCode}
-              onChange={(event) =>
-                setStorefrontCode(
-                  event.target
-                    .value as
-                    StorefrontAuthCode,
-                )
-              }
+          {!isAdmin ? (
+            <label
+              className={styles.field}
             >
-              {storefronts.map(
-                (storefront) => (
-                  <option
-                    key={
-                      storefront.code
-                    }
-                    value={
-                      storefront.code
-                    }
-                  >
-                    {
-                      storefront.shortName
-                    }{" "}
-                    ·{" "}
-                    {
-                      storefront.countryName
-                    }
-                  </option>
-                ),
-              )}
-            </select>
-          </label>
+              <span>
+                Storefront managed
+              </span>
+              <select
+                value={storefrontCode}
+                onChange={(event) =>
+                  setStorefrontCode(
+                    event.target
+                      .value as
+                      StorefrontAuthCode,
+                  )
+                }
+              >
+                {(storefronts ?? []).map(
+                  (storefront) => (
+                    <option
+                      key={
+                        storefront.code
+                      }
+                      value={
+                        storefront.code
+                      }
+                    >
+                      {
+                        storefront.shortName
+                      }{" "}
+                      ·{" "}
+                      {
+                        storefront.countryName
+                      }
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+          ) : null}
 
           <label
             className={styles.field}
@@ -263,15 +288,14 @@ export default function PortalLogin({
           className={styles.infoPanel}
         >
           <h2>
-            Access remains separated
+            {isAdmin
+              ? "One SORVYRA identity"
+              : "Access remains separated"}
           </h2>
           <p>
-            Selecting a storefront does
-            not grant access. The server
-            verifies the account,
-            approval and active role
-            before returning protected
-            information.
+            {isAdmin
+              ? "Your administrator role is global. Storefront identity is never selected by the browser and does not limit the stores you can govern."
+              : "Selecting a storefront does not grant access. The server verifies the account, approval and active role before returning protected information."}
           </p>
 
           {!isAdmin ? (

@@ -1,15 +1,14 @@
 import type {
   Metadata,
 } from "next";
+import {
+  redirect,
+} from "next/navigation";
 
 import PortalLogin from "@/components/governance/portal-login";
 import {
-  storefrontCodeFromSearch,
   type GovernanceSearchParams,
 } from "@/lib/governance-portal";
-import {
-  getAllStorefrontAuthConfigs,
-} from "@/lib/storefront-auth";
 
 export const metadata: Metadata = {
   title:
@@ -27,17 +26,16 @@ export default async function AdminLoginPage({
   const resolved =
     await searchParams;
 
+  if (
+    resolved.storefrontCode !==
+    undefined
+  ) {
+    redirect("/admin/login");
+  }
+
   return (
     <PortalLogin
       mode="admin"
-      storefronts={
-        getAllStorefrontAuthConfigs()
-      }
-      initialStorefrontCode={
-        storefrontCodeFromSearch(
-          resolved,
-        )
-      }
       destination="admin"
     />
   );

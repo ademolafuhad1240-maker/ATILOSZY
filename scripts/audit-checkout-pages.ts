@@ -381,8 +381,8 @@ async function main(): Promise<void> {
       "/manager/login?storefrontCode=ATI",
       "/manager/apply?storefrontCode=ATI",
       "/manager?storefrontCode=ATI",
-      "/admin/login?storefrontCode=ATI",
-      "/admin?storefrontCode=ATI",
+      "/admin/login",
+      "/admin",
     ];
 
     for (

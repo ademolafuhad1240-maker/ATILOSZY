@@ -54,11 +54,36 @@ export interface LoginResult {
   };
 }
 
+export interface PlatformAdministratorLoginInput {
+  email: string;
+  password: string;
+  tokenSecret: string;
+  ipAddress?: string;
+  userAgent?: string;
+  sessionTtlMinutes?: number;
+}
+
+export interface PlatformAdministratorLoginResult
+  extends LoginResult {
+  administrator: {
+    role: "OWNER" | "ADMIN";
+    email: string;
+  };
+}
+
 export interface ValidatedSession {
   sessionId: string;
   userId: string;
   storefrontId: string;
   storefrontCode: string;
   email: string;
+  expiresAt: Date;
+}
+
+export interface ValidatedPlatformSession {
+  sessionId: string;
+  userId: string;
+  email: string;
+  role: "OWNER" | "ADMIN";
   expiresAt: Date;
 }

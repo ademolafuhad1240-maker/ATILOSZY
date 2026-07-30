@@ -7,7 +7,12 @@ import type {
 import {
   authApiErrorResponse,
   authJsonResponse,
+  getAuthTokenSecret,
+  readPlatformSessionCookie,
 } from "@/server/auth/http";
+import {
+  validatePlatformSession,
+} from "@/server/auth";
 import {
   readCartApiSession,
 } from "@/server/cart/http";
@@ -42,7 +47,7 @@ export function governanceSessionRequiredResponse() {
       error: {
         code: "SESSION_INVALID",
         message:
-          "Sign in with the selected storefront account to continue.",
+          "Sign in with the appropriate account to continue.",
       },
     },
     401,
@@ -57,6 +62,25 @@ export async function readGovernanceSession(
     request,
     storefrontCode,
   );
+}
+
+export async function readPlatformGovernanceSession(
+  request: NextRequest,
+) {
+  const sessionToken =
+    readPlatformSessionCookie(
+      request,
+    );
+
+  if (!sessionToken) {
+    return null;
+  }
+
+  return validatePlatformSession({
+    sessionToken,
+    tokenSecret:
+      getAuthTokenSecret(),
+  });
 }
 
 export function requireStringField(

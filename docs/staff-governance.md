@@ -8,9 +8,14 @@ password system for each brand.
 
 ### SORVYRA platform administrator
 
-A platform administrator is attached to one existing verified
-storefront account, but the administrator permission is global.
-The initial account should use the `OWNER` role.
+A platform administrator uses one SORVYRA platform login. The
+permission is global and the owner never selects or signs in as a
+storefront. The initial account should use the `OWNER` role.
+
+The credential is initially linked to an existing verified account
+so the established password hashing, lockout and session controls
+can be reused. That underlying bootstrap link is resolved only by
+the server and is not a storefront scope or browser input.
 
 Platform administrators can:
 
@@ -65,10 +70,12 @@ The central pages are:
 /admin
 ```
 
-The manager and administrator login pages reuse the existing
-storefront authentication API. The selected storefront identifies
-which verified account and session cookie are used; it does not
-grant permission.
+Managers select the storefront they manage and use its verified
+account. Administrators instead authenticate through the dedicated
+SORVYRA platform endpoint with email and password only. The server
+resolves the active platform administrator, creates a separate
+HTTP-only platform session cookie and never accepts a storefront
+from the administrator browser.
 
 The manager portal links to the existing storefront-specific order
 queues after the server confirms an active manager membership.
@@ -131,6 +138,9 @@ scripts/provision-platform-administrator.ts \
 ```
 
 The provisioning gate should not be stored as `true` in Railway.
+The `--storefront` argument is used only to locate the exact account
+during this protected bootstrap command. It is not requested during
+administrator login and does not limit the administrator role.
 
 ## Verification
 

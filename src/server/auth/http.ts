@@ -685,3 +685,55 @@ export function clearSessionCookie(
     maxAge: 0,
   });
 }
+
+export function getPlatformSessionCookieName(): string {
+  const baseName =
+    "sorvyra_platform_session";
+
+  return secureCookiesEnabled()
+    ? `__Host-${baseName}`
+    : baseName;
+}
+
+export function readPlatformSessionCookie(
+  request: NextRequest,
+): string | null {
+  return (
+    request.cookies.get(
+      getPlatformSessionCookieName(),
+    )?.value ?? null
+  );
+}
+
+export function setPlatformSessionCookie(
+  response: NextResponse,
+  sessionToken: string,
+  expiresAt: Date,
+): void {
+  response.cookies.set({
+    name:
+      getPlatformSessionCookieName(),
+    value: sessionToken,
+    httpOnly: true,
+    secure: secureCookiesEnabled(),
+    sameSite: "lax",
+    path: "/",
+    expires: expiresAt,
+  });
+}
+
+export function clearPlatformSessionCookie(
+  response: NextResponse,
+): void {
+  response.cookies.set({
+    name:
+      getPlatformSessionCookieName(),
+    value: "",
+    httpOnly: true,
+    secure: secureCookiesEnabled(),
+    sameSite: "lax",
+    path: "/",
+    expires: new Date(0),
+    maxAge: 0,
+  });
+}

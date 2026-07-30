@@ -15,9 +15,8 @@ import {
   governanceJsonResponse,
   governanceSessionRequiredResponse,
   optionalStringField,
-  readGovernanceSession,
+  readPlatformGovernanceSession,
   requireManagerAction,
-  requireStorefrontCode,
 } from "@/server/governance/http";
 
 export const runtime = "nodejs";
@@ -36,21 +35,15 @@ export async function POST(
     const body =
       await readJsonObject(
         request,
-      );
+    );
     assertOnlyFields(body, [
-      "storefrontCode",
       "action",
       "note",
     ]);
 
-    const storefrontCode =
-      requireStorefrontCode(
-        body.storefrontCode,
-      );
     const session =
-      await readGovernanceSession(
+      await readPlatformGovernanceSession(
         request,
-        storefrontCode,
       );
 
     if (!session) {

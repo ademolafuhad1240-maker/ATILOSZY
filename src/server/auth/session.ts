@@ -15,6 +15,9 @@ import { AuthServiceError } from "./errors";
 import type {
   LoginCustomerInput,
   LoginResult,
+  PlatformAdministratorLoginInput,
+  PlatformAdministratorLoginResult,
+  ValidatedPlatformSession,
   ValidatedSession,
 } from "./types";
 
@@ -405,6 +408,97 @@ export async function loginCustomer(
   };
 }
 
+export async function loginPlatformAdministrator(
+  input:
+    PlatformAdministratorLoginInput,
+): Promise<PlatformAdministratorLoginResult> {
+  const normalizedEmail = normalizeEmail(
+    input.email,
+  );
+
+  validateLoginPasswordCandidate(
+    input.password,
+  );
+
+  const candidates =
+    await prisma.platformAdministrator
+      .findMany({
+        where: {
+          status: "ACTIVE",
+          user: {
+            normalizedEmail,
+            status: "ACTIVE",
+            emailVerifiedAt: {
+              not: null,
+            },
+            phoneVerifiedAt: {
+              not: null,
+            },
+            deletedAt: null,
+            storefront: {
+              status: "ACTIVE",
+            },
+          },
+        },
+        take: 2,
+        select: {
+          userId: true,
+          role: true,
+          user: {
+            select: {
+              email: true,
+              storefront: {
+                select: {
+                  code: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+  if (candidates.length !== 1) {
+    await consumePasswordCost(
+      input.password,
+    );
+
+    throw new AuthServiceError(
+      "INVALID_CREDENTIALS",
+      "The email or password is incorrect.",
+    );
+  }
+
+  const candidate = candidates[0]!;
+  const result = await loginCustomer({
+    storefrontCode:
+      candidate.user.storefront.code,
+    email: normalizedEmail,
+    password: input.password,
+    tokenSecret: input.tokenSecret,
+    ipAddress: input.ipAddress,
+    userAgent: input.userAgent,
+    sessionTtlMinutes:
+      input.sessionTtlMinutes,
+  });
+
+  if (
+    result.user.id !== candidate.userId
+  ) {
+    throw new AuthServiceError(
+      "INVALID_CREDENTIALS",
+      "The email or password is incorrect.",
+    );
+  }
+
+  return {
+    ...result,
+    administrator: {
+      role: candidate.role,
+      email: candidate.user.email,
+    },
+  };
+}
+
 export async function validateSession(
   input: {
     storefrontCode: string;
@@ -489,6 +583,94 @@ export async function validateSession(
   };
 }
 
+export async function validatePlatformSession(
+  input: {
+    sessionToken: string;
+    tokenSecret: string;
+  },
+): Promise<ValidatedPlatformSession> {
+  const tokenHash = hashOpaqueToken(
+    input.sessionToken,
+    input.tokenSecret,
+  );
+
+  const session =
+    await prisma.session.findUnique({
+      where: {
+        tokenHash,
+      },
+      select: {
+        id: true,
+        expiresAt: true,
+        revokedAt: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            status: true,
+            emailVerifiedAt: true,
+            phoneVerifiedAt: true,
+            deletedAt: true,
+            storefront: {
+              select: {
+                status: true,
+              },
+            },
+            platformAdministrator: {
+              select: {
+                role: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+  const now = new Date();
+  const administrator =
+    session?.user
+      .platformAdministrator;
+
+  if (
+    !session ||
+    session.revokedAt !== null ||
+    session.expiresAt <= now ||
+    session.user.status !== "ACTIVE" ||
+    session.user.emailVerifiedAt ===
+      null ||
+    session.user.phoneVerifiedAt ===
+      null ||
+    session.user.deletedAt !== null ||
+    session.user.storefront.status !==
+      "ACTIVE" ||
+    !administrator ||
+    administrator.status !== "ACTIVE"
+  ) {
+    throw new AuthServiceError(
+      "SESSION_INVALID",
+      "The platform session is invalid or expired.",
+    );
+  }
+
+  await prisma.session.update({
+    where: {
+      id: session.id,
+    },
+    data: {
+      lastSeenAt: now,
+    },
+  });
+
+  return {
+    sessionId: session.id,
+    userId: session.user.id,
+    email: session.user.email,
+    role: administrator.role,
+    expiresAt: session.expiresAt,
+  };
+}
+
 export async function revokeSession(
   input: {
     storefrontCode: string;
@@ -525,6 +707,35 @@ export async function revokeSession(
     await prisma.session.updateMany({
       where: {
         storefrontId: storefront.id,
+        tokenHash,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+        revokedReason:
+          input.reason?.slice(0, 500) ??
+          "USER_LOGOUT",
+      },
+    });
+
+  return result.count === 1;
+}
+
+export async function revokeSessionToken(
+  input: {
+    sessionToken: string;
+    tokenSecret: string;
+    reason?: string;
+  },
+): Promise<boolean> {
+  const tokenHash = hashOpaqueToken(
+    input.sessionToken,
+    input.tokenSecret,
+  );
+
+  const result =
+    await prisma.session.updateMany({
+      where: {
         tokenHash,
         revokedAt: null,
       },

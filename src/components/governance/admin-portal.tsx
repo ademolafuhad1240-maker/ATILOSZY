@@ -10,11 +10,6 @@ import {
   useRouter,
 } from "next/navigation";
 
-import type {
-  StorefrontAuthCode,
-  StorefrontAuthConfig,
-} from "@/lib/storefront-auth";
-
 import GovernanceShell from "./governance-shell";
 import styles from "./governance.module.css";
 
@@ -88,22 +83,8 @@ function readable(
     );
 }
 
-export default function AdminPortal({
-  storefronts,
-  initialStorefrontCode,
-}: {
-  storefronts:
-    StorefrontAuthConfig[];
-  initialStorefrontCode:
-    StorefrontAuthCode;
-}) {
+export default function AdminPortal() {
   const router = useRouter();
-  const [
-    storefrontCode,
-    setStorefrontCode,
-  ] = useState(
-    initialStorefrontCode,
-  );
   const [
     data,
     setData,
@@ -146,7 +127,7 @@ export default function AdminPortal({
 
       try {
         const response = await fetch(
-          `/api/governance/admin?storefrontCode=${encodeURIComponent(storefrontCode)}`,
+          "/api/governance/admin",
           {
             credentials:
               "same-origin",
@@ -191,21 +172,11 @@ export default function AdminPortal({
       } finally {
         setLoading(false);
       }
-    }, [storefrontCode]);
+    }, []);
 
   useEffect(() => {
     void loadAdmin();
   }, [loadAdmin]);
-
-  function changeAccountStorefront(
-    value: StorefrontAuthCode,
-  ) {
-    setStorefrontCode(value);
-    setNotice(null);
-    router.replace(
-      `/admin?storefrontCode=${value}`,
-    );
-  }
 
   async function reviewApplication(
     applicationId: string,
@@ -242,7 +213,6 @@ export default function AdminPortal({
           },
           credentials: "same-origin",
           body: JSON.stringify({
-            storefrontCode,
             decision,
             note:
               reviewNotes[
@@ -317,7 +287,6 @@ export default function AdminPortal({
           },
           credentials: "same-origin",
           body: JSON.stringify({
-            storefrontCode,
             action,
           }),
         },
@@ -355,6 +324,44 @@ export default function AdminPortal({
     }
   }
 
+  async function logout(): Promise<void> {
+    setBusyKey("logout");
+    setNotice(null);
+
+    try {
+      const response = await fetch(
+        "/api/governance/admin/logout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({}),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Sign out could not be completed.",
+        );
+      }
+
+      router.replace("/admin/login");
+      router.refresh();
+    } catch (error) {
+      setNotice({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Sign out could not be completed.",
+      });
+      setBusyKey(null);
+    }
+  }
+
   const pending =
     data?.applications.filter(
       (application) =>
@@ -367,12 +374,6 @@ export default function AdminPortal({
         application.status !==
         "PENDING",
     ) ?? [];
-  const accountStorefront =
-    storefronts.find(
-      (item) =>
-        item.code ===
-        storefrontCode,
-    ) ?? storefronts[0]!;
 
   return (
     <GovernanceShell
@@ -380,45 +381,6 @@ export default function AdminPortal({
       title="Approve managers without weakening storefront boundaries."
       description="Your platform-level role can review every application. Approved managers receive access only to the storefront named in their application."
     >
-      <section
-        className={styles.toolbar}
-      >
-        <label
-          className={styles.compactField}
-        >
-          <span>
-            Administrator account
-          </span>
-          <select
-            value={storefrontCode}
-            onChange={(event) =>
-              changeAccountStorefront(
-                event.target.value as
-                  StorefrontAuthCode,
-              )
-            }
-          >
-            {storefronts.map(
-              (item) => (
-                <option
-                  key={item.code}
-                  value={item.code}
-                >
-                  {item.shortName}
-                </option>
-              ),
-            )}
-          </select>
-        </label>
-        <span
-          className={styles.muted}
-        >
-          This identifies your login
-          account, not the scope of your
-          platform role.
-        </span>
-      </section>
-
       {notice ? (
         <p
           className={
@@ -450,16 +412,13 @@ export default function AdminPortal({
             required
           </h2>
           <p>
-            Sign in with the verified{" "}
-            {
-              accountStorefront.shortName
-            }{" "}
-            account provisioned as a
-            SORVYRA administrator.
+            Sign in with your protected
+            SORVYRA platform
+            administrator account.
           </p>
           <Link
             className={styles.primaryLink}
-            href={`/admin/login?storefrontCode=${storefrontCode}`}
+            href="/admin/login"
           >
             Sign in to owner portal
           </Link>
@@ -489,6 +448,22 @@ export default function AdminPortal({
                     .email
                 }
               </p>
+              <button
+                className={
+                  styles.secondaryButton
+                }
+                type="button"
+                disabled={
+                  busyKey !== null
+                }
+                onClick={() =>
+                  void logout()
+                }
+              >
+                {busyKey === "logout"
+                  ? "Signing out..."
+                  : "Sign out"}
+              </button>
             </article>
             <article
               className={styles.panel}

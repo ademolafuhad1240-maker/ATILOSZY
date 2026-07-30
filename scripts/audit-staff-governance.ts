@@ -53,6 +53,15 @@ function main(): void {
   const reviewRoute = read(
     "src/app/api/governance/admin/applications/[applicationId]/review/route.ts",
   );
+  const adminRoute = read(
+    "src/app/api/governance/admin/route.ts",
+  );
+  const adminLoginRoute = read(
+    "src/app/api/governance/admin/login/route.ts",
+  );
+  const adminLogoutRoute = read(
+    "src/app/api/governance/admin/logout/route.ts",
+  );
   const staffRoute = read(
     "src/app/api/governance/staff/route.ts",
   );
@@ -61,6 +70,15 @@ function main(): void {
   );
   const adminPortal = read(
     "src/components/governance/admin-portal.tsx",
+  );
+  const portalLogin = read(
+    "src/components/governance/portal-login.tsx",
+  );
+  const authSession = read(
+    "src/server/auth/session.ts",
+  );
+  const authHttp = read(
+    "src/server/auth/http.ts",
   );
   const provision = read(
     "scripts/provision-platform-administrator.ts",
@@ -135,7 +153,6 @@ function main(): void {
   assertCondition(
     [
       applicationsRoute,
-      reviewRoute,
       staffRoute,
     ].every((source) =>
       includesAll(source, [
@@ -143,11 +160,52 @@ function main(): void {
         "readGovernanceSession",
         "assertOnlyFields",
       ]),
-    ),
-    "Mutating governance APIs are missing session, origin or allowlist protection.",
+    ) &&
+      includesAll(reviewRoute, [
+        "assertTrustedOrigin",
+        "readPlatformGovernanceSession",
+        "assertOnlyFields",
+      ]),
+    "Mutating governance APIs are missing the correct scoped session, origin or allowlist protection.",
   );
   console.log(
-    "PASS: Governance APIs require a verified storefront session, trusted origin and minimal server-controlled payloads.",
+    "PASS: Governance APIs require the correct platform or storefront session, trusted origin and minimal server-controlled payloads.",
+  );
+
+  assertCondition(
+    includesAll(authSession, [
+      "loginPlatformAdministrator",
+      "validatePlatformSession",
+      "platformAdministrator",
+      "candidates.length !== 1",
+      "consumePasswordCost",
+    ]) &&
+      includesAll(authHttp, [
+        "sorvyra_platform_session",
+        "httpOnly: true",
+        'sameSite: "lax"',
+      ]) &&
+      includesAll(adminLoginRoute, [
+        "loginPlatformAdministrator",
+        "setPlatformSessionCookie",
+        "assertTrustedOrigin",
+        'assertOnlyFields(body, [\n      "email",\n      "password",',
+      ]) &&
+      !adminLoginRoute.includes(
+        "storefrontCode",
+      ) &&
+      includesAll(adminLogoutRoute, [
+        "revokeSessionToken",
+        "clearPlatformSessionCookie",
+      ]) &&
+      includesAll(adminRoute, [
+        "readPlatformGovernanceSession",
+        "getAdminGovernanceView",
+      ]),
+    "SORVYRA administrator authentication is not a fail-closed platform login.",
+  );
+  console.log(
+    "PASS: SORVYRA administrator login resolves a global platform identity without browser-supplied storefront context.",
   );
 
   assertCondition(
@@ -164,6 +222,15 @@ function main(): void {
         "REJECT",
         "SUSPEND",
         "REVOKE",
+        "/api/governance/admin/logout",
+      ]) &&
+      !adminPortal.includes(
+        "storefrontCode",
+      ) &&
+      includesAll(portalLogin, [
+        "/api/governance/admin/login",
+        "One SORVYRA identity",
+        "Storefront managed",
       ]),
     "The manager or owner portal is missing required governance controls.",
   );

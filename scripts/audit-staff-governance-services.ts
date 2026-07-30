@@ -13,7 +13,11 @@ import {
   prisma,
 } from "../src/lib/prisma";
 import {
+  AuthServiceError,
+  loginPlatformAdministrator,
   registerCustomer,
+  revokeSessionToken,
+  validatePlatformSession,
   verifyCustomerEmail,
   verifyCustomerPhone,
 } from "../src/server/auth";
@@ -34,6 +38,40 @@ function assertCondition(
   if (!condition) {
     throw new Error(message);
   }
+}
+
+async function expectAuthError(
+  label: string,
+  expectedCode:
+    AuthServiceError["code"],
+  operation: () => Promise<unknown>,
+): Promise<void> {
+  let discovered:
+    | AuthServiceError
+    | null = null;
+
+  try {
+    await operation();
+  } catch (error) {
+    if (
+      error instanceof
+      AuthServiceError
+    ) {
+      discovered = error;
+    } else {
+      throw error;
+    }
+  }
+
+  assertCondition(
+    discovered?.code ===
+      expectedCode,
+    `${label} did not return ${expectedCode}.`,
+  );
+
+  console.log(
+    `PASS: ${label} returned ${expectedCode}.`,
+  );
 }
 
 async function expectGovernanceError(
@@ -240,6 +278,69 @@ async function main(): Promise<void> {
           },
         ],
       });
+
+    const ownerLogin =
+      await loginPlatformAdministrator({
+        email:
+          `governance-owner-${lowerToken}@example.test`,
+        password:
+          `Governance-${token}-Password`,
+        tokenSecret,
+      });
+    const platformSession =
+      await validatePlatformSession({
+        sessionToken:
+          ownerLogin.sessionToken,
+        tokenSecret,
+      });
+
+    assertCondition(
+      ownerLogin.administrator.role ===
+        PlatformAdministratorRole
+          .OWNER &&
+        platformSession.userId ===
+          owner.id &&
+        platformSession.role ===
+          PlatformAdministratorRole
+            .OWNER,
+      "SORVYRA platform login did not establish an owner-scoped platform session.",
+    );
+
+    await expectAuthError(
+      "non-administrator platform login",
+      "INVALID_CREDENTIALS",
+      () =>
+        loginPlatformAdministrator({
+          email:
+            `governance-staff-${lowerToken}@example.test`,
+          password:
+            `Governance-${token}-Password`,
+          tokenSecret,
+        }),
+    );
+
+    await revokeSessionToken({
+      sessionToken:
+        ownerLogin.sessionToken,
+      tokenSecret,
+      reason:
+        "GOVERNANCE_AUDIT_LOGOUT",
+    });
+
+    await expectAuthError(
+      "revoked platform session",
+      "SESSION_INVALID",
+      () =>
+        validatePlatformSession({
+          sessionToken:
+            ownerLogin.sessionToken,
+          tokenSecret,
+        }),
+    );
+
+    console.log(
+      "PASS: SORVYRA administrator login resolves a global platform identity without customer-supplied storefront context.",
+    );
 
     const application =
       await submitManagerApplication({

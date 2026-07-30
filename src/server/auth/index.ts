@@ -30,16 +30,22 @@ export {
 
 export {
   loginCustomer,
+  loginPlatformAdministrator,
   revokeAllUserSessions,
   revokeSession,
+  revokeSessionToken,
+  validatePlatformSession,
   validateSession,
 } from "./session";
 
 export type {
   LoginCustomerInput,
   LoginResult,
+  PlatformAdministratorLoginInput,
+  PlatformAdministratorLoginResult,
   RegisterCustomerInput,
   RegistrationResult,
+  ValidatedPlatformSession,
   ValidatedSession,
   VerificationResult,
 } from "./types";

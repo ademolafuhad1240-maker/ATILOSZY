@@ -9,8 +9,7 @@ import {
   governanceApiErrorResponse,
   governanceJsonResponse,
   governanceSessionRequiredResponse,
-  readGovernanceSession,
-  requireStorefrontCode,
+  readPlatformGovernanceSession,
 } from "@/server/governance/http";
 
 export const runtime = "nodejs";
@@ -20,17 +19,9 @@ export async function GET(
   request: NextRequest,
 ) {
   try {
-    const storefrontCode =
-      requireStorefrontCode(
-        request.nextUrl
-          .searchParams.get(
-            "storefrontCode",
-          ),
-      );
     const session =
-      await readGovernanceSession(
+      await readPlatformGovernanceSession(
         request,
-        storefrontCode,
       );
 
     if (!session) {
