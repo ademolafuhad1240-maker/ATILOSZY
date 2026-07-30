@@ -31,6 +31,7 @@
     "db:audit:auth-ui": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-customer-auth-pages.ts",
     "db:audit:recovery": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-auth-recovery-services.ts",
     "db:audit:recovery-http": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-auth-recovery-routes-pages.ts",
+    "audit:auth-delivery-adapters": "node --conditions=react-server --import tsx scripts/audit-auth-delivery-adapters.ts",
     "db:audit:cart": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-foundation.ts",
     "db:audit:cart-services": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-services.ts",
     "db:audit:cart-api": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-cart-api-pages.ts",

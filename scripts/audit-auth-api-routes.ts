@@ -329,6 +329,8 @@ async function main(): Promise<void> {
           APP_ORIGIN: baseUrl,
           AUTH_REGISTRATION_API_ENABLED:
             "true",
+          AUTH_DELIVERY_PROVIDER:
+            "disabled",
         },
         stdio: [
           "ignore",
@@ -429,8 +431,8 @@ async function main(): Promise<void> {
 
     assertCondition(
       routeRegistration.status ===
-        201,
-      "The registration route did not return 201.",
+        503,
+      "Registration did not fail closed while delivery was disabled.",
     );
 
     for (
@@ -454,8 +456,34 @@ async function main(): Promise<void> {
       );
     }
 
+    assertCondition(
+      routeRegistration.text.includes(
+        "AUTH_DELIVERY_UNAVAILABLE",
+      ),
+      "Disabled registration did not return the safe delivery error.",
+    );
+
+    const blockedRegistrationUser =
+      await prisma.user.findFirst({
+        where: {
+          normalizedEmail:
+            normalizeEmail(
+              routeEmail,
+            ),
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    assertCondition(
+      blockedRegistrationUser ===
+        null,
+      "Registration created an unreachable account while delivery was disabled.",
+    );
+
     console.log(
-      "PASS: Registration route completed without exposing secrets.",
+      "PASS: Registration fails closed before creating an account when delivery is disabled.",
     );
 
     const loginBeforeVerification =

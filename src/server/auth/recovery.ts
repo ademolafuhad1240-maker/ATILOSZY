@@ -69,6 +69,7 @@ export async function requestPasswordReset(
         id: true,
         code: true,
         name: true,
+        route: true,
         status: true,
       },
     });
@@ -225,10 +226,14 @@ export async function requestPasswordReset(
   try {
     await deliveryProvider.sendPasswordReset(
       {
+        deliveryId:
+          verification.id,
         storefrontCode:
           storefront.code,
         storefrontName:
           storefront.name,
+        storefrontRoute:
+          storefront.route,
         recipientEmail:
           user.normalizedEmail,
         token,

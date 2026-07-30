@@ -52,7 +52,11 @@ export type {
 
 export {
   assertAuthDeliveryEnabled,
+  AuthDeliveryProviderError,
   createDisabledAuthDeliveryProvider,
+  createResendEmailSender,
+  createResendTwilioAuthDeliveryProvider,
+  createTwilioSmsSender,
   getAuthDeliveryProvider,
   isAuthDeliveryUnavailableError,
   AuthDeliveryUnavailableError,
@@ -69,9 +73,15 @@ export {
 
 export type {
   AuthDeliveryProvider,
+  AuthDeliveryFetch,
   EmailVerificationDelivery,
   PasswordResetDelivery,
   PhoneVerificationDelivery,
+  ResendEmailSender,
+  ResendEmailSenderOptions,
+  ResendTwilioAuthDeliveryProviderOptions,
+  TwilioSmsSender,
+  TwilioSmsSenderOptions,
 } from "./delivery";
 
 export type {

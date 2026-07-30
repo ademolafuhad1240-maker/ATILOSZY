@@ -71,6 +71,7 @@ AUTH_TOKEN_SECRET=<at-least-32-random-characters>
 AUTH_TRUSTED_ORIGINS=
 AUTH_REGISTRATION_API_ENABLED=false
 AUTH_DELIVERY_PROVIDER=disabled
+AUTH_DELIVERY_TIMEOUT_MS=8000
 STAFF_PROVISIONING_ENABLED=false
 PLATFORM_ADMIN_PROVISIONING_ENABLED=false
 PAYMENT_INITIATION_PROVIDER=disabled
@@ -97,6 +98,13 @@ platform login without selecting a storefront. Keep
 `PLATFORM_ADMIN_PROVISIONING_ENABLED=false` during normal
 deployment. Provisioning, manager applications and storefront staff
 controls are documented in `docs/staff-governance.md`.
+
+Customer registration, verification resend and password recovery
+remain closed while `AUTH_DELIVERY_PROVIDER=disabled`. The implemented
+`resend-twilio` adapter, its sealed Railway variables and staged
+enablement procedure are documented in
+`docs/authentication-delivery.md`. Do not enable public registration
+until both delivery channels pass a staging smoke test.
 
 ## Test payment enablement gate
 
@@ -157,9 +165,9 @@ are true:
 - committed migrations have been applied successfully to a
   disposable staging database;
 - database-backed payment event and transition audits pass;
-- a real authentication delivery provider is implemented
-  and tested if public registration or account recovery is
-  required;
+- the Resend and Twilio authentication-delivery adapters pass
+  mocked audits and registration, verification resend and
+  password recovery pass end to end with staging credentials;
 - Paystack and/or Flutterwave sandbox initiation, webhook,
   reconciliation, duplicate delivery, and failure scenarios
   pass end to end;

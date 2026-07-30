@@ -3,6 +3,7 @@ import type {
 } from "next/server";
 
 import {
+  getAuthDeliveryProvider,
   registerCustomer,
 } from "../../../../server/auth";
 import {
@@ -32,76 +33,85 @@ export async function POST(
       await readJsonObject(request);
 
     const result =
-      await registerCustomer({
-        storefrontCode:
-          requiredString(
-            body,
-            "storefrontCode",
-            {
-              maxLength: 12,
-            },
-          ),
-        email: requiredString(
-          body,
-          "email",
-          {
-            maxLength: 254,
-          },
-        ),
-        phone: requiredString(
-          body,
-          "phone",
-          {
-            maxLength: 32,
-          },
-        ),
-        password: requiredString(
-          body,
-          "password",
-          {
-            maxLength: 128,
-            trim: false,
-          },
-        ),
-        firstName: requiredString(
-          body,
-          "firstName",
-          {
-            maxLength: 100,
-          },
-        ),
-        lastName: requiredString(
-          body,
-          "lastName",
-          {
-            maxLength: 100,
-          },
-        ),
-        displayName: optionalString(
-          body,
-          "displayName",
-          {
-            maxLength: 100,
-          },
-        ),
-        marketingOptIn:
-          optionalBoolean(
-            body,
-            "marketingOptIn",
-          ),
-        termsAccepted:
-          requiredBoolean(
-            body,
-            "termsAccepted",
-          ),
-        privacyAccepted:
-          requiredBoolean(
-            body,
-            "privacyAccepted",
-          ),
-        tokenSecret:
-          getAuthTokenSecret(),
-      });
+      await registerCustomer(
+        {
+          storefrontCode:
+            requiredString(
+              body,
+              "storefrontCode",
+              {
+                maxLength: 12,
+              },
+            ),
+          email:
+            requiredString(
+              body,
+              "email",
+              {
+                maxLength: 254,
+              },
+            ),
+          phone:
+            requiredString(
+              body,
+              "phone",
+              {
+                maxLength: 32,
+              },
+            ),
+          password:
+            requiredString(
+              body,
+              "password",
+              {
+                maxLength: 128,
+                trim: false,
+              },
+            ),
+          firstName:
+            requiredString(
+              body,
+              "firstName",
+              {
+                maxLength: 100,
+              },
+            ),
+          lastName:
+            requiredString(
+              body,
+              "lastName",
+              {
+                maxLength: 100,
+              },
+            ),
+          displayName:
+            optionalString(
+              body,
+              "displayName",
+              {
+                maxLength: 100,
+              },
+            ),
+          marketingOptIn:
+            optionalBoolean(
+              body,
+              "marketingOptIn",
+            ),
+          termsAccepted:
+            requiredBoolean(
+              body,
+              "termsAccepted",
+            ),
+          privacyAccepted:
+            requiredBoolean(
+              body,
+              "privacyAccepted",
+            ),
+          tokenSecret:
+            getAuthTokenSecret(),
+        },
+        getAuthDeliveryProvider(),
+      );
 
     return authJsonResponse(
       {
@@ -116,7 +126,7 @@ export async function POST(
             emailRequired: true,
             phoneRequired: true,
             delivery:
-              "PENDING_PROVIDER_INTEGRATION",
+              "PROVIDER_ACCEPTED",
           },
         },
       },

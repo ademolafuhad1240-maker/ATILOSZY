@@ -13,6 +13,10 @@ import {
   normalizeStorefrontCode,
 } from "./crypto";
 import {
+  assertAuthDeliveryEnabled,
+  type AuthDeliveryProvider,
+} from "./delivery";
+import {
   AuthServiceError,
   isPrismaErrorCode,
 } from "./errors";
@@ -26,7 +30,15 @@ const PHONE_VERIFICATION_MINUTES = 10;
 
 export async function registerCustomer(
   input: RegisterCustomerInput,
+  deliveryProvider?:
+    AuthDeliveryProvider,
 ): Promise<RegistrationResult> {
+  if (deliveryProvider) {
+    assertAuthDeliveryEnabled(
+      deliveryProvider,
+    );
+  }
+
   const storefrontCode =
     normalizeStorefrontCode(
       input.storefrontCode,
@@ -74,6 +86,9 @@ export async function registerCustomer(
       },
       select: {
         id: true,
+        code: true,
+        name: true,
+        route: true,
         status: true,
       },
     });
@@ -120,7 +135,8 @@ export async function registerCustomer(
   );
 
   try {
-    const user = await prisma.$transaction(
+    const records =
+      await prisma.$transaction(
       async (transaction) => {
         const createdUser =
           await transaction.user.create({
@@ -174,44 +190,155 @@ export async function registerCustomer(
           },
         );
 
-        await transaction.emailVerification.create(
-          {
-            data: {
-              userId: createdUser.id,
-              storefrontId:
-                createdUser.storefrontId,
-              email: normalizedEmail,
-              tokenHash: emailTokenHash,
-              purpose: "REGISTRATION",
-              expiresAt: emailExpiresAt,
+        const emailVerification =
+          await transaction.emailVerification.create(
+            {
+              data: {
+                userId:
+                  createdUser.id,
+                storefrontId:
+                  createdUser.storefrontId,
+                email:
+                  normalizedEmail,
+                tokenHash:
+                  emailTokenHash,
+                purpose:
+                  "REGISTRATION",
+                expiresAt:
+                  emailExpiresAt,
+              },
+              select: {
+                id: true,
+              },
             },
-          },
-        );
+          );
 
-        await transaction.phoneVerification.create(
-          {
-            data: {
-              userId: createdUser.id,
-              storefrontId:
-                createdUser.storefrontId,
-              phone: normalizedPhone,
-              challengeId:
-                phoneChallenge.challengeId,
-              codeHash:
-                phoneChallenge.codeHash,
-              purpose: "REGISTRATION",
-              expiresAt: phoneExpiresAt,
-              maxAttempts: 5,
+        const phoneVerification =
+          await transaction.phoneVerification.create(
+            {
+              data: {
+                userId:
+                  createdUser.id,
+                storefrontId:
+                  createdUser.storefrontId,
+                phone:
+                  normalizedPhone,
+                challengeId:
+                  phoneChallenge
+                    .challengeId,
+                codeHash:
+                  phoneChallenge
+                    .codeHash,
+                purpose:
+                  "REGISTRATION",
+                expiresAt:
+                  phoneExpiresAt,
+                maxAttempts: 5,
+              },
+              select: {
+                id: true,
+              },
             },
-          },
-        );
+          );
 
-        return createdUser;
+        return {
+          user: createdUser,
+          emailVerificationId:
+            emailVerification.id,
+          phoneVerificationId:
+            phoneVerification.id,
+        };
       },
     );
 
+    if (deliveryProvider) {
+      let firstDeliveryError:
+        unknown = null;
+
+      try {
+        await deliveryProvider.sendEmailVerification(
+          {
+            deliveryId:
+              records.emailVerificationId,
+            storefrontCode:
+              storefront.code,
+            storefrontName:
+              storefront.name,
+            storefrontRoute:
+              storefront.route,
+            recipientEmail:
+              normalizedEmail,
+            token:
+              emailVerificationToken,
+            expiresAt:
+              emailExpiresAt,
+          },
+        );
+      } catch (error) {
+        firstDeliveryError = error;
+
+        await prisma.emailVerification.updateMany(
+          {
+            where: {
+              id:
+                records.emailVerificationId,
+              consumedAt: null,
+            },
+            data: {
+              consumedAt:
+                new Date(),
+            },
+          },
+        );
+      }
+
+      try {
+        await deliveryProvider.sendPhoneVerification(
+          {
+            deliveryId:
+              records.phoneVerificationId,
+            storefrontCode:
+              storefront.code,
+            storefrontName:
+              storefront.name,
+            storefrontRoute:
+              storefront.route,
+            recipientPhone:
+              normalizedPhone,
+            challengeId:
+              phoneChallenge
+                .challengeId,
+            code:
+              phoneChallenge.code,
+            expiresAt:
+              phoneExpiresAt,
+          },
+        );
+      } catch (error) {
+        firstDeliveryError ??= error;
+
+        await prisma.phoneVerification.updateMany(
+          {
+            where: {
+              id:
+                records.phoneVerificationId,
+              consumedAt: null,
+            },
+            data: {
+              consumedAt:
+                new Date(),
+            },
+          },
+        );
+      }
+
+      if (firstDeliveryError) {
+        throw firstDeliveryError;
+      }
+    }
+
     return {
-      user,
+      user: records.user,
       emailVerificationToken,
       phoneChallengeId:
         phoneChallenge.challengeId,

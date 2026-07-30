@@ -136,9 +136,13 @@ async function main(): Promise<void> {
 
   try {
     await disabled.sendPasswordReset({
+      deliveryId:
+        "audit-delivery",
       storefrontCode: "ATI",
       storefrontName:
         "ATILOSZY Varieties Store",
+      storefrontRoute:
+        "/ng/atiloszy",
       recipientEmail: email,
       token: "audit-token",
       expiresAt: new Date(),
@@ -175,7 +179,29 @@ async function main(): Promise<void> {
         privacyAccepted: true,
         tokenSecret:
           AUDIT_TOKEN_SECRET,
-      });
+      }, capture);
+
+    assertCondition(
+      capture.emailVerifications
+        .length === 1 &&
+        capture.phoneVerifications
+          .length === 1,
+      "Initial registration verification was not delivered through both channels.",
+    );
+
+    assertCondition(
+      capture.emailVerifications[0]
+        .storefrontRoute ===
+        "/ng/atiloszy" &&
+        capture.phoneVerifications[0]
+          .storefrontRoute ===
+          "/ng/atiloszy",
+      "Initial registration delivery was not scoped to the storefront route.",
+    );
+
+    console.log(
+      "PASS: Initial registration email and phone delivery completed.",
+    );
 
     const registrationTime =
       new Date();
@@ -201,14 +227,18 @@ async function main(): Promise<void> {
     );
 
     assertCondition(
-      capture.emailVerifications
-        .length === 1,
+      Number(
+        capture.emailVerifications
+          .length,
+      ) === 2,
       "The email verification resend was not delivered.",
     );
 
     assertCondition(
-      capture.phoneVerifications
-        .length === 1,
+      Number(
+        capture.phoneVerifications
+          .length,
+      ) === 2,
       "The phone verification resend was not delivered.",
     );
 
@@ -234,10 +264,14 @@ async function main(): Promise<void> {
     );
 
     assertCondition(
-      capture.emailVerifications
-        .length === 1 &&
-      capture.phoneVerifications
-        .length === 1,
+      Number(
+        capture.emailVerifications
+          .length,
+      ) === 2 &&
+      Number(
+        capture.phoneVerifications
+          .length,
+      ) === 2,
       "The resend cooldown was not enforced.",
     );
 
@@ -246,10 +280,10 @@ async function main(): Promise<void> {
     );
 
     const resentEmail =
-      capture.emailVerifications[0];
+      capture.emailVerifications[1];
 
     const resentPhone =
-      capture.phoneVerifications[0];
+      capture.phoneVerifications[1];
 
     await verifyCustomerEmail({
       storefrontCode: "ATI",

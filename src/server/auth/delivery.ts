@@ -1,69 +1,93 @@
 import "server-only";
 
-export interface EmailVerificationDelivery {
-  storefrontCode: string;
-  storefrontName: string;
-  recipientEmail: string;
-  token: string;
-  expiresAt: Date;
-}
+import {
+  AuthDeliveryProviderError,
+  AuthDeliveryUnavailableError,
+  isAuthDeliveryUnavailableError,
+} from "./delivery/errors";
+import {
+  normalizeDeliveryTimeout,
+} from "./delivery/http";
+import {
+  createResendTwilioAuthDeliveryProvider,
+} from "./delivery/resend-twilio";
+import type {
+  AuthDeliveryProvider,
+} from "./delivery/types";
 
-export interface PhoneVerificationDelivery {
-  storefrontCode: string;
-  storefrontName: string;
-  recipientPhone: string;
-  challengeId: string;
-  code: string;
-  expiresAt: Date;
-}
+export {
+  AuthDeliveryProviderError,
+  AuthDeliveryUnavailableError,
+  createResendTwilioAuthDeliveryProvider,
+  isAuthDeliveryUnavailableError,
+};
 
-export interface PasswordResetDelivery {
-  storefrontCode: string;
-  storefrontName: string;
-  recipientEmail: string;
-  token: string;
-  expiresAt: Date;
-}
+export {
+  createResendEmailSender,
+} from "./delivery/resend";
 
-export interface AuthDeliveryProvider {
-  readonly name: string;
-  readonly enabled: boolean;
+export {
+  createTwilioSmsSender,
+} from "./delivery/twilio";
 
-  sendEmailVerification(
-    delivery: EmailVerificationDelivery,
-  ): Promise<void>;
+export type {
+  ResendEmailSender,
+  ResendEmailSenderOptions,
+} from "./delivery/resend";
 
-  sendPhoneVerification(
-    delivery: PhoneVerificationDelivery,
-  ): Promise<void>;
+export type {
+  ResendTwilioAuthDeliveryProviderOptions,
+} from "./delivery/resend-twilio";
 
-  sendPasswordReset(
-    delivery: PasswordResetDelivery,
-  ): Promise<void>;
-}
+export type {
+  TwilioSmsSender,
+  TwilioSmsSenderOptions,
+} from "./delivery/twilio";
 
-export class AuthDeliveryUnavailableError
-  extends Error {
-  readonly code =
-    "AUTH_DELIVERY_UNAVAILABLE";
+export type {
+  AuthDeliveryFetch,
+  AuthDeliveryProvider,
+  EmailVerificationDelivery,
+  PasswordResetDelivery,
+  PhoneVerificationDelivery,
+} from "./delivery/types";
 
-  constructor(
-    message =
-      "Authentication message delivery is unavailable.",
-  ) {
-    super(message);
+function requiredEnvironmentValue(
+  name: string,
+): string {
+  const value =
+    process.env[name]?.trim();
 
-    this.name =
-      "AuthDeliveryUnavailableError";
+  if (!value) {
+    throw new AuthDeliveryProviderError(
+      "configuration",
+      "CONFIGURATION",
+    );
   }
+
+  return value;
 }
 
-export function isAuthDeliveryUnavailableError(
-  error: unknown,
-): error is AuthDeliveryUnavailableError {
-  return (
-    error instanceof
-    AuthDeliveryUnavailableError
+function configuredTimeout():
+  number {
+  const raw =
+    process.env
+      .AUTH_DELIVERY_TIMEOUT_MS
+      ?.trim();
+
+  if (!raw) {
+    return normalizeDeliveryTimeout();
+  }
+
+  if (!/^\d+$/.test(raw)) {
+    throw new AuthDeliveryProviderError(
+      "configuration",
+      "CONFIGURATION",
+    );
+  }
+
+  return normalizeDeliveryTimeout(
+    Number(raw),
   );
 }
 
@@ -96,8 +120,60 @@ export function getAuthDeliveryProvider(): AuthDeliveryProvider {
     return createDisabledAuthDeliveryProvider();
   }
 
-  throw new Error(
-    `Unsupported AUTH_DELIVERY_PROVIDER: ${configuredProvider}`,
+  if (
+    configuredProvider ===
+    "resend-twilio"
+  ) {
+    const timeoutMs =
+      configuredTimeout();
+    const appOrigin =
+      requiredEnvironmentValue(
+        "APP_ORIGIN",
+      );
+
+    return createResendTwilioAuthDeliveryProvider(
+      {
+        resend: {
+          apiKey:
+            requiredEnvironmentValue(
+              "RESEND_API_KEY",
+            ),
+          from:
+            requiredEnvironmentValue(
+              "AUTH_EMAIL_FROM",
+            ),
+          appOrigin,
+          timeoutMs,
+        },
+        twilio: {
+          accountSid:
+            requiredEnvironmentValue(
+              "TWILIO_ACCOUNT_SID",
+            ),
+          apiKey:
+            requiredEnvironmentValue(
+              "TWILIO_API_KEY",
+            ),
+          apiKeySecret:
+            requiredEnvironmentValue(
+              "TWILIO_API_KEY_SECRET",
+            ),
+          from:
+            process.env
+              .AUTH_SMS_SENDER,
+          messagingServiceSid:
+            process.env
+              .TWILIO_MESSAGING_SERVICE_SID,
+          appOrigin,
+          timeoutMs,
+        },
+      },
+    );
+  }
+
+  throw new AuthDeliveryProviderError(
+    "configuration",
+    "CONFIGURATION",
   );
 }
 

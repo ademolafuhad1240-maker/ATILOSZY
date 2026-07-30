@@ -204,6 +204,13 @@ async function main(): Promise<void> {
       "AUTH_TRUSTED_ORIGINS=",
       "AUTH_REGISTRATION_API_ENABLED=false",
       "AUTH_DELIVERY_PROVIDER=disabled",
+      "AUTH_DELIVERY_TIMEOUT_MS=8000",
+      "AUTH_EMAIL_FROM=",
+      "RESEND_API_KEY=",
+      "TWILIO_ACCOUNT_SID=",
+      "TWILIO_API_KEY=",
+      "TWILIO_API_KEY_SECRET=",
+      "TWILIO_MESSAGING_SERVICE_SID=",
       "STAFF_PROVISIONING_ENABLED=false",
       "PLATFORM_ADMIN_PROVISIONING_ENABLED=false",
       "PAYMENT_INITIATION_PROVIDER=disabled",
@@ -246,6 +253,7 @@ async function main(): Promise<void> {
       "PAYMENT_INITIATION_PROVIDER=disabled",
       "STAFF_PROVISIONING_ENABLED=false",
       "PLATFORM_ADMIN_PROVISIONING_ENABLED=false",
+      "docs/authentication-delivery.md",
       "Do not connect `shop.sorvyra.com`",
     ]
   ) {

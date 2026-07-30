@@ -182,6 +182,7 @@ export async function resendRegistrationVerification(
         id: true,
         code: true,
         name: true,
+        route: true,
         status: true,
       },
     });
@@ -395,10 +396,14 @@ export async function resendRegistrationVerification(
     try {
       await deliveryProvider.sendEmailVerification(
         {
+          deliveryId:
+            records.emailRecordId,
           storefrontCode:
             storefront.code,
           storefrontName:
             storefront.name,
+          storefrontRoute:
+            storefront.route,
           recipientEmail:
             user.normalizedEmail,
           token: emailToken,
@@ -431,10 +436,14 @@ export async function resendRegistrationVerification(
     try {
       await deliveryProvider.sendPhoneVerification(
         {
+          deliveryId:
+            records.phoneRecordId,
           storefrontCode:
             storefront.code,
           storefrontName:
             storefront.name,
+          storefrontRoute:
+            storefront.route,
           recipientPhone:
             user.normalizedPhone,
           challengeId:
