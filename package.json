@@ -56,7 +56,7 @@
     "db:audit:staff-governance-services": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-staff-governance-services.ts",
     "audit:catalog-management": "node --import tsx scripts/audit-catalog-management.ts",
     "audit:catalog-media": "node --conditions=react-server --import tsx scripts/audit-catalog-media.ts",
-    "db:audit:catalog-management": "node --env-file=.env --conditions=react-server --import tsx scripts/audit-catalog-management-services.ts",
+    "db:audit:catalog-management": "node --env-file-if-exists=.env --conditions=react-server --import tsx scripts/audit-catalog-management-services.ts",
     "audit:railway-readiness": "node --import tsx scripts/audit-railway-readiness.ts"
   },
   "dependencies": {
