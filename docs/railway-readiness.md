@@ -58,12 +58,12 @@ Next.js start command reads it without a hardcoded port.
 10. Run database-backed payment audits against the staging
     database before enabling a test payment provider.
 
-The approved manager catalogue at `/manager/catalogue` requires no
-additional Railway variables or schema migration. Run
-`npm run db:audit:catalog-management` in the staging service before
-creating a manual staging product. Product images must use durable
-HTTPS media URLs or existing application asset paths; do not use
-Railway's service filesystem as uploaded-product storage.
+The approved manager catalogue at `/manager/catalogue` supports
+durable multi-photo uploads through the optional Cloudinary adapter.
+The provider remains disabled by default. Run
+`npm run audit:catalog-media` and
+`npm run db:audit:catalog-management` before enabling it. Uploaded
+product photos never use Railway's service filesystem.
 
 ## Required initial variables
 
@@ -82,6 +82,8 @@ AUTH_DELIVERY_TIMEOUT_MS=8000
 STAFF_PROVISIONING_ENABLED=false
 PLATFORM_ADMIN_PROVISIONING_ENABLED=false
 PAYMENT_INITIATION_PROVIDER=disabled
+CATALOG_MEDIA_PROVIDER=disabled
+CATALOG_MEDIA_UPLOAD_TIMEOUT_MS=15000
 ```
 
 If the Railway PostgreSQL service has a different service
@@ -105,6 +107,26 @@ platform login without selecting a storefront. Keep
 `PLATFORM_ADMIN_PROVISIONING_ENABLED=false` during normal
 deployment. Provisioning, manager applications and storefront staff
 controls are documented in `docs/staff-governance.md`.
+
+## Staging product-photo uploads
+
+Use a separate Cloudinary product environment for staging. Add the
+following variables as sealed Railway values before changing the
+provider from `disabled`:
+
+```text
+CATALOG_MEDIA_PROVIDER=cloudinary
+CLOUDINARY_CLOUD_NAME=<staging-cloud-name>
+CLOUDINARY_API_KEY=<staging-api-key>
+CLOUDINARY_API_SECRET=<sealed-staging-api-secret>
+CATALOG_MEDIA_UPLOAD_TIMEOUT_MS=15000
+```
+
+Do not configure `CLOUDINARY_URL` in the repository, reuse
+production credentials in staging, or expose the API secret to the
+browser. The application validates and optimizes images before its
+authenticated server-side Cloudinary upload. Cloudinary has no
+payment callback or webhook requirement for this upload flow.
 
 Customer registration, verification resend and password recovery
 remain closed while `AUTH_DELIVERY_PROVIDER=disabled`. The implemented

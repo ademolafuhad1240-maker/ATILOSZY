@@ -12,6 +12,7 @@ export {
   createManagedCatalogProduct,
   getManagerCatalog,
   updateManagedCatalogProduct,
+  uploadManagedCatalogImage,
 } from "@/server/catalog/management";
 
 export {
@@ -28,19 +29,24 @@ export type {
   AdjustManagedCatalogStockInput,
   AdjustVariantStockInput,
   CatalogImageInput,
+  CatalogMediaCapabilities,
   CatalogPriceInput,
   CatalogVariantOptionInput,
   CreatedCatalogProduct,
   CreateManagedCatalogProductInput,
   CreateCatalogProductInput,
   ManagedCatalogProductFields,
+  ManagedCatalogImageSelectionInput,
   ManagerCatalogCategory,
+  ManagerCatalogImage,
   ManagerCatalogProduct,
   ManagerCatalogStockMovement,
   ManagerCatalogView,
   PublicCatalogOption,
+  PublicCatalogImage,
   PublicCatalogPrice,
   PublicCatalogProduct,
   PublicCatalogVariant,
   UpdateManagedCatalogProductInput,
+  UploadedManagedCatalogImage,
 } from "@/server/catalog/types";

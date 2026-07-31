@@ -9,9 +9,13 @@ import {
 import { prisma } from "@/lib/prisma";
 import { CatalogServiceError } from "@/server/catalog/errors";
 import type {
+  CatalogImageInput,
   CreateCatalogProductInput,
   CreatedCatalogProduct,
 } from "@/server/catalog/types";
+import {
+  MAX_CATALOG_IMAGES,
+} from "@/server/catalog/media";
 import {
   normalizeImageUrl,
   normalizeSku,
@@ -32,6 +36,122 @@ function isUniqueConstraintError(error: unknown): boolean {
   }
 
   return error.code === "P2002";
+}
+
+function normalizeCatalogImages(
+  input:
+    readonly CatalogImageInput[],
+) {
+  if (
+    input.length >
+    MAX_CATALOG_IMAGES
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `A product can have no more than ${MAX_CATALOG_IMAGES} photos.`,
+    );
+  }
+
+  return input.map(
+    (image, index) => {
+      const storageProvider =
+        optionalText(
+          image.storageProvider,
+          `Product photo ${index + 1} storage provider`,
+          32,
+        );
+      const storageKey =
+        optionalText(
+          image.storageKey,
+          `Product photo ${index + 1} storage key`,
+          255,
+        );
+      const mimeType =
+        optionalText(
+          image.mimeType,
+          `Product photo ${index + 1} media type`,
+          100,
+        );
+      const hasStorageMetadata =
+        storageProvider !== null ||
+        storageKey !== null ||
+        mimeType !== null ||
+        image.byteSize !==
+          null &&
+          image.byteSize !==
+            undefined ||
+        image.width !== null &&
+          image.width !==
+            undefined ||
+        image.height !== null &&
+          image.height !==
+            undefined;
+
+      if (
+        hasStorageMetadata &&
+        (
+          !storageProvider ||
+          !storageKey ||
+          !mimeType ||
+          image.byteSize ===
+            null ||
+          image.byteSize ===
+            undefined ||
+          image.width === null ||
+          image.width ===
+            undefined ||
+          image.height === null ||
+          image.height ===
+            undefined
+        )
+      ) {
+        throw new CatalogServiceError(
+          "VALIDATION",
+          "Managed product photo metadata is incomplete.",
+        );
+      }
+
+      return {
+        url: normalizeImageUrl(
+          image.url,
+        ),
+        altText: optionalText(
+          image.altText,
+          `Product photo ${index + 1} description`,
+          300,
+        ),
+        position: index + 1,
+        isPrimary: index === 0,
+        storageProvider,
+        storageKey,
+        mimeType,
+        byteSize:
+          hasStorageMetadata
+            ? requireInteger(
+                image.byteSize!,
+                `Product photo ${index + 1} byte size`,
+                1,
+              )
+            : null,
+        width:
+          hasStorageMetadata
+            ? requireInteger(
+                image.width!,
+                `Product photo ${index + 1} width`,
+                1,
+              )
+            : null,
+        height:
+          hasStorageMetadata
+            ? requireInteger(
+                image.height!,
+                `Product photo ${index + 1} height`,
+                1,
+              )
+            : null,
+      };
+    },
+  );
 }
 
 export async function createCatalogProduct(
@@ -234,20 +354,25 @@ export async function createCatalogProduct(
       ? input.publishedAt ?? new Date()
       : input.publishedAt ?? null;
 
-  const image = input.image
-    ? {
-        url: normalizeImageUrl(
-          input.image.url,
+  if (
+    input.image &&
+    input.images !== undefined
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "Use one product photo collection.",
+    );
+  }
+
+  const images =
+    normalizeCatalogImages(
+      input.images ??
+        (
+          input.image
+            ? [input.image]
+            : []
         ),
-        altText: optionalText(
-          input.image.altText,
-          "Image alternative text",
-          300,
-        ),
-        position: 1,
-        isPrimary: true,
-      }
-    : null;
+    );
   const openingStockReason =
     optionalText(
       input.variant
@@ -309,9 +434,10 @@ export async function createCatalogProduct(
             publishedAt,
             availableFrom: input.availableFrom ?? null,
             availableUntil: input.availableUntil ?? null,
-            images: image
+            images:
+              images.length > 0
               ? {
-                  create: image,
+                  create: images,
                 }
               : undefined,
             variants: {

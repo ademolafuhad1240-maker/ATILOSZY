@@ -280,6 +280,19 @@ async function queryPublicCatalogue(
         listing.images[0]?.url ??
         variants[0]?.imageUrl ??
         null,
+      images:
+        listing.images.map(
+          (image) => ({
+            id: image.id,
+            url: image.url,
+            altText:
+              image.altText,
+            isPrimary:
+              image.isPrimary,
+            position:
+              image.position,
+          }),
+        ),
       isFeatured: listing.isFeatured,
       variants,
     });

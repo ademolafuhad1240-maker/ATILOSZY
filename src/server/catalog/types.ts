@@ -25,6 +25,12 @@ export interface CatalogPriceInput {
 export interface CatalogImageInput {
   url: string;
   altText?: string | null;
+  storageProvider?: string | null;
+  storageKey?: string | null;
+  mimeType?: string | null;
+  byteSize?: number | null;
+  width?: number | null;
+  height?: number | null;
 }
 
 export interface CreateCatalogProductInput {
@@ -45,6 +51,7 @@ export interface CreateCatalogProductInput {
   availableFrom?: Date | null;
   availableUntil?: Date | null;
   image?: CatalogImageInput | null;
+  images?: readonly CatalogImageInput[];
   variant: {
     sku: string;
     title: string;
@@ -114,8 +121,17 @@ export interface PublicCatalogProduct {
     name: string;
   } | null;
   primaryImageUrl: string | null;
+  images: PublicCatalogImage[];
   isFeatured: boolean;
   variants: PublicCatalogVariant[];
+}
+
+export interface PublicCatalogImage {
+  id: string;
+  url: string;
+  altText: string | null;
+  isPrimary: boolean;
+  position: number;
 }
 
 export interface AdjustVariantStockInput {
@@ -169,9 +185,11 @@ export interface ManagerCatalogProduct {
   publishedAt: string | null;
   updatedAt: string;
   image: {
+    id: string;
     url: string;
     altText: string | null;
   } | null;
+  images: ManagerCatalogImage[];
   variant: {
     id: string;
     sku: string;
@@ -195,6 +213,22 @@ export interface ManagerCatalogProduct {
   };
 }
 
+export interface ManagerCatalogImage {
+  id: string;
+  url: string;
+  altText: string | null;
+  position: number;
+  isPrimary: boolean;
+}
+
+export interface CatalogMediaCapabilities {
+  provider: "disabled" | "cloudinary";
+  uploadEnabled: boolean;
+  maxImages: number;
+  maxInputBytes: number;
+  acceptedMimeTypes: string[];
+}
+
 export interface ManagerCatalogView {
   manager: {
     email: string;
@@ -207,6 +241,13 @@ export interface ManagerCatalogView {
   };
   categories: ManagerCatalogCategory[];
   products: ManagerCatalogProduct[];
+  media: CatalogMediaCapabilities;
+}
+
+export interface ManagedCatalogImageSelectionInput {
+  existingImageId?: string | null;
+  uploadToken?: string | null;
+  altText?: string | null;
 }
 
 export interface ManagedCatalogProductFields {
@@ -220,6 +261,7 @@ export interface ManagedCatalogProductFields {
   maxPerOrder?: number | null;
   imageUrl?: string | null;
   imageAltText?: string | null;
+  images?: readonly ManagedCatalogImageSelectionInput[];
   variantTitle: string;
   priceAmount: string;
   compareAtAmount?: string | null;
@@ -252,4 +294,14 @@ export interface AdjustManagedCatalogStockInput {
   quantityDelta: number;
   type: StockMovementType;
   reason: string;
+}
+
+export interface UploadedManagedCatalogImage {
+  uploadToken: string;
+  url: string;
+  mimeType: string;
+  byteSize: number;
+  width: number;
+  height: number;
+  expiresAt: string;
 }

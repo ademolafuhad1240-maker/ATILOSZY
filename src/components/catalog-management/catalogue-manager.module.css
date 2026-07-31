@@ -171,6 +171,152 @@
   grid-column: 1 / -1;
 }
 
+.imageManager {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 1rem;
+  border: 1px solid
+    rgba(20, 31, 36, 0.12);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: #f8f6f0;
+}
+
+.imageManagerHeading {
+  display: flex;
+  align-items: center;
+  justify-content:
+    space-between;
+  gap: 1rem;
+}
+
+.imageManagerHeading h3,
+.imageManagerHeading p {
+  margin: 0.25rem 0 0;
+}
+
+.imageManagerHeading p {
+  color: #687278;
+  font-size: 0.86rem;
+}
+
+.uploadButton,
+.uploadButtonDisabled {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 0.78rem 1rem;
+  background: #275f59;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.uploadButtonDisabled {
+  background: #8b9292;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.uploadButton input,
+.uploadButtonDisabled input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.mediaUnavailable,
+.imageEmpty {
+  margin: 0;
+  border-radius: 0.85rem;
+  padding: 0.9rem;
+  background: #eee9dd;
+  color: #626b6d;
+  font-size: 0.85rem;
+}
+
+.imageEmpty {
+  border: 1px dashed
+    rgba(20, 31, 36, 0.2);
+  text-align: center;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(220px, 1fr)
+    );
+  gap: 0.8rem;
+}
+
+.imageCard {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid
+    rgba(20, 31, 36, 0.12);
+  border-radius: 0.95rem;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.imagePreview {
+  display: flex;
+  min-height: 170px;
+  align-items: start;
+  justify-content: end;
+  border-radius: 0.75rem;
+  padding: 0.6rem;
+  background:
+    #e9e5dc center / cover
+    no-repeat;
+}
+
+.imagePreview strong {
+  border-radius: 999px;
+  padding: 0.35rem 0.55rem;
+  background:
+    rgba(21, 36, 42, 0.86);
+  color: #fff;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.imageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.imageActions button {
+  border: 1px solid
+    rgba(20, 31, 36, 0.16);
+  border-radius: 999px;
+  padding: 0.5rem 0.65rem;
+  background: #fff;
+  color: #274e4b;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.imageActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.imageActions .removeImage {
+  color: #9a2f39;
+}
+
 .field > span,
 .wideField > span {
   color: #465257;
@@ -333,6 +479,15 @@
 
   .wideField {
     grid-column: auto;
+  }
+
+  .imageManager {
+    grid-column: auto;
+  }
+
+  .imageManagerHeading {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .summary article + article {

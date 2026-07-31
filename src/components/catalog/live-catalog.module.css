@@ -157,6 +157,31 @@
   font-size: 6rem;
 }
 
+.productGallery {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.productThumbnails {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(110px, 1fr)
+    );
+  gap: 0.7rem;
+}
+
+.productThumbnail {
+  min-height: 120px;
+  border: 1px solid
+    rgba(16, 24, 39, 0.1);
+  border-radius: 1rem;
+  background:
+    var(--catalog-soft)
+    center / cover no-repeat;
+}
+
 .cardHeader {
   display: grid;
   gap: 0.4rem;

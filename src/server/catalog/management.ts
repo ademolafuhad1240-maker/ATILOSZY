@@ -25,12 +25,23 @@ import {
 import type {
   AdjustManagedCatalogStockInput,
   AdjustedInventory,
+  CatalogImageInput,
   CreateManagedCatalogProductInput,
   CreatedCatalogProduct,
   ManagedCatalogProductFields,
+  ManagedCatalogImageSelectionInput,
   ManagerCatalogView,
+  UploadedManagedCatalogImage,
   UpdateManagedCatalogProductInput,
 } from "./types";
+import {
+  getCatalogMediaCapabilities,
+  issueCatalogMediaToken,
+  MAX_CATALOG_IMAGES,
+  prepareCatalogImage,
+  resolveCatalogMediaProvider,
+  verifyCatalogMediaToken,
+} from "./media";
 import {
   normalizeImageUrl,
   normalizeSlug,
@@ -69,6 +80,9 @@ interface NormalizedManagedProductFields {
   maxPerOrder: number | null;
   imageUrl: string | null;
   imageAltText: string | null;
+  images:
+    ManagedCatalogImageSelectionInput[] |
+    undefined;
   variantTitle: string;
   priceAmount: string;
   compareAtAmount: string | null;
@@ -77,6 +91,18 @@ interface NormalizedManagedProductFields {
   isTracked: boolean;
   allowBackorder: boolean;
 }
+
+type ResolvedManagedCatalogImage =
+  | {
+      kind: "existing";
+      id: string;
+      altText: string | null;
+    }
+  | {
+      kind: "upload";
+      image: CatalogImageInput;
+      altText: string | null;
+    };
 
 const editableListingStatuses =
   new Set<StorefrontProductStatus>([
@@ -184,6 +210,135 @@ function requireBoolean(
   }
 
   return value;
+}
+
+function normalizeManagedImageSelections(
+  images:
+    readonly ManagedCatalogImageSelectionInput[] |
+    undefined,
+):
+  ManagedCatalogImageSelectionInput[] |
+  undefined {
+  if (images === undefined) {
+    return undefined;
+  }
+
+  if (
+    !Array.isArray(images) ||
+    images.length >
+      MAX_CATALOG_IMAGES
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `A product can have no more than ${MAX_CATALOG_IMAGES} photos.`,
+    );
+  }
+
+  const normalized =
+    images.map(
+      (image, index) => {
+        if (
+          typeof image !==
+            "object" ||
+          image === null
+        ) {
+          throw new CatalogServiceError(
+            "VALIDATION",
+            `Product photo ${index + 1} is invalid.`,
+          );
+        }
+
+        const existingImageId =
+          optionalText(
+            image.existingImageId,
+            `Product photo ${index + 1} identifier`,
+            191,
+          );
+        const uploadToken =
+          optionalText(
+            image.uploadToken,
+            `Product photo ${index + 1} upload attachment`,
+            8_192,
+          );
+
+        if (
+          Boolean(
+            existingImageId,
+          ) ===
+          Boolean(uploadToken)
+        ) {
+          throw new CatalogServiceError(
+            "VALIDATION",
+            "Each product photo must be an existing photo or a new secure upload.",
+          );
+        }
+
+        return {
+          existingImageId,
+          uploadToken,
+          altText:
+            optionalText(
+              image.altText,
+              `Product photo ${index + 1} description`,
+              300,
+            ),
+        };
+      },
+    );
+
+  const identities =
+    normalized.map(
+      (image) =>
+        image.existingImageId ??
+        image.uploadToken!,
+    );
+
+  if (
+    new Set(identities).size !==
+    identities.length
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "A product photo cannot be attached more than once.",
+    );
+  }
+
+  return normalized;
+}
+
+function resolveManagedImageSelections(
+  images:
+    readonly ManagedCatalogImageSelectionInput[],
+  storefrontCode: string,
+): ResolvedManagedCatalogImage[] {
+  return images.map(
+    (selection) => {
+      if (
+        selection.existingImageId
+      ) {
+        return {
+          kind: "existing",
+          id:
+            selection.existingImageId,
+          altText:
+            selection.altText ??
+            null,
+        };
+      }
+
+      return {
+        kind: "upload",
+        image:
+          verifyCatalogMediaToken(
+            selection.uploadToken!,
+            storefrontCode,
+          ),
+        altText:
+          selection.altText ??
+          null,
+      };
+    },
+  );
 }
 
 function normalizeManagedProductFields(
@@ -299,6 +454,10 @@ function normalizeManagedProductFields(
         "Image alternative text",
         300,
       ),
+    images:
+      normalizeManagedImageSelections(
+        input.images,
+      ),
     variantTitle: requireText(
       input.variantTitle,
       "Variant title",
@@ -408,13 +567,14 @@ export async function getManagerCatalog(
             },
           },
           images: {
-            where: {
-              isPrimary: true,
-            },
-            orderBy: {
-              position: "asc",
-            },
-            take: 1,
+            orderBy: [
+              {
+                isPrimary: "desc",
+              },
+              {
+                position: "asc",
+              },
+            ],
           },
           variants: {
             orderBy: [
@@ -509,6 +669,9 @@ export async function getManagerCatalog(
           .toISOString(),
       image: listing.images[0]
         ? {
+            id:
+              listing.images[0]
+                .id,
             url:
               listing.images[0]
                 .url,
@@ -517,6 +680,19 @@ export async function getManagerCatalog(
                 .altText,
           }
         : null,
+      images:
+        listing.images.map(
+          (image) => ({
+            id: image.id,
+            url: image.url,
+            altText:
+              image.altText,
+            position:
+              image.position,
+            isPrimary:
+              image.isPrimary,
+          }),
+        ),
       variant: {
         id: variant.id,
         sku: variant.sku,
@@ -589,6 +765,8 @@ export async function getManagerCatalog(
       manager.storefront,
     categories,
     products,
+    media:
+      getCatalogMediaCapabilities(),
   };
 }
 
@@ -613,6 +791,27 @@ export async function createManagedCatalogProduct(
     throw new CatalogServiceError(
       "VALIDATION",
       "A new product cannot begin in archived status.",
+    );
+  }
+
+  const managedImages =
+    fields.images === undefined
+      ? null
+      : resolveManagedImageSelections(
+          fields.images,
+          manager.storefront.code,
+        );
+
+  if (
+    managedImages?.some(
+      (image) =>
+        image.kind ===
+        "existing",
+    )
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "A new product can use only newly uploaded photos.",
     );
   }
 
@@ -645,13 +844,36 @@ export async function createManagedCatalogProduct(
       StorefrontProductStatus.ACTIVE
         ? new Date()
         : null,
-    image: fields.imageUrl
+    image:
+      managedImages === null &&
+      fields.imageUrl
       ? {
           url: fields.imageUrl,
           altText:
             fields.imageAltText,
         }
       : null,
+    images:
+      managedImages === null
+        ? undefined
+        : managedImages.map(
+            (selection) => ({
+              ...(
+                selection.kind ===
+                "upload"
+                  ? selection.image
+                  : {}
+              ),
+              url:
+                selection.kind ===
+                "upload"
+                  ? selection.image
+                      .url
+                  : "",
+              altText:
+                selection.altText,
+            }),
+          ),
     variant: {
       sku: input.sku,
       title:
@@ -709,6 +931,13 @@ export async function updateManagedCatalogProduct(
       "Catalogue listing",
       191,
     );
+  const managedImages =
+    fields.images === undefined
+      ? null
+      : resolveManagedImageSelections(
+          fields.images,
+          manager.storefront.code,
+        );
 
   try {
     return await prisma.$transaction(
@@ -745,13 +974,16 @@ export async function updateManagedCatalogProduct(
               },
               include: {
                 images: {
-                  where: {
-                    isPrimary: true,
-                  },
-                  orderBy: {
-                    position: "asc",
-                  },
-                  take: 1,
+                  orderBy: [
+                    {
+                      isPrimary:
+                        "desc",
+                    },
+                    {
+                      position:
+                        "asc",
+                    },
+                  ],
                 },
                 variants: {
                   orderBy: [
@@ -938,54 +1170,172 @@ export async function updateManagedCatalogProduct(
             },
           });
 
-        const primaryImage =
-          listing.images[0];
+        if (managedImages) {
+          const existingById =
+            new Map(
+              listing.images.map(
+                (image) => [
+                  image.id,
+                  image,
+                ],
+              ),
+            );
+          const retainedIds =
+            managedImages
+              .filter(
+                (
+                  image,
+                ): image is Extract<
+                  ResolvedManagedCatalogImage,
+                  {
+                    kind:
+                      "existing";
+                  }
+                > =>
+                  image.kind ===
+                  "existing",
+              )
+              .map(
+                (image) =>
+                  image.id,
+              );
 
-        if (fields.imageUrl) {
-          if (primaryImage) {
-            await transaction
-              .productImage
-              .update({
-                where: {
-                  id:
-                    primaryImage.id,
-                },
-                data: {
-                  url:
-                    fields.imageUrl,
-                  altText:
-                    fields
-                      .imageAltText,
-                  variantId: null,
-                  position: 1,
-                  isPrimary: true,
-                },
-              });
-          } else {
-            await transaction
-              .productImage
-              .create({
-                data: {
-                  storefrontProductId,
-                  url:
-                    fields.imageUrl,
-                  altText:
-                    fields
-                      .imageAltText,
-                  position: 1,
-                  isPrimary: true,
-                },
-              });
+          if (
+            retainedIds.some(
+              (id) =>
+                !existingById.has(
+                  id,
+                ),
+            )
+          ) {
+            throw new CatalogServiceError(
+              "NOT_FOUND",
+              "A selected product photo does not belong to this storefront product.",
+            );
           }
-        } else {
+
           await transaction
             .productImage
             .deleteMany({
               where: {
                 storefrontProductId,
-                isPrimary: true,
+                id: {
+                  notIn:
+                    retainedIds,
+                },
               },
             });
+
+          for (
+            const [
+              index,
+              image,
+            ] of managedImages.entries()
+          ) {
+            const shared = {
+              altText:
+                image.altText,
+              variantId: null,
+              position:
+                index + 1,
+              isPrimary:
+                index === 0,
+            };
+
+            if (
+              image.kind ===
+              "existing"
+            ) {
+              await transaction
+                .productImage
+                .update({
+                  where: {
+                    id: image.id,
+                  },
+                  data: shared,
+                });
+            } else {
+              await transaction
+                .productImage
+                .create({
+                  data: {
+                    storefrontProductId,
+                    ...shared,
+                    url:
+                      image.image
+                        .url,
+                    storageProvider:
+                      image.image
+                        .storageProvider,
+                    storageKey:
+                      image.image
+                        .storageKey,
+                    mimeType:
+                      image.image
+                        .mimeType,
+                    byteSize:
+                      image.image
+                        .byteSize,
+                    width:
+                      image.image
+                        .width,
+                    height:
+                      image.image
+                        .height,
+                  },
+                });
+            }
+          }
+        } else {
+          const primaryImage =
+            listing.images[0];
+
+          if (fields.imageUrl) {
+            if (primaryImage) {
+              await transaction
+                .productImage
+                .update({
+                  where: {
+                    id:
+                      primaryImage.id,
+                  },
+                  data: {
+                    url:
+                      fields.imageUrl,
+                    altText:
+                      fields
+                        .imageAltText,
+                    variantId: null,
+                    position: 1,
+                    isPrimary: true,
+                  },
+                });
+            } else {
+              await transaction
+                .productImage
+                .create({
+                  data: {
+                    storefrontProductId,
+                    url:
+                      fields.imageUrl,
+                    altText:
+                      fields
+                        .imageAltText,
+                    position: 1,
+                    isPrimary: true,
+                  },
+                });
+            }
+          } else {
+            await transaction
+              .productImage
+              .deleteMany({
+                where: {
+                  storefrontProductId,
+                  isPrimary: true,
+                },
+              });
+          }
         }
 
         return {
@@ -1015,6 +1365,55 @@ export async function updateManagedCatalogProduct(
 
     throw error;
   }
+}
+
+export async function uploadManagedCatalogImage(
+  input: {
+    storefrontCode: string;
+    userId: string;
+    bytes: Uint8Array;
+    contentType: string;
+  },
+): Promise<UploadedManagedCatalogImage> {
+  const manager =
+    await requireManagerCatalogContext(
+      input.storefrontCode,
+      input.userId,
+    );
+  const prepared =
+    await prepareCatalogImage({
+      bytes: input.bytes,
+      contentType:
+        input.contentType,
+    });
+  const provider =
+    resolveCatalogMediaProvider();
+  const asset =
+    await provider.upload({
+      storefrontCode:
+        manager.storefront.code,
+      ...prepared,
+    });
+  const attachment =
+    issueCatalogMediaToken({
+      storefrontCode:
+        manager.storefront.code,
+      asset,
+    });
+
+  return {
+    uploadToken:
+      attachment.token,
+    url: asset.url,
+    mimeType:
+      asset.mimeType,
+    byteSize:
+      asset.byteSize,
+    width: asset.width,
+    height: asset.height,
+    expiresAt:
+      attachment.expiresAt.toISOString(),
+  };
 }
 
 export async function adjustManagedCatalogStock(

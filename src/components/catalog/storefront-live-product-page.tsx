@@ -51,6 +51,25 @@ export async function StorefrontLiveProductPage({
     notFound();
   }
 
+  const galleryImages =
+    product.images.length > 0
+      ? product.images
+      : product.primaryImageUrl
+        ? [
+            {
+              id: "primary",
+              url:
+                product.primaryImageUrl,
+              altText:
+                product.name,
+              isPrimary: true,
+              position: 1,
+            },
+          ]
+        : [];
+  const primaryImage =
+    galleryImages[0] ?? null;
+
   return (
     <main
       className={
@@ -78,38 +97,77 @@ export async function StorefrontLiveProductPage({
           {storefront.shortName}
         </Link>
 
-        <div
+        <section
           className={
-            styles.productHeroMedia
+            styles.productGallery
           }
-          style={
-            product.primaryImageUrl
-              ? {
-                  backgroundImage: `url("${product.primaryImageUrl.replace(/"/gu, "%22")}")`,
-                }
-              : undefined
-          }
-          role={
-            product.primaryImageUrl
-              ? "img"
-              : undefined
-          }
-          aria-label={
-            product.primaryImageUrl
-              ? product.name
-              : undefined
-          }
+          aria-label={`${product.name} photos`}
         >
-          {!product.primaryImageUrl
-            ? (
-                product.name
-                  .trim()
-                  .charAt(0)
-                  .toUpperCase() ||
-                "S"
-              )
-            : null}
-        </div>
+          <div
+            className={
+              styles.productHeroMedia
+            }
+            style={
+              primaryImage
+                ? {
+                    backgroundImage: `url("${primaryImage.url.replace(/"/gu, "%22")}")`,
+                  }
+                : undefined
+            }
+            role={
+              primaryImage
+                ? "img"
+                : undefined
+            }
+            aria-label={
+              primaryImage
+                ? primaryImage
+                    .altText ??
+                  product.name
+                : undefined
+            }
+          >
+            {!primaryImage
+              ? (
+                  product.name
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase() ||
+                  "S"
+                )
+              : null}
+          </div>
+
+          {galleryImages.length >
+          1 ? (
+            <div
+              className={
+                styles.productThumbnails
+              }
+            >
+              {galleryImages
+                .slice(1)
+                .map(
+                  (image) => (
+                    <div
+                      className={
+                        styles.productThumbnail
+                      }
+                      key={image.id}
+                      style={{
+                        backgroundImage: `url("${image.url.replace(/"/gu, "%22")}")`,
+                      }}
+                      role="img"
+                      aria-label={
+                        image.altText ??
+                        product.name
+                      }
+                    />
+                  ),
+                )}
+            </div>
+          ) : null}
+        </section>
 
         <header
           className={

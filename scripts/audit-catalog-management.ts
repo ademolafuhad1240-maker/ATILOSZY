@@ -50,6 +50,18 @@ function main(): void {
   const stockRoute = read(
     "src/app/api/catalog/management/products/[storefrontProductId]/stock/route.ts",
   );
+  const imageRoute = read(
+    "src/app/api/catalog/management/images/route.ts",
+  );
+  const mediaRegistry = read(
+    "src/server/catalog/media/registry.ts",
+  );
+  const mediaToken = read(
+    "src/server/catalog/media/token.ts",
+  );
+  const mediaImage = read(
+    "src/server/catalog/media/image.ts",
+  );
   const managerUi = read(
     "src/components/catalog-management/catalogue-manager.tsx",
   );
@@ -58,6 +70,9 @@ function main(): void {
   );
   const publicGrid = read(
     "src/components/catalog/storefront-live-catalog-section.tsx",
+  );
+  const publicProductPage = read(
+    "src/components/catalog/storefront-live-product-page.tsx",
   );
 
   assertCondition(
@@ -121,7 +136,9 @@ function main(): void {
       "Create a product",
       "Adjust stock",
       "Storefront visibility",
-      "Product image",
+      "Product photos",
+      "Make primary",
+      "catalogImages",
       "reserved by",
       "/api/auth/logout",
       "Sign out",
@@ -136,11 +153,60 @@ function main(): void {
   );
 
   assertCondition(
+    includesAll(
+      imageRoute,
+      [
+        "MAX_CATALOG_IMAGE_INPUT_BYTES",
+        "readCatalogApiSession",
+        "assertTrustedOrigin",
+        "uploadManagedCatalogImage",
+      ],
+    ) &&
+      includesAll(
+        mediaRegistry,
+        [
+          "disabled",
+          "cloudinary",
+          "CLOUDINARY_API_SECRET",
+          "resolveCatalogMediaProvider",
+        ],
+      ) &&
+      includesAll(
+        mediaImage,
+        [
+          "limitInputPixels",
+          ".webp(",
+          "MAX_CATALOG_IMAGE_DIMENSION",
+        ],
+      ) &&
+      includesAll(
+        mediaToken,
+        [
+          "timingSafeEqual",
+          "expectedStorefrontCode",
+          "AUTH_TOKEN_SECRET",
+        ],
+      ),
+    "Product photo uploads are missing fail-closed provider selection, binary validation, manager scoping or signed attachment protection.",
+  );
+  console.log(
+    "PASS: Product photo uploads fail closed and use manager scope, image validation and signed attachments.",
+  );
+
+  assertCondition(
     includesAll(publicGrid, [
       "primaryImageUrl",
       "productMedia",
       "AuthenticatedAddToCartButton",
     ]) &&
+      includesAll(
+        publicProductPage,
+        [
+          "galleryImages",
+          "productThumbnails",
+          "altText",
+        ],
+      ) &&
       !managerUi.includes(
         "currencyCode:",
       ),

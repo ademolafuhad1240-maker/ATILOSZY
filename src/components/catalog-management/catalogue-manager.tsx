@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type ChangeEvent,
   type FormEvent,
   useCallback,
   useEffect,
@@ -18,6 +19,7 @@ import type {
 import type {
   ManagerCatalogProduct,
   ManagerCatalogView,
+  UploadedManagedCatalogImage,
 } from "@/server/catalog/types";
 
 import GovernanceShell from "../governance/governance-shell";
@@ -29,6 +31,25 @@ interface ApiPayload {
   error?: {
     message?: string;
   };
+}
+
+interface MediaUploadPayload {
+  ok?: boolean;
+  data?: {
+    image?:
+      UploadedManagedCatalogImage;
+  };
+  error?: {
+    message?: string;
+  };
+}
+
+interface EditorImage {
+  key: string;
+  existingImageId?: string;
+  uploadToken?: string;
+  url: string;
+  altText: string;
 }
 
 function stringValue(
@@ -74,6 +95,38 @@ function productPayload(
   storefrontCode:
     StorefrontAuthCode,
 ) {
+  if (
+    stringValue(
+      data,
+      "catalogImagesUploading",
+    ) === "1"
+  ) {
+    throw new Error(
+      "Wait for the product photos to finish uploading before saving.",
+    );
+  }
+
+  let images: Array<{
+    existingImageId?: string;
+    uploadToken?: string;
+    altText: string;
+  }> = [];
+
+  try {
+    const parsed = JSON.parse(
+      stringValue(
+        data,
+        "catalogImages",
+      ) || "[]",
+    ) as unknown;
+
+    if (Array.isArray(parsed)) {
+      images = parsed;
+    }
+  } catch {
+    images = [];
+  }
+
   return {
     storefrontCode,
     categorySlug: stringValue(
@@ -109,15 +162,7 @@ function productPayload(
         data,
         "maxPerOrder",
       ),
-    imageUrl: stringValue(
-      data,
-      "imageUrl",
-    ),
-    imageAltText:
-      stringValue(
-        data,
-        "imageAltText",
-      ),
+    images,
     variantTitle: stringValue(
       data,
       "variantTitle",
@@ -174,6 +219,483 @@ function readable(
       (letter) =>
         letter.toUpperCase(),
     );
+}
+
+function ProductImageFields({
+  catalog,
+  product,
+}: {
+  catalog: ManagerCatalogView;
+  product?:
+    ManagerCatalogProduct;
+}) {
+  const [
+    images,
+    setImages,
+  ] = useState<EditorImage[]>(
+    () =>
+      product?.images.map(
+        (image) => ({
+          key: `existing:${image.id}`,
+          existingImageId:
+            image.id,
+          url: image.url,
+          altText:
+            image.altText ?? "",
+        }),
+      ) ?? [],
+  );
+  const [
+    uploading,
+    setUploading,
+  ] = useState(false);
+  const [
+    uploadError,
+    setUploadError,
+  ] = useState<string | null>(
+    null,
+  );
+
+  function updateImage(
+    index: number,
+    update:
+      Partial<EditorImage>,
+  ) {
+    setImages((current) =>
+      current.map(
+        (image, imageIndex) =>
+          imageIndex === index
+            ? {
+                ...image,
+                ...update,
+              }
+            : image,
+      ),
+    );
+  }
+
+  function moveImage(
+    from: number,
+    to: number,
+  ) {
+    setImages((current) => {
+      if (
+        to < 0 ||
+        to >= current.length
+      ) {
+        return current;
+      }
+
+      const next = [...current];
+      const [image] =
+        next.splice(from, 1);
+      next.splice(to, 0, image);
+      return next;
+    });
+  }
+
+  async function uploadImages(
+    event:
+      ChangeEvent<HTMLInputElement>,
+  ) {
+    const input =
+      event.currentTarget;
+    const selected = [
+      ...(input.files ?? []),
+    ];
+    input.value = "";
+
+    if (
+      selected.length === 0
+    ) {
+      return;
+    }
+
+    if (
+      !catalog.media
+        .uploadEnabled
+    ) {
+      setUploadError(
+        "Product photo uploads are not enabled yet.",
+      );
+      return;
+    }
+
+    const remaining =
+      catalog.media.maxImages -
+      images.length;
+
+    if (
+      selected.length >
+      remaining
+    ) {
+      setUploadError(
+        `You can add ${remaining} more product photo${remaining === 1 ? "" : "s"}.`,
+      );
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      for (const file of selected) {
+        if (
+          !catalog.media
+            .acceptedMimeTypes
+            .includes(file.type)
+        ) {
+          throw new Error(
+            `${file.name} must be a JPEG, PNG or WebP image.`,
+          );
+        }
+
+        if (
+          file.size >
+          catalog.media
+            .maxInputBytes
+        ) {
+          throw new Error(
+            `${file.name} is larger than 8 MB.`,
+          );
+        }
+
+        const body =
+          new FormData();
+        body.append(
+          "image",
+          file,
+        );
+        const response =
+          await fetch(
+            `/api/catalog/management/images?storefrontCode=${encodeURIComponent(catalog.storefront.code)}`,
+            {
+              method: "POST",
+              credentials:
+                "same-origin",
+              body,
+            },
+          );
+        const payload =
+          await response
+            .json()
+            .catch(
+              () => ({}),
+            ) as MediaUploadPayload;
+        const uploaded =
+          payload.data?.image;
+
+        if (
+          !response.ok ||
+          !uploaded
+        ) {
+          throw new Error(
+            payload.error?.message ??
+              "The product photo could not be uploaded.",
+          );
+        }
+
+        setImages(
+          (current) => [
+            ...current,
+            {
+              key:
+                `upload:${uploaded.uploadToken}`,
+              uploadToken:
+                uploaded.uploadToken,
+              url: uploaded.url,
+              altText: "",
+            },
+          ],
+        );
+      }
+    } catch (error) {
+      setUploadError(
+        error instanceof Error
+          ? error.message
+          : "The product photo could not be uploaded.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const serialized =
+    JSON.stringify(
+      images.map((image) => ({
+        ...(
+          image.existingImageId
+            ? {
+                existingImageId:
+                  image.existingImageId,
+              }
+            : {
+                uploadToken:
+                  image.uploadToken,
+              }
+        ),
+        altText:
+          image.altText,
+      })),
+    );
+
+  return (
+    <section
+      className={
+        styles.imageManager
+      }
+    >
+      <input
+        name="catalogImages"
+        type="hidden"
+        value={serialized}
+      />
+      <input
+        name="catalogImagesUploading"
+        type="hidden"
+        value={
+          uploading ? "1" : "0"
+        }
+      />
+
+      <div
+        className={
+          styles.imageManagerHeading
+        }
+      >
+        <div>
+          <span
+            className={
+              styles.eyebrow
+            }
+          >
+            Product gallery
+          </span>
+          <h3>Product photos</h3>
+          <p>
+            Add up to{" "}
+            {
+              catalog.media
+                .maxImages
+            }{" "}
+            photos. The first photo
+            is the storefront cover.
+          </p>
+        </div>
+
+        <label
+          className={
+            catalog.media
+              .uploadEnabled &&
+            images.length <
+              catalog.media
+                .maxImages
+              ? styles.uploadButton
+              : styles.uploadButtonDisabled
+          }
+        >
+          <span>
+            {uploading
+              ? "Uploading…"
+              : "Add photos"}
+          </span>
+          <input
+            type="file"
+            accept={catalog.media.acceptedMimeTypes.join(
+              ",",
+            )}
+            multiple
+            disabled={
+              uploading ||
+              !catalog.media
+                .uploadEnabled ||
+              images.length >=
+                catalog.media
+                  .maxImages
+            }
+            onChange={(event) =>
+              void uploadImages(
+                event,
+              )
+            }
+          />
+        </label>
+      </div>
+
+      {!catalog.media
+        .uploadEnabled ? (
+        <p
+          className={
+            styles.mediaUnavailable
+          }
+        >
+          SORVYRA must enable secure
+          cloud media storage before
+          managers can upload photos.
+        </p>
+      ) : null}
+
+      {uploadError ? (
+        <p
+          className={styles.error}
+          role="status"
+        >
+          {uploadError}
+        </p>
+      ) : null}
+
+      {images.length === 0 ? (
+        <div
+          className={
+            styles.imageEmpty
+          }
+        >
+          No product photos added
+          yet.
+        </div>
+      ) : (
+        <div
+          className={
+            styles.imageGrid
+          }
+        >
+          {images.map(
+            (image, index) => (
+              <article
+                className={
+                  styles.imageCard
+                }
+                key={image.key}
+              >
+                <div
+                  className={
+                    styles.imagePreview
+                  }
+                  style={{
+                    backgroundImage: `url("${image.url.replace(/"/gu, "%22")}")`,
+                  }}
+                  role="img"
+                  aria-label={
+                    image.altText ||
+                    `Product photo ${index + 1}`
+                  }
+                >
+                  {index === 0 ? (
+                    <strong>
+                      Primary
+                    </strong>
+                  ) : null}
+                </div>
+
+                <label
+                  className={
+                    styles.field
+                  }
+                >
+                  <span>
+                    Photo description
+                  </span>
+                  <input
+                    value={
+                      image.altText
+                    }
+                    maxLength={300}
+                    placeholder="Describe this view of the product"
+                    onChange={(
+                      event,
+                    ) =>
+                      updateImage(
+                        index,
+                        {
+                          altText:
+                            event
+                              .target
+                              .value,
+                        },
+                      )
+                    }
+                  />
+                </label>
+
+                <div
+                  className={
+                    styles.imageActions
+                  }
+                >
+                  {index > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        moveImage(
+                          index,
+                          0,
+                        )
+                      }
+                    >
+                      Make primary
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={
+                      index === 0
+                    }
+                    aria-label="Move photo earlier"
+                    onClick={() =>
+                      moveImage(
+                        index,
+                        index - 1,
+                      )
+                    }
+                  >
+                    Earlier
+                  </button>
+                  <button
+                    type="button"
+                    disabled={
+                      index ===
+                      images.length -
+                        1
+                    }
+                    aria-label="Move photo later"
+                    onClick={() =>
+                      moveImage(
+                        index,
+                        index + 1,
+                      )
+                    }
+                  >
+                    Later
+                  </button>
+                  <button
+                    className={
+                      styles.removeImage
+                    }
+                    type="button"
+                    onClick={() =>
+                      setImages(
+                        (current) =>
+                          current.filter(
+                            (
+                              _,
+                              imageIndex,
+                            ) =>
+                              imageIndex !==
+                              index,
+                          ),
+                      )
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
+              </article>
+            ),
+          )}
+        </div>
+      )}
+    </section>
+  );
 }
 
 function ProductFields({
@@ -392,43 +914,10 @@ function ProductFields({
         />
       </label>
 
-      <label
-        className={
-          styles.wideField
-        }
-      >
-        <span>Product image</span>
-        <input
-          name="imageUrl"
-          defaultValue={
-            product?.image?.url ?? ""
-          }
-          maxLength={2048}
-          placeholder="https://… or /brand/image.png"
-        />
-        <small>
-          Use an HTTPS image URL or a
-          safe image path already in
-          this app.
-        </small>
-      </label>
-
-      <label
-        className={
-          styles.wideField
-        }
-      >
-        <span>Image description</span>
-        <input
-          name="imageAltText"
-          defaultValue={
-            product?.image?.altText ??
-            ""
-          }
-          maxLength={300}
-          placeholder="Describe the product for accessibility"
-        />
-      </label>
+      <ProductImageFields
+        catalog={catalog}
+        product={product}
+      />
 
       <label
         className={styles.check}
@@ -514,8 +1003,12 @@ export default function CatalogueManager({
     busyKey,
     setBusyKey,
   ] = useState<string | null>(
-    null,
+      null,
   );
+  const [
+    createFormVersion,
+    setCreateFormVersion,
+  ] = useState(0);
   const [
     notice,
     setNotice,
@@ -707,6 +1200,10 @@ export default function CatalogueManager({
         },
       );
       form.reset();
+      setCreateFormVersion(
+        (current) =>
+          current + 1,
+      );
       setNotice({
         kind: "success",
         message:
@@ -1067,6 +1564,9 @@ export default function CatalogueManager({
                 </label>
               </div>
               <ProductFields
+                key={
+                  createFormVersion
+                }
                 catalog={catalog}
               />
               <button
@@ -1243,6 +1743,7 @@ export default function CatalogueManager({
                         }
                       >
                         <ProductFields
+                          key={`${product.id}:${product.updatedAt}`}
                           catalog={
                             catalog
                           }

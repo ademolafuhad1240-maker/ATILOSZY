@@ -21,6 +21,9 @@ import {
   getPublicStorefrontProduct,
   updateManagedCatalogProduct,
 } from "../src/server/catalog";
+import {
+  issueCatalogMediaToken,
+} from "../src/server/catalog/media";
 
 async function expectCatalogError(
   label: string,
@@ -271,6 +274,59 @@ async function main(): Promise<void> {
       "ATI",
     );
 
+    const mediaSecret =
+      process.env
+        .AUTH_TOKEN_SECRET;
+    assert.ok(
+      mediaSecret &&
+        mediaSecret.length >= 32,
+      "AUTH_TOKEN_SECRET is required for the catalog media lifecycle audit.",
+    );
+    const mediaKeyOne =
+      `sorvyra-store/ati/audit-${lowerToken}-one`;
+    const mediaKeyTwo =
+      `sorvyra-store/ati/audit-${lowerToken}-two`;
+    const imageOne =
+      issueCatalogMediaToken(
+        {
+          storefrontCode: "ATI",
+          asset: {
+            provider:
+              "cloudinary",
+            storageKey:
+              mediaKeyOne,
+            url:
+              `https://res.cloudinary.com/sorvyra-audit/image/upload/v1/${mediaKeyOne}.webp`,
+            mimeType:
+              "image/webp",
+            byteSize: 1_024,
+            width: 800,
+            height: 800,
+          },
+        },
+        mediaSecret,
+      );
+    const imageTwo =
+      issueCatalogMediaToken(
+        {
+          storefrontCode: "ATI",
+          asset: {
+            provider:
+              "cloudinary",
+            storageKey:
+              mediaKeyTwo,
+            url:
+              `https://res.cloudinary.com/sorvyra-audit/image/upload/v1/${mediaKeyTwo}.webp`,
+            mimeType:
+              "image/webp",
+            byteSize: 1_200,
+            width: 900,
+            height: 700,
+          },
+        },
+        mediaSecret,
+      );
+
     await updateManagedCatalogProduct({
       storefrontCode: "ATI",
       userId: manager.id,
@@ -292,6 +348,20 @@ async function main(): Promise<void> {
         "/brand/atiloszy-logo-original.png",
       imageAltText:
         "Updated temporary audit product",
+      images: [
+        {
+          uploadToken:
+            imageTwo.token,
+          altText:
+            "Primary audit product view",
+        },
+        {
+          uploadToken:
+            imageOne.token,
+          altText:
+            "Secondary audit product view",
+        },
+      ],
       variantTitle: "Standard",
       priceAmount: "1200.00",
       compareAtAmount:
@@ -368,6 +438,20 @@ async function main(): Promise<void> {
         .availableQuantity,
       4,
     );
+    assert.equal(
+      managedProduct.images.length,
+      2,
+    );
+    assert.equal(
+      managedProduct.images[0]
+        ?.isPrimary,
+      true,
+    );
+    assert.equal(
+      managedProduct.images[0]
+        ?.altText,
+      "Primary audit product view",
+    );
 
     const publicProduct =
       await getPublicStorefrontProduct(
@@ -381,7 +465,11 @@ async function main(): Promise<void> {
     );
     assert.equal(
       publicProduct.primaryImageUrl,
-      "/brand/atiloszy-logo-original.png",
+      `https://res.cloudinary.com/sorvyra-audit/image/upload/v1/${mediaKeyTwo}.webp`,
+    );
+    assert.equal(
+      publicProduct.images.length,
+      2,
     );
 
     const [
@@ -423,7 +511,7 @@ async function main(): Promise<void> {
       "PASS: Manager product creation derived storefront and NGN currency on the server.",
     );
     console.log(
-      "PASS: Product update preserved price history and published the managed image.",
+      "PASS: Product update preserved price history and published an ordered multi-photo gallery.",
     );
     console.log(
       "PASS: Stock changes were atomic and attributed to the active manager membership.",

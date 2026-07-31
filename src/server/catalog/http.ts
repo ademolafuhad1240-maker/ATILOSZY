@@ -21,7 +21,11 @@ import {
 } from "./errors";
 import type {
   ManagedCatalogProductFields,
+  ManagedCatalogImageSelectionInput,
 } from "./types";
+import {
+  MAX_CATALOG_IMAGES,
+} from "./media";
 import {
   normalizeStorefrontCode,
 } from "./validation";
@@ -41,6 +45,7 @@ const productFields = [
   "maxPerOrder",
   "imageUrl",
   "imageAltText",
+  "images",
   "variantTitle",
   "priceAmount",
   "compareAtAmount",
@@ -235,6 +240,139 @@ export function optionalCatalogInteger(
   );
 }
 
+function optionalCatalogImages(
+  value: unknown,
+):
+  ManagedCatalogImageSelectionInput[] |
+  undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (
+    !Array.isArray(value) ||
+    value.length >
+      MAX_CATALOG_IMAGES
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `A product can have no more than ${MAX_CATALOG_IMAGES} photos.`,
+    );
+  }
+
+  return value.map(
+    (item, index) => {
+      if (
+        typeof item !==
+          "object" ||
+        item === null ||
+        Array.isArray(item)
+      ) {
+        throw new CatalogServiceError(
+          "VALIDATION",
+          `Product photo ${index + 1} is invalid.`,
+        );
+      }
+
+      const image =
+        item as Record<
+          string,
+          unknown
+        >;
+      const allowed =
+        new Set([
+          "existingImageId",
+          "uploadToken",
+          "altText",
+        ]);
+
+      if (
+        Object.keys(image).some(
+          (field) =>
+            !allowed.has(field),
+        )
+      ) {
+        throw new CatalogServiceError(
+          "VALIDATION",
+          "Product photo storage identity is controlled by the server.",
+        );
+      }
+
+      const existingImageId =
+        image.existingImageId;
+      const uploadToken =
+        image.uploadToken;
+      const altText =
+        image.altText;
+
+      if (
+        existingImageId !==
+          undefined &&
+        (
+          typeof existingImageId !==
+            "string" ||
+          existingImageId.length >
+            191
+        )
+      ) {
+        throw new CatalogServiceError(
+          "VALIDATION",
+          `Product photo ${index + 1} identifier is invalid.`,
+        );
+      }
+
+      if (
+        uploadToken !==
+          undefined &&
+        (
+          typeof uploadToken !==
+            "string" ||
+          uploadToken.length >
+            8_192
+        )
+      ) {
+        throw new CatalogServiceError(
+          "VALIDATION",
+          `Product photo ${index + 1} attachment is invalid.`,
+        );
+      }
+
+      if (
+        altText !== undefined &&
+        altText !== null &&
+        (
+          typeof altText !==
+            "string" ||
+          altText.length > 300
+        )
+      ) {
+        throw new CatalogServiceError(
+          "VALIDATION",
+          `Product photo ${index + 1} description is invalid.`,
+        );
+      }
+
+      return {
+        existingImageId:
+          typeof existingImageId ===
+          "string"
+            ? existingImageId
+            : undefined,
+        uploadToken:
+          typeof uploadToken ===
+          "string"
+            ? uploadToken
+            : undefined,
+        altText:
+          typeof altText ===
+          "string"
+            ? altText
+            : null,
+      };
+    },
+  );
+}
+
 export function requireListingStatus(
   body: JsonObject,
 ): StorefrontProductStatus {
@@ -354,6 +492,10 @@ export function productFieldsFromBody(
         "imageAltText",
         300,
       ),
+    images:
+      optionalCatalogImages(
+        body.images,
+      ),
     variantTitle:
       requireCatalogString(
         body,
@@ -427,6 +569,8 @@ const errorStatuses: Record<
   STOREFRONT_UNAVAILABLE: 404,
   NOT_FOUND: 404,
   CONFLICT: 409,
+  MEDIA_UNAVAILABLE: 503,
+  MEDIA_REJECTED: 502,
   CURRENCY_MISMATCH: 409,
   INSUFFICIENT_STOCK: 409,
 };
