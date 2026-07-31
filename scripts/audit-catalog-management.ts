@@ -123,6 +123,8 @@ function main(): void {
       "Storefront visibility",
       "Product image",
       "reserved by",
+      "/api/auth/logout",
+      "Sign out",
     ]) &&
       managerPortal.includes(
         "/manager/catalogue?storefrontCode=",

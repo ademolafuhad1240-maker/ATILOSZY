@@ -590,6 +590,57 @@ export default function CatalogueManager({
     );
   }
 
+  async function signOut() {
+    setBusyKey("sign-out");
+    setNotice(null);
+
+    try {
+      const response = await fetch(
+        "/api/auth/logout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            storefrontCode,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const payload =
+          await response
+            .json()
+            .catch(
+              () => ({}),
+            ) as ApiPayload;
+
+        throw new Error(
+          payload.error?.message ??
+            "Sign out could not be completed.",
+        );
+      }
+
+      setCatalog(null);
+      router.replace(
+        `/manager/login?storefrontCode=${storefrontCode}&destination=catalogue`,
+      );
+      router.refresh();
+    } catch (error) {
+      setNotice({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Sign out could not be completed.",
+      });
+      setBusyKey(null);
+    }
+  }
+
   async function request(
     url: string,
     method: "POST" | "PATCH",
@@ -849,6 +900,24 @@ export default function CatalogueManager({
           >
             View storefront
           </Link>
+          {catalog ? (
+            <button
+              className={
+                styles.secondaryButton
+              }
+              type="button"
+              disabled={
+                busyKey !== null
+              }
+              onClick={() =>
+                void signOut()
+              }
+            >
+              {busyKey === "sign-out"
+                ? "Signing out…"
+                : "Sign out"}
+            </button>
+          ) : null}
         </div>
       </section>
 

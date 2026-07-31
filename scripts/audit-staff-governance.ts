@@ -212,6 +212,8 @@ function main(): void {
     includesAll(managerPortal, [
       "/api/governance/applications",
       "/api/governance/staff",
+      "/api/auth/logout",
+      "Sign out",
       "Managers cannot grant",
       "data-manager-application-form",
     ]) &&

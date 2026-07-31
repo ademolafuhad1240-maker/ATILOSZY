@@ -226,6 +226,57 @@ export default function ManagerPortal({
     );
   }
 
+  async function signOut() {
+    setBusyKey("sign-out");
+    setNotice(null);
+
+    try {
+      const response = await fetch(
+        "/api/auth/logout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            storefrontCode,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const payload =
+          await response
+            .json()
+            .catch(
+              () => ({}),
+            ) as ApiPayload;
+
+        throw new Error(
+          payload.error?.message ??
+            "Sign out could not be completed.",
+        );
+      }
+
+      setData(null);
+      router.replace(
+        `/manager/login?storefrontCode=${storefrontCode}&destination=${applicationMode ? "apply" : "portal"}`,
+      );
+      router.refresh();
+    } catch (error) {
+      setNotice({
+        kind: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Sign out could not be completed.",
+      });
+      setBusyKey(null);
+    }
+  }
+
   async function submitApplication(
     event:
       FormEvent<HTMLFormElement>,
@@ -567,21 +618,43 @@ export default function ManagerPortal({
           </select>
         </label>
 
-        {!applicationMode ? (
-          <Link
-            className={styles.textLink}
-            href={`/manager/apply?storefrontCode=${storefrontCode}`}
-          >
-            Manager application
-          </Link>
-        ) : (
-          <Link
-            className={styles.textLink}
-            href={`/manager?storefrontCode=${storefrontCode}`}
-          >
-            Manager dashboard
-          </Link>
-        )}
+        <div
+          className={styles.actions}
+        >
+          {!applicationMode ? (
+            <Link
+              className={styles.textLink}
+              href={`/manager/apply?storefrontCode=${storefrontCode}`}
+            >
+              Manager application
+            </Link>
+          ) : (
+            <Link
+              className={styles.textLink}
+              href={`/manager?storefrontCode=${storefrontCode}`}
+            >
+              Manager dashboard
+            </Link>
+          )}
+          {data ? (
+            <button
+              className={
+                styles.secondaryButton
+              }
+              type="button"
+              disabled={
+                busyKey !== null
+              }
+              onClick={() =>
+                void signOut()
+              }
+            >
+              {busyKey === "sign-out"
+                ? "Signing out…"
+                : "Sign out"}
+            </button>
+          ) : null}
+        </div>
       </section>
 
       {notice ? (
