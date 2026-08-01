@@ -12,11 +12,10 @@ import {
   Ruler,
   Truck,
 } from 'lucide-react';
-import ComfortProductCard from '@/components/zee-comfort/comfort-product-card';
-import {
-  comfortCategories,
-  comfortProducts,
-} from '@/data/zee-comfort-store';
+import StorefrontLiveCatalogSection from '@/components/catalog/storefront-live-catalog-section';
+import { comfortCategories } from '@/data/zee-comfort-store';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Zee COMFORT HUB Qatar',
@@ -287,35 +286,7 @@ export default function ZeeComfortHubPage() {
         </div>
       </section>
 
-      <section className="bg-[#fff9f7] px-5 py-20 md:py-28">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[9px] font-extrabold uppercase tracking-[0.24em] text-[#9b5a6d]">
-                New and comfortable
-              </p>
-
-              <h2 className="mt-4 font-display text-5xl font-semibold tracking-[-0.03em] text-[#481428] sm:text-6xl">
-                Fresh picks in QAR.
-              </h2>
-            </div>
-
-            <Link
-              href="/qa/zee-comfort-hub/shop"
-              className="flex items-center gap-2 text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#481428]"
-            >
-              View all products
-              <ArrowRight size={15} />
-            </Link>
-          </div>
-
-          <div className="hide-scrollbar mt-12 flex gap-5 overflow-x-auto pb-5">
-            {comfortProducts.map((product) => (
-              <ComfortProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <StorefrontLiveCatalogSection storefrontCode="ZCH" />
 
       <section className="bg-[#481428] px-5 py-20 text-white md:py-28">
         <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1.05fr_0.95fr]">

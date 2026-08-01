@@ -7,11 +7,7 @@ import {
   PackageCheck,
   Truck,
 } from 'lucide-react';
-import ComfortProductCard from '@/components/zee-comfort/comfort-product-card';
-import {
-  comfortCategories,
-  comfortProducts,
-} from '@/data/zee-comfort-store';
+import { comfortCategories } from '@/data/zee-comfort-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,32 +62,7 @@ export default function ComfortShopPage() {
         </div>
       </section>
 
-      <section id="products" className="bg-[#fff9f7] px-5 py-20 md:py-28">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[9px] font-extrabold uppercase tracking-[0.24em] text-[#9b5a6d]">
-                Complete collection
-              </p>
-
-              <h2 className="mt-4 font-display text-5xl font-semibold tracking-[-0.03em] text-[#481428] sm:text-6xl">
-                Shop Zee COMFORT HUB.
-              </h2>
-            </div>
-
-            <p className="max-w-md text-sm leading-7 text-[#7d5a65]">
-              These are temporary demonstration products. The real inventory,
-              sizes and availability will be managed through the store admin.
-            </p>
-          </div>
-
-          <div className="mt-12 flex flex-wrap gap-x-5 gap-y-12">
-            {comfortProducts.map((product) => (
-              <ComfortProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <StorefrontLiveCatalogSection storefrontCode="ZCH" />
 
       <section className="bg-[#481428] px-5 py-14 text-white">
         <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
@@ -143,8 +114,6 @@ export default function ComfortShopPage() {
           </a>
         </div>
       </section>
-
-      <StorefrontLiveCatalogSection storefrontCode="ZCH" />
 </>
   );
 }

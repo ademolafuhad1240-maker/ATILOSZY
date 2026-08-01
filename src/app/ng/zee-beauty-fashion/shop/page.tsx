@@ -7,8 +7,6 @@ import {
   PackageCheck,
   Truck,
 } from 'lucide-react';
-import ZeeProductCard from '@/components/zee-nigeria/zee-product-card';
-import { zeeNigeriaProducts } from '@/data/zee-nigeria-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,32 +72,7 @@ export default function ZeeNigeriaShopPage() {
         </div>
       </section>
 
-      <section className="bg-[#fff8f5] px-5 py-20 md:py-28">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[9px] font-extrabold uppercase tracking-[0.24em] text-[#99506f]">
-                Complete collection
-              </p>
-
-              <h2 className="mt-4 font-display text-5xl font-semibold tracking-[-0.03em] text-[#3b1024] sm:text-6xl">
-                Shop all ZEE products.
-              </h2>
-            </div>
-
-            <p className="max-w-md text-sm leading-7 text-[#765463]">
-              These are temporary demonstration products. The real catalogue
-              will be managed separately through the ZEE admin account.
-            </p>
-          </div>
-
-          <div className="mt-12 flex flex-wrap gap-x-5 gap-y-12">
-            {zeeNigeriaProducts.map((product) => (
-              <ZeeProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <StorefrontLiveCatalogSection storefrontCode="ZBF" />
 
       <section className="bg-[#3d1028] px-5 py-14 text-white">
         <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
@@ -145,8 +118,6 @@ export default function ZeeNigeriaShopPage() {
           </a>
         </div>
       </section>
-
-      <StorefrontLiveCatalogSection storefrontCode="ZBF" />
 </>
   );
 }

@@ -8,11 +8,7 @@ import {
   PackageCheck,
   Truck,
 } from 'lucide-react';
-import AtiloszyProductCard from '@/components/atiloszy/atiloszy-product-card';
-import {
-  atiloszyCategories,
-  atiloszyProducts,
-} from '@/data/atiloszy-store';
+import { atiloszyCategories } from '@/data/atiloszy-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,32 +64,7 @@ export default function AtiloszyShopPage() {
         </div>
       </section>
 
-      <section id="products" className="bg-[#f4f0e8] px-5 py-20 md:py-28">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[9px] font-extrabold uppercase tracking-[0.24em] text-[#80662f]">
-                Complete collection
-              </p>
-
-              <h2 className="mt-4 font-display text-5xl font-semibold tracking-[-0.03em] text-[#102219] sm:text-6xl">
-                Shop all ATILOSZY products.
-              </h2>
-            </div>
-
-            <p className="max-w-md text-sm leading-7 text-[#607064]">
-              These are temporary demonstration products. The real catalogue
-              will later be controlled through the ATILOSZY admin account.
-            </p>
-          </div>
-
-          <div className="mt-12 flex flex-wrap gap-x-5 gap-y-12">
-            {atiloszyProducts.map((product) => (
-              <AtiloszyProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <StorefrontLiveCatalogSection storefrontCode="ATI" />
 
       <section className="bg-[#062317] px-5 py-14 text-white">
         <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
@@ -147,8 +118,6 @@ export default function AtiloszyShopPage() {
           </a>
         </div>
       </section>
-
-      <StorefrontLiveCatalogSection storefrontCode="ATI" />
 </>
   );
 }

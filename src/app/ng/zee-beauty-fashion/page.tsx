@@ -12,11 +12,10 @@ import {
   Sparkles,
   Truck,
 } from 'lucide-react';
-import ZeeProductCard from '@/components/zee-nigeria/zee-product-card';
-import {
-  zeeNigeriaCategories,
-  zeeNigeriaProducts,
-} from '@/data/zee-nigeria-store';
+import StorefrontLiveCatalogSection from '@/components/catalog/storefront-live-catalog-section';
+import { zeeNigeriaCategories } from '@/data/zee-nigeria-store';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'ZEE Beauty & Fashion World Nigeria',
@@ -268,35 +267,9 @@ export default function ZeeBeautyFashionPage() {
         </div>
       </section>
 
-      <section id="zee-new" className="bg-[#fff8f5] px-5 py-20 md:py-28">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[9px] font-extrabold uppercase tracking-[0.24em] text-[#99506f]">
-                New and loved
-              </p>
-
-              <h2 className="mt-4 font-display text-5xl font-semibold tracking-[-0.03em] text-[#3b1024] sm:text-6xl">
-                Fresh picks from ZEE.
-              </h2>
-            </div>
-
-            <Link
-              href="/ng/zee-beauty-fashion/shop"
-              className="flex items-center gap-2 text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#3b1024]"
-            >
-              View all products
-              <ArrowRight size={15} />
-            </Link>
-          </div>
-
-          <div className="hide-scrollbar mt-12 flex gap-5 overflow-x-auto pb-5">
-            {zeeNigeriaProducts.map((product) => (
-              <ZeeProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <div id="zee-new">
+        <StorefrontLiveCatalogSection storefrontCode="ZBF" />
+      </div>
 
       <section
         id="zee-fashion"

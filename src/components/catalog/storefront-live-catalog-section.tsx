@@ -43,6 +43,7 @@ export default async function StorefrontLiveCatalogSection({
 
   return (
     <section
+      id="products"
       className={styles.section}
       data-storefront-code={
         storefront.code
@@ -62,7 +63,7 @@ export default async function StorefrontLiveCatalogSection({
               styles.eyebrow
             }
           >
-            Live inventory
+            Current collection
           </p>
 
           <h2
@@ -70,7 +71,7 @@ export default async function StorefrontLiveCatalogSection({
               styles.heading
             }
           >
-            Products available now
+            Shop {storefront.shortName}
           </h2>
 
           <p
@@ -78,13 +79,10 @@ export default async function StorefrontLiveCatalogSection({
               styles.description
             }
           >
-            These products come directly
-            from the secure{" "}
-            {storefront.shortName}{" "}
-            catalogue. Prices, variants
-            and stock are checked by the
-            server before they enter your
-            storefront cart.
+            Every product shown here is published by the{" "}
+            {storefront.shortName} manager. Prices, options and stock
+            are checked again before an item enters this storefront&apos;s
+            cart.
           </p>
         </div>
 
@@ -104,11 +102,9 @@ export default async function StorefrontLiveCatalogSection({
         <div
           className={styles.empty}
         >
-          Live products have not been
-          published for this storefront
-          yet. The demonstration products
-          above remain available for
-          preview.
+          No products have been published for this storefront yet. New
+          active products will appear here automatically after the
+          storefront manager adds them to the catalogue.
         </div>
       ) : (
         <div

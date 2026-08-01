@@ -1,19 +1,56 @@
 .page {
+  --checkout-accent: #d8bd69;
+  --checkout-accent-text: #03130c;
+  --checkout-deep: #03130c;
+  --checkout-deep-soft: #062317;
+  --checkout-glow: rgba(85, 201, 137, 0.2);
   min-height: 100vh;
   padding: clamp(1.25rem, 3vw, 3rem);
   background:
     radial-gradient(
       circle at 10% 0%,
-      rgba(255, 255, 255, 0.12),
+      var(--checkout-glow),
       transparent 34rem
     ),
     linear-gradient(
       145deg,
-      #07111b,
-      #101c28 52%,
-      #07111b
+      var(--checkout-deep),
+      var(--checkout-deep-soft) 52%,
+      var(--checkout-deep)
     );
   color: #f7f9fb;
+}
+
+.page[data-checkout-page="ATI"] {
+  --checkout-accent: #d8bd69;
+  --checkout-accent-text: #03130c;
+  --checkout-deep: #03130c;
+  --checkout-deep-soft: #062317;
+  --checkout-glow: rgba(85, 201, 137, 0.2);
+}
+
+.page[data-checkout-page="ZBF"] {
+  --checkout-accent: #f2bed2;
+  --checkout-accent-text: #3b1024;
+  --checkout-deep: #2d0b1c;
+  --checkout-deep-soft: #4a102f;
+  --checkout-glow: rgba(242, 190, 210, 0.2);
+}
+
+.page[data-checkout-page="DEN"] {
+  --checkout-accent: #f4c642;
+  --checkout-accent-text: #071a31;
+  --checkout-deep: #04111f;
+  --checkout-deep-soft: #071a31;
+  --checkout-glow: rgba(22, 103, 164, 0.34);
+}
+
+.page[data-checkout-page="ZCH"] {
+  --checkout-accent: #efc4ce;
+  --checkout-accent-text: #481428;
+  --checkout-deep: #2b0b18;
+  --checkout-deep-soft: #481428;
+  --checkout-glow: rgba(239, 196, 206, 0.22);
 }
 
 .hero {
@@ -25,11 +62,11 @@
   justify-content: space-between;
   gap: 2rem;
   border: 1px solid
-    rgba(255, 255, 255, 0.13);
+    color-mix(in srgb, var(--checkout-accent) 32%, transparent);
   background:
     linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.1),
+      color-mix(in srgb, var(--checkout-accent) 12%, transparent),
       rgba(255, 255, 255, 0.025)
     );
   box-shadow:
@@ -45,7 +82,7 @@
   font-weight: 800;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--checkout-accent);
 }
 
 .hero h1 {
@@ -79,7 +116,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid
-    rgba(255, 255, 255, 0.2);
+    color-mix(in srgb, var(--checkout-accent) 45%, transparent);
   color: #ffffff;
   text-decoration: none;
   font-size: 0.72rem;
@@ -94,8 +131,8 @@
 
 .heroLinks a:hover,
 .primaryLink:hover {
-  background: #ffffff;
-  color: #08121d;
+  background: var(--checkout-accent);
+  color: var(--checkout-accent-text);
   transform: translateY(-1px);
 }
 
@@ -119,7 +156,7 @@
 .summary,
 .stateCard {
   border: 1px solid
-    rgba(255, 255, 255, 0.12);
+    color-mix(in srgb, var(--checkout-accent) 25%, transparent);
   background:
     rgba(255, 255, 255, 0.055);
   box-shadow:
@@ -147,7 +184,8 @@
   display: grid;
   place-items: center;
   border: 1px solid
-    rgba(255, 255, 255, 0.2);
+    color-mix(in srgb, var(--checkout-accent) 55%, transparent);
+  color: var(--checkout-accent);
   font-size: 0.72rem;
   font-weight: 900;
 }
@@ -190,15 +228,15 @@
 .method:hover,
 .method[data-selected="true"] {
   border-color:
-    rgba(255, 255, 255, 0.55);
+    var(--checkout-accent);
   background:
-    rgba(255, 255, 255, 0.1);
+    color-mix(in srgb, var(--checkout-accent) 13%, transparent);
   transform: translateY(-1px);
 }
 
 .method input {
   margin-top: 0.25rem;
-  accent-color: #ffffff;
+  accent-color: var(--checkout-accent);
 }
 
 .method span {
@@ -258,7 +296,7 @@
 .fieldGrid textarea:focus,
 .fullField textarea:focus {
   border-color:
-    rgba(255, 255, 255, 0.65);
+    var(--checkout-accent);
   background:
     rgba(0, 0, 0, 0.28);
 }
@@ -351,15 +389,15 @@
   margin: 0 1.4rem 1rem;
   padding: 1rem;
   border: 1px solid
-    rgba(255, 214, 122, 0.24);
+    color-mix(in srgb, var(--checkout-accent) 34%, transparent);
   background:
-    rgba(255, 197, 72, 0.075);
+    color-mix(in srgb, var(--checkout-accent) 8%, transparent);
 }
 
 .paymentNotice strong {
   display: block;
   margin-bottom: 0.35rem;
-  color: #ffe5a6;
+  color: var(--checkout-accent);
 }
 
 .paymentNotice p {
@@ -386,8 +424,8 @@
   margin: 0 1.4rem;
   border: 0;
   border-radius: 0;
-  background: #ffffff;
-  color: #07111b;
+  background: var(--checkout-accent);
+  color: var(--checkout-accent-text);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -434,7 +472,7 @@
   flex: 0 0 auto;
   border: 2px solid
     rgba(255, 255, 255, 0.2);
-  border-top-color: #ffffff;
+  border-top-color: var(--checkout-accent);
   border-radius: 999px;
   animation:
     checkoutSpin 800ms linear

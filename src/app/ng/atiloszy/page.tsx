@@ -12,11 +12,10 @@ import {
   Truck,
   Zap,
 } from 'lucide-react';
-import AtiloszyProductCard from '@/components/atiloszy/atiloszy-product-card';
-import {
-  atiloszyCategories,
-  atiloszyProducts,
-} from '@/data/atiloszy-store';
+import StorefrontLiveCatalogSection from '@/components/catalog/storefront-live-catalog-section';
+import { atiloszyCategories } from '@/data/atiloszy-store';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'ATILOSZY Varieties Store',
@@ -263,37 +262,9 @@ export default function AtiloszyPage() {
         </div>
       </section>
 
-      <section
-        id="new-arrivals"
-        className="bg-[#f4f0e8] px-5 py-20 md:py-28"
-      >
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[9px] font-extrabold uppercase tracking-[0.24em] text-[#80662f]">
-                New and noteworthy
-              </p>
-              <h2 className="mt-4 font-display text-5xl font-semibold tracking-[-0.03em] text-[#102219] sm:text-6xl">
-                Fresh picks from ATILOSZY.
-              </h2>
-            </div>
-
-            <Link
-              href="/ng/atiloszy/shop"
-              className="flex items-center gap-2 text-[9px] font-extrabold uppercase tracking-[0.18em] text-[#102219]"
-            >
-              View all products
-              <ArrowRight size={15} />
-            </Link>
-          </div>
-
-          <div className="hide-scrollbar mt-12 flex gap-5 overflow-x-auto pb-5">
-            {atiloszyProducts.map((product) => (
-              <AtiloszyProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        </div>
-      </section>
+      <div id="new-arrivals">
+        <StorefrontLiveCatalogSection storefrontCode="ATI" />
+      </div>
 
       <section className="bg-[#062317] px-5 py-20 text-white md:py-28">
         <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1.05fr_0.95fr]">

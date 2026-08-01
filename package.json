@@ -57,6 +57,7 @@
     "audit:catalog-management": "node --import tsx scripts/audit-catalog-management.ts",
     "audit:quantity-pricing": "node --conditions=react-server --import tsx scripts/audit-quantity-pricing.ts",
     "audit:catalog-media": "node --conditions=react-server --import tsx scripts/audit-catalog-media.ts",
+    "audit:storefront-commerce-ui": "node --import tsx scripts/audit-storefront-commerce-ui.ts",
     "db:audit:catalog-management": "node --env-file-if-exists=.env --conditions=react-server --import tsx scripts/audit-catalog-management-services.ts",
     "audit:railway-readiness": "node --import tsx scripts/audit-railway-readiness.ts"
   },
