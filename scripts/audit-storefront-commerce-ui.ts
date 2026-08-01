@@ -66,9 +66,14 @@ function main(): void {
   const catalogue = read(
     "src/components/catalog/storefront-live-catalog-section.tsx",
   );
+  const catalogueQuery = read("src/server/catalog/read.ts");
   assert.ok(catalogue.includes('id="products"'));
   assert.ok(catalogue.includes("published by the"));
   assert.ok(!catalogue.includes("demonstration products above"));
+  assert.ok(
+    catalogueQuery.includes("isDemo: false"),
+    "Public catalogue queries do not exclude demo-flagged products.",
+  );
   console.log("PASS: Public product sections use only manager-published catalogue data.");
 
   const cartComponent = read("src/components/cart/storefront-cart.tsx");

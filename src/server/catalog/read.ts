@@ -74,6 +74,7 @@ async function queryPublicCatalogue(
         status: StorefrontStatus.ACTIVE,
       },
       status: StorefrontProductStatus.ACTIVE,
+      isDemo: false,
       product: {
         status: ProductStatus.ACTIVE,
       },

@@ -66,7 +66,7 @@ async function audit(): Promise<void> {
       listingStatus:
         StorefrontProductStatus.ACTIVE,
       isFeatured: true,
-      isDemo: true,
+      isDemo: false,
       publishedAt: new Date(
         Date.now() - 60_000,
       ),

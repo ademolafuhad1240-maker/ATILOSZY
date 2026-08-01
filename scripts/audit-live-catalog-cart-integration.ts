@@ -196,7 +196,7 @@ async function main(): Promise<void> {
       publishedAt: new Date(
         Date.now() - 60_000,
       ),
-      isDemo: true,
+      isDemo: false,
       maxPerOrder: 5,
       variant: {
         sku:
