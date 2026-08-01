@@ -1222,6 +1222,15 @@ async function main(): Promise<void> {
       },
     });
 
+    await prisma.customerAccount.deleteMany({
+      where: {
+        normalizedEmail: {
+          in:
+            normalizedEmails,
+        },
+      },
+    });
+
     if (productIds.length > 0) {
       await prisma.product.deleteMany({
         where: {

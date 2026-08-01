@@ -598,6 +598,12 @@ async function main(): Promise<void> {
       },
     });
 
+    await prisma.customerAccount.deleteMany({
+      where: {
+        normalizedEmail,
+      },
+    });
+
     console.log(
       "PASS: Temporary authentication page audit records removed.",
     );

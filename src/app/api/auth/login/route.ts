@@ -62,6 +62,8 @@ export async function POST(
           getClientIp(request),
         userAgent:
           getUserAgent(request),
+        createAllStorefrontSessions:
+          true,
       });
 
     const response =
@@ -77,12 +79,15 @@ export async function POST(
         },
       });
 
-    setSessionCookie(
-      response,
-      storefrontCode,
-      result.sessionToken,
-      result.session.expiresAt,
-    );
+    for (const storefrontSession of
+      result.storefrontSessions) {
+      setSessionCookie(
+        response,
+        storefrontSession.storefrontCode,
+        storefrontSession.sessionToken,
+        storefrontSession.expiresAt,
+      );
+    }
 
     return response;
   } catch (error) {

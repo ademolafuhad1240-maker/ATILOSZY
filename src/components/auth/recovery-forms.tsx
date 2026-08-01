@@ -516,7 +516,7 @@ export function ResendVerificationForm({
       <p className={styles.verifyText}>
         Request replacement email and
         phone challenges using the
-        storefront email you registered.
+        SORVYRA STORE email you registered.
       </p>
 
       <div className={styles.notice}>

@@ -83,9 +83,9 @@ export function StorefrontRegisterPage({
   return (
     <AuthShell
       storefront={storefront}
-      title="A private account for every order."
+      title="One account for every storefront."
       description={
-        "Create a verified account for this storefront. Your identity, cart and order history remain separated from every other SORVYRA store."
+        "Create one verified SORVYRA STORE account for every storefront. Carts, checkout and orders remain separated by storefront."
       }
     >
       <RegistrationForm
@@ -132,7 +132,7 @@ export function StorefrontForgotPasswordPage({
       storefront={storefront}
       title="Recover access safely."
       description={
-        "Request a single-use recovery link for the account registered with this storefront."
+        "Request a single-use recovery link for your SORVYRA STORE account."
       }
     >
       <ForgotPasswordForm
@@ -192,7 +192,7 @@ export async function StorefrontAccountPage({
       storefront={storefront}
       title="Your account, secured."
       description={
-        "Review your email-verified storefront identity and continue managing purchases from one protected place."
+        "Review your verified SORVYRA identity and continue shopping across every storefront from one protected account."
       }
     >
       <AccountPanel

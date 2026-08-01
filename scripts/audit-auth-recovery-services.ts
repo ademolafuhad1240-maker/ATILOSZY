@@ -520,6 +520,12 @@ async function main(): Promise<void> {
       },
     });
 
+    await prisma.customerAccount.deleteMany({
+      where: {
+        normalizedEmail,
+      },
+    });
+
     console.log(
       "PASS: Temporary recovery audit records removed.",
     );

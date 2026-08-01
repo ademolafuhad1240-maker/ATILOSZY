@@ -103,6 +103,23 @@ export async function registerCustomer(
     );
   }
 
+  const existingAccount =
+    await prisma.customerAccount.findUnique({
+      where: {
+        normalizedEmail,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+  if (existingAccount) {
+    throw new AuthServiceError(
+      "ACCOUNT_CONFLICT",
+      "A SORVYRA STORE account already exists for this email. Sign in with the same account on any storefront.",
+    );
+  }
+
   const passwordHash = await hashPassword(
     input.password,
   );
@@ -140,9 +157,21 @@ export async function registerCustomer(
     const records =
       await prisma.$transaction(
       async (transaction) => {
+        const customerAccount =
+          await transaction.customerAccount.create({
+            data: {
+              normalizedEmail,
+            },
+            select: {
+              id: true,
+            },
+          });
+
         const createdUser =
           await transaction.user.create({
             data: {
+              customerAccountId:
+                customerAccount.id,
               storefrontId: storefront.id,
               email: normalizedEmail,
               normalizedEmail,
@@ -363,7 +392,7 @@ export async function registerCustomer(
     if (isPrismaErrorCode(error, "P2002")) {
       throw new AuthServiceError(
         "ACCOUNT_CONFLICT",
-        "An account already exists for this storefront.",
+        "A SORVYRA STORE account already exists for this email or phone number.",
       );
     }
 

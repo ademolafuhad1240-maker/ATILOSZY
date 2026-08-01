@@ -81,24 +81,54 @@ export async function requestPasswordReset(
     return GENERIC_ACCEPTED_RESULT;
   }
 
-  const user = await prisma.user.findUnique({
+  const customerAccount =
+    await prisma.customerAccount.findUnique({
     where: {
-      storefrontId_normalizedEmail: {
-        storefrontId: storefront.id,
-        normalizedEmail,
-      },
+      normalizedEmail,
     },
     select: {
       id: true,
-      storefrontId: true,
-      normalizedEmail: true,
-      status: true,
-      emailVerifiedAt: true,
-      deletedAt: true,
+      users: {
+        where: {
+          status: "ACTIVE",
+          emailVerifiedAt: {
+            not: null,
+          },
+          deletedAt: null,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          id: true,
+          storefrontId: true,
+          normalizedEmail: true,
+          status: true,
+          emailVerifiedAt: true,
+          deletedAt: true,
+          storefront: {
+            select: {
+              code: true,
+              name: true,
+              route: true,
+            },
+          },
+        },
+      },
     },
   });
 
+  const user =
+    customerAccount?.users.find(
+      (candidate) =>
+        candidate.storefrontId ===
+        storefront.id,
+    ) ??
+    customerAccount?.users[0] ??
+    null;
+
   if (
+    !customerAccount ||
     !user ||
     user.status !== "ACTIVE" ||
     user.emailVerifiedAt === null ||
@@ -119,9 +149,10 @@ export async function requestPasswordReset(
     await prisma.emailVerification.findFirst(
       {
         where: {
-          userId: user.id,
-          storefrontId:
-            user.storefrontId,
+          user: {
+            customerAccountId:
+              customerAccount.id,
+          },
           purpose: "PASSWORD_RESET",
         },
         orderBy: {
@@ -151,9 +182,10 @@ export async function requestPasswordReset(
   const recentRequestCount =
     await prisma.emailVerification.count({
       where: {
-        userId: user.id,
-        storefrontId:
-          user.storefrontId,
+        user: {
+          customerAccountId:
+            customerAccount.id,
+        },
         purpose: "PASSWORD_RESET",
         createdAt: {
           gte: windowCutoff,
@@ -188,9 +220,10 @@ export async function requestPasswordReset(
         await transaction.emailVerification.updateMany(
           {
             where: {
-              userId: user.id,
-              storefrontId:
-                user.storefrontId,
+              user: {
+                customerAccountId:
+                  customerAccount.id,
+              },
               purpose:
                 "PASSWORD_RESET",
               consumedAt: null,
@@ -229,11 +262,11 @@ export async function requestPasswordReset(
         deliveryId:
           verification.id,
         storefrontCode:
-          storefront.code,
+          user.storefront.code,
         storefrontName:
-          storefront.name,
+          user.storefront.name,
         storefrontRoute:
-          storefront.route,
+          user.storefront.route,
         recipientEmail:
           user.normalizedEmail,
         token,
@@ -294,6 +327,7 @@ export async function resetCustomerPassword(
           user: {
             select: {
               id: true,
+              customerAccountId: true,
               storefrontId: true,
               normalizedEmail: true,
               status: true,
@@ -318,6 +352,7 @@ export async function resetCustomerPassword(
     record.expiresAt <= now ||
     record.user.status !== "ACTIVE" ||
     record.user.deletedAt !== null ||
+    !record.user.customerAccountId ||
     normalizeEmail(record.email) !==
       record.user.normalizedEmail
   ) {
@@ -357,9 +392,10 @@ export async function resetCustomerPassword(
       await transaction.emailVerification.updateMany(
         {
           where: {
-            userId: record.user.id,
-            storefrontId:
-              record.user.storefrontId,
+            user: {
+              customerAccountId:
+                record.user.customerAccountId,
+            },
             purpose:
               "PASSWORD_RESET",
             consumedAt: null,
@@ -370,9 +406,10 @@ export async function resetCustomerPassword(
         },
       );
 
-      await transaction.user.update({
+      await transaction.user.updateMany({
         where: {
-          id: record.user.id,
+          customerAccountId:
+            record.user.customerAccountId,
         },
         data: {
           passwordHash:
@@ -389,11 +426,10 @@ export async function resetCustomerPassword(
         await transaction.session.updateMany(
           {
             where: {
-              userId:
-                record.user.id,
-              storefrontId:
-                record.user
-                  .storefrontId,
+              user: {
+                customerAccountId:
+                  record.user.customerAccountId,
+              },
               revokedAt: null,
             },
             data: {

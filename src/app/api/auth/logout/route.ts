@@ -3,7 +3,7 @@ import type {
 } from "next/server";
 
 import {
-  revokeSession,
+  revokeCustomerAccountSessions,
 } from "../../../../server/auth";
 import {
   assertTrustedOrigin,
@@ -43,15 +43,15 @@ export async function POST(
         storefrontCode,
       );
 
-    if (sessionToken) {
-      await revokeSession({
-        storefrontCode,
+    const storefrontCodes =
+      sessionToken
+        ? await revokeCustomerAccountSessions({
         sessionToken,
         tokenSecret:
           getAuthTokenSecret(),
         reason: "USER_LOGOUT",
-      });
-    }
+          })
+        : [];
 
     const response =
       authJsonResponse({
@@ -61,10 +61,15 @@ export async function POST(
         },
       });
 
-    clearSessionCookie(
-      response,
+    for (const code of new Set([
       storefrontCode,
-    );
+      ...storefrontCodes,
+    ])) {
+      clearSessionCookie(
+        response,
+        code,
+      );
+    }
 
     return response;
   } catch (error) {

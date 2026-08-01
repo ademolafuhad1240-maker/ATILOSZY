@@ -32,6 +32,7 @@ export {
   loginCustomer,
   loginPlatformAdministrator,
   revokeAllUserSessions,
+  revokeCustomerAccountSessions,
   revokeSession,
   revokeSessionToken,
   validatePlatformSession,

@@ -121,28 +121,55 @@ export async function loginCustomer(
     );
   }
 
-  let user = await prisma.user.findUnique({
-    where: {
-      storefrontId_normalizedEmail: {
-        storefrontId: storefront.id,
+  const customerAccount =
+    await prisma.customerAccount.findUnique({
+      where: {
         normalizedEmail,
       },
-    },
-    select: {
-      id: true,
-      storefrontId: true,
-      email: true,
-      passwordHash: true,
-      status: true,
-      emailVerifiedAt: true,
-      phoneVerifiedAt: true,
-      failedLoginAttempts: true,
-      lockedUntil: true,
-      deletedAt: true,
-    },
-  });
+      select: {
+        id: true,
+        users: {
+          select: {
+            id: true,
+            storefrontId: true,
+            email: true,
+            normalizedEmail: true,
+            phone: true,
+            normalizedPhone: true,
+            passwordHash: true,
+            status: true,
+            emailVerifiedAt: true,
+            phoneVerifiedAt: true,
+            failedLoginAttempts: true,
+            lockedUntil: true,
+            deletedAt: true,
+            customer: {
+              select: {
+                firstName: true,
+                lastName: true,
+                displayName: true,
+                marketingOptIn: true,
+                marketingOptInAt: true,
+                termsAcceptedAt: true,
+                privacyAcceptedAt: true,
+              },
+            },
+            security: {
+              select: {
+                twoFactorEnabled: true,
+                loginAlertsEnabled: true,
+                passwordChangedAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-  if (!user) {
+  if (
+    !customerAccount ||
+    customerAccount.users.length === 0
+  ) {
     await consumePasswordCost(
       input.password,
     );
@@ -155,66 +182,126 @@ export async function loginCustomer(
 
   const now = new Date();
 
-  if (
-    user.lockedUntil &&
-    user.lockedUntil > now
-  ) {
+  const activeLock =
+    customerAccount.users
+      .map((candidate) =>
+        candidate.lockedUntil,
+      )
+      .filter(
+        (lockedUntil): lockedUntil is Date =>
+          lockedUntil !== null &&
+          lockedUntil > now,
+      )
+      .sort(
+        (left, right) =>
+          right.getTime() -
+          left.getTime(),
+      )[0] ?? null;
+
+  if (activeLock) {
     throw new AuthServiceError(
       "ACCOUNT_LOCKED",
       "The account is temporarily locked.",
     );
   }
 
-  if (
-    user.lockedUntil &&
-    user.lockedUntil <= now
-  ) {
-    user = await prisma.user.update({
+  const expiredLockWasCleared =
+    customerAccount.users.some(
+      (candidate) =>
+        candidate.lockedUntil !== null,
+    );
+
+  if (expiredLockWasCleared) {
+    await prisma.user.updateMany({
       where: {
-        id: user.id,
+        customerAccountId:
+          customerAccount.id,
       },
       data: {
         failedLoginAttempts: 0,
         lockedUntil: null,
       },
-      select: {
-        id: true,
-        storefrontId: true,
-        email: true,
-        passwordHash: true,
-        status: true,
-        emailVerifiedAt: true,
-        phoneVerifiedAt: true,
-        failedLoginAttempts: true,
-        lockedUntil: true,
-        deletedAt: true,
-      },
     });
   }
 
-  const validPassword = await verifyPassword(
-    input.password,
-    user.passwordHash,
-  );
+  const targetCandidate =
+    customerAccount.users.find(
+      (candidate) =>
+        candidate.storefrontId ===
+        storefront.id,
+    );
 
-  if (!validPassword) {
-    const failedUser =
-      await prisma.user.update({
-        where: {
-          id: user.id,
-        },
-        data: {
-          failedLoginAttempts: {
-            increment: 1,
-          },
-        },
-        select: {
-          failedLoginAttempts: true,
-        },
-      });
+  const credentialCandidates = [
+    ...(targetCandidate?.status ===
+        "ACTIVE" &&
+      targetCandidate.emailVerifiedAt !==
+        null
+      ? [targetCandidate]
+      : []),
+    ...customerAccount.users.filter(
+      (candidate) =>
+        candidate.id !==
+          targetCandidate?.id &&
+        candidate.status === "ACTIVE" &&
+        candidate.emailVerifiedAt !== null,
+    ),
+    ...(targetCandidate &&
+    (targetCandidate.status !== "ACTIVE" ||
+      targetCandidate.emailVerifiedAt ===
+        null)
+      ? [targetCandidate]
+      : []),
+    ...customerAccount.users.filter(
+      (candidate) =>
+        candidate.id !==
+          targetCandidate?.id &&
+        (candidate.status !== "ACTIVE" ||
+          candidate.emailVerifiedAt ===
+            null),
+    ),
+  ];
+
+  let user = null as
+    | (typeof credentialCandidates)[number]
+    | null;
+
+  for (const candidate of
+    credentialCandidates) {
+    if (
+      await verifyPassword(
+        input.password,
+        candidate.passwordHash,
+      )
+    ) {
+      user = candidate;
+      break;
+    }
+  }
+
+  if (!user) {
+    const failedAttempts =
+      (expiredLockWasCleared
+        ? 0
+        : Math.max(
+            ...customerAccount.users.map(
+              (candidate) =>
+                candidate.failedLoginAttempts,
+            ),
+          )) + 1;
+
+    await prisma.user.updateMany({
+      where: {
+        customerAccountId:
+          customerAccount.id,
+      },
+      data: {
+        failedLoginAttempts:
+          failedAttempts,
+      },
+    });
 
     if (
-      failedUser.failedLoginAttempts >=
+      failedAttempts >=
       MAX_FAILED_LOGIN_ATTEMPTS
     ) {
       const lockedUntil = new Date(
@@ -224,9 +311,10 @@ export async function loginCustomer(
             1000,
       );
 
-      await prisma.user.update({
+      await prisma.user.updateMany({
         where: {
-          id: user.id,
+          customerAccountId:
+            customerAccount.id,
         },
         data: {
           lockedUntil,
@@ -261,7 +349,8 @@ export async function loginCustomer(
       "PENDING_VERIFICATION" &&
     user.emailVerifiedAt !== null
   ) {
-    user = await prisma.user.update({
+    const activatedUser =
+      await prisma.user.update({
       where: {
         id: user.id,
       },
@@ -281,15 +370,21 @@ export async function loginCustomer(
         deletedAt: true,
       },
     });
+
+    user = {
+      ...user,
+      ...activatedUser,
+    };
   }
 
   if (
     user.status !== "ACTIVE" ||
     user.emailVerifiedAt === null
   ) {
-    await prisma.user.update({
+    await prisma.user.updateMany({
       where: {
-        id: user.id,
+        customerAccountId:
+          customerAccount.id,
       },
       data: {
         failedLoginAttempts: 0,
@@ -308,14 +403,6 @@ export async function loginCustomer(
       input.sessionTtlMinutes,
     );
 
-  const sessionToken =
-    createOpaqueToken();
-
-  const tokenHash = hashOpaqueToken(
-    sessionToken,
-    input.tokenSecret,
-  );
-
   const expiresAt = new Date(
     now.getTime() +
       ttlMinutes *
@@ -332,13 +419,35 @@ export async function loginCustomer(
           },
           select: {
             id: true,
+            customerAccountId: true,
             storefrontId: true,
             email: true,
+            normalizedEmail: true,
+            phone: true,
+            normalizedPhone: true,
             passwordHash: true,
             status: true,
             emailVerifiedAt: true,
             phoneVerifiedAt: true,
             deletedAt: true,
+            customer: {
+              select: {
+                firstName: true,
+                lastName: true,
+                displayName: true,
+                marketingOptIn: true,
+                marketingOptInAt: true,
+                termsAcceptedAt: true,
+                privacyAcceptedAt: true,
+              },
+            },
+            security: {
+              select: {
+                twoFactorEnabled: true,
+                loginAlertsEnabled: true,
+                passwordChangedAt: true,
+              },
+            },
           },
         });
 
@@ -347,7 +456,10 @@ export async function loginCustomer(
         currentUser.status !== "ACTIVE" ||
         currentUser.emailVerifiedAt ===
           null ||
-        currentUser.deletedAt !== null
+        currentUser.deletedAt !== null ||
+        !currentUser.customerAccountId ||
+        !currentUser.customer ||
+        !currentUser.security
       ) {
         throw new AuthServiceError(
           "ACCOUNT_UNAVAILABLE",
@@ -364,18 +476,55 @@ export async function loginCustomer(
             )
           : null;
 
-      await transaction.user.update({
+      const effectivePasswordHash =
+        passwordHashUpdate ??
+        currentUser.passwordHash;
+
+      const passwordRecordsToSync =
+        await transaction.user.count({
+          where: {
+            customerAccountId:
+              currentUser.customerAccountId,
+            passwordHash: {
+              not: effectivePasswordHash,
+            },
+          },
+        });
+
+      if (
+        passwordHashUpdate ||
+        passwordRecordsToSync > 0
+      ) {
+        await transaction.session.updateMany({
+          where: {
+            user: {
+              customerAccountId:
+                currentUser.customerAccountId,
+            },
+            revokedAt: null,
+          },
+          data: {
+            revokedAt: now,
+            revokedReason:
+              "PLATFORM_ACCOUNT_CREDENTIAL_SYNC",
+          },
+        });
+      }
+
+      await transaction.user.updateMany({
         where: {
-          id: currentUser.id,
+          customerAccountId:
+            currentUser.customerAccountId,
         },
         data: {
           failedLoginAttempts: 0,
           lockedUntil: null,
           lastLoginAt: now,
-          ...(passwordHashUpdate
+          ...(passwordHashUpdate ||
+          passwordRecordsToSync > 0
             ? {
                 passwordHash:
-                  passwordHashUpdate,
+                  effectivePasswordHash,
                 sessionVersion: {
                   increment: 1,
                 },
@@ -384,51 +533,297 @@ export async function loginCustomer(
         },
       });
 
-      const createdSession =
-        await transaction.session.create({
-          data: {
-            userId: currentUser.id,
-            storefrontId:
-              currentUser.storefrontId,
-            tokenHash,
-            expiresAt,
-            lastSeenAt: now,
-            ipAddress:
-              input.ipAddress?.slice(0, 64) ??
-              null,
-            userAgent:
-              input.userAgent?.slice(
-                0,
-                1000,
-              ) ?? null,
-          },
+      const sessionStorefronts =
+        await transaction.storefront.findMany({
+          where:
+            input.createAllStorefrontSessions ===
+            true
+              ? {
+                  status: "ACTIVE",
+                }
+              : {
+                  id: storefront.id,
+                  status: "ACTIVE",
+                },
           select: {
             id: true,
-            expiresAt: true,
+            code: true,
+          },
+          orderBy: {
+            code: "asc",
           },
         });
 
+      const storefrontSessions: Array<{
+        id: string;
+        storefrontId: string;
+        storefrontCode: string;
+        userId: string;
+        sessionToken: string;
+        expiresAt: Date;
+      }> = [];
+
+      for (const sessionStorefront of
+        sessionStorefronts) {
+        let membership =
+          await transaction.user.findFirst({
+            where: {
+              customerAccountId:
+                currentUser.customerAccountId,
+              storefrontId:
+                sessionStorefront.id,
+            },
+            select: {
+              id: true,
+              storefrontId: true,
+              status: true,
+              emailVerifiedAt: true,
+              deletedAt: true,
+            },
+          });
+
+        if (!membership) {
+          const phoneConflict =
+            await transaction.user.findUnique({
+              where: {
+                storefrontId_normalizedPhone: {
+                  storefrontId:
+                    sessionStorefront.id,
+                  normalizedPhone:
+                    currentUser.normalizedPhone,
+                },
+              },
+              select: {
+                customerAccountId: true,
+              },
+            });
+
+          if (
+            phoneConflict &&
+            phoneConflict.customerAccountId !==
+              currentUser.customerAccountId
+          ) {
+            if (
+              sessionStorefront.id ===
+              storefront.id
+            ) {
+              throw new AuthServiceError(
+                "ACCOUNT_CONFLICT",
+                "This customer account cannot be connected to the selected storefront. Contact SORVYRA support.",
+              );
+            }
+
+            continue;
+          }
+
+          membership =
+            await transaction.user.create({
+              data: {
+                customerAccountId:
+                  currentUser.customerAccountId,
+                storefrontId:
+                  sessionStorefront.id,
+                email: currentUser.email,
+                normalizedEmail:
+                  currentUser.normalizedEmail,
+                phone: currentUser.phone,
+                normalizedPhone:
+                  currentUser.normalizedPhone,
+                passwordHash:
+                  passwordHashUpdate ??
+                  currentUser.passwordHash,
+                status: "ACTIVE",
+                emailVerifiedAt:
+                  currentUser.emailVerifiedAt,
+                phoneVerifiedAt:
+                  currentUser.phoneVerifiedAt,
+                lastLoginAt: now,
+              },
+              select: {
+                id: true,
+                storefrontId: true,
+                status: true,
+                emailVerifiedAt: true,
+                deletedAt: true,
+              },
+            });
+
+          await transaction.storefrontCustomer.create({
+            data: {
+              userId: membership.id,
+              storefrontId:
+                membership.storefrontId,
+              firstName:
+                currentUser.customer.firstName,
+              lastName:
+                currentUser.customer.lastName,
+              displayName:
+                currentUser.customer.displayName,
+              marketingOptIn:
+                currentUser.customer.marketingOptIn,
+              marketingOptInAt:
+                currentUser.customer.marketingOptInAt,
+              termsAcceptedAt:
+                currentUser.customer.termsAcceptedAt,
+              privacyAcceptedAt:
+                currentUser.customer.privacyAcceptedAt,
+            },
+          });
+
+          await transaction.customerSecuritySettings.create({
+            data: {
+              userId: membership.id,
+              storefrontId:
+                membership.storefrontId,
+              twoFactorEnabled: false,
+              loginAlertsEnabled:
+                currentUser.security.loginAlertsEnabled,
+              passwordChangedAt:
+                currentUser.security.passwordChangedAt,
+            },
+          });
+        } else if (
+          membership.status ===
+            "PENDING_VERIFICATION" &&
+          currentUser.emailVerifiedAt !==
+            null &&
+          membership.deletedAt === null
+        ) {
+          membership =
+            await transaction.user.update({
+              where: {
+                id: membership.id,
+              },
+              data: {
+                status: "ACTIVE",
+                emailVerifiedAt:
+                  currentUser.emailVerifiedAt,
+                phoneVerifiedAt:
+                  currentUser.phoneVerifiedAt,
+                passwordHash:
+                  effectivePasswordHash,
+              },
+              select: {
+                id: true,
+                storefrontId: true,
+                status: true,
+                emailVerifiedAt: true,
+                deletedAt: true,
+              },
+            });
+        }
+
+        if (
+          membership.status !== "ACTIVE" ||
+          membership.emailVerifiedAt ===
+            null ||
+          membership.deletedAt !== null
+        ) {
+          if (
+            sessionStorefront.id ===
+            storefront.id
+          ) {
+            throw new AuthServiceError(
+              "ACCOUNT_UNAVAILABLE",
+              "The account is unavailable.",
+            );
+          }
+
+          continue;
+        }
+
+        const storefrontSessionToken =
+          createOpaqueToken();
+
+        const createdSession =
+          await transaction.session.create({
+            data: {
+              userId: membership.id,
+              storefrontId:
+                membership.storefrontId,
+              tokenHash: hashOpaqueToken(
+                storefrontSessionToken,
+                input.tokenSecret,
+              ),
+              expiresAt,
+              lastSeenAt: now,
+              ipAddress:
+                input.ipAddress?.slice(0, 64) ??
+                null,
+              userAgent:
+                input.userAgent?.slice(
+                  0,
+                  1000,
+                ) ?? null,
+            },
+            select: {
+              id: true,
+              expiresAt: true,
+            },
+          });
+
+        storefrontSessions.push({
+          id: createdSession.id,
+          storefrontId:
+            membership.storefrontId,
+          storefrontCode:
+            sessionStorefront.code,
+          userId: membership.id,
+          sessionToken:
+            storefrontSessionToken,
+          expiresAt:
+            createdSession.expiresAt,
+        });
+      }
+
+      const targetSession =
+        storefrontSessions.find(
+          (candidate) =>
+            candidate.storefrontId ===
+            storefront.id,
+        );
+
+      if (!targetSession) {
+        throw new AuthServiceError(
+          "ACCOUNT_UNAVAILABLE",
+          "The account is unavailable.",
+        );
+      }
+
       return {
-        createdSession,
+        targetSession,
+        storefrontSessions,
         currentUser,
       };
     },
   );
 
   return {
-    sessionToken,
+    sessionToken:
+      session.targetSession.sessionToken,
     session: {
-      id: session.createdSession.id,
+      id: session.targetSession.id,
       expiresAt:
-        session.createdSession.expiresAt,
+        session.targetSession.expiresAt,
     },
     user: {
-      id: session.currentUser.id,
+      id: session.targetSession.userId,
       storefrontId:
-        session.currentUser.storefrontId,
+        session.targetSession.storefrontId,
       email: session.currentUser.email,
       status: session.currentUser.status,
     },
+    storefrontSessions:
+      session.storefrontSessions.map(
+        (storefrontSession) => ({
+          storefrontCode:
+            storefrontSession.storefrontCode,
+          sessionToken:
+            storefrontSession.sessionToken,
+          expiresAt:
+            storefrontSession.expiresAt,
+        }),
+      ),
   };
 }
 
@@ -766,6 +1161,79 @@ export async function revokeSessionToken(
     });
 
   return result.count === 1;
+}
+
+export async function revokeCustomerAccountSessions(
+  input: {
+    sessionToken: string;
+    tokenSecret: string;
+    reason?: string;
+  },
+): Promise<string[]> {
+  const tokenHash = hashOpaqueToken(
+    input.sessionToken,
+    input.tokenSecret,
+  );
+
+  const session =
+    await prisma.session.findUnique({
+      where: {
+        tokenHash,
+      },
+      select: {
+        user: {
+          select: {
+            customerAccountId: true,
+          },
+        },
+      },
+    });
+
+  const customerAccountId =
+    session?.user.customerAccountId;
+
+  if (!customerAccountId) {
+    await revokeSessionToken(input);
+    return [];
+  }
+
+  const memberships =
+    await prisma.user.findMany({
+      where: {
+        customerAccountId,
+      },
+      select: {
+        storefront: {
+          select: {
+            code: true,
+          },
+        },
+      },
+    });
+
+  await prisma.session.updateMany({
+    where: {
+      user: {
+        customerAccountId,
+      },
+      revokedAt: null,
+    },
+    data: {
+      revokedAt: new Date(),
+      revokedReason:
+        input.reason?.slice(0, 500) ??
+        "USER_LOGOUT",
+    },
+  });
+
+  return Array.from(
+    new Set(
+      memberships.map(
+        (membership) =>
+          membership.storefront.code,
+      ),
+    ),
+  );
 }
 
 export async function revokeAllUserSessions(

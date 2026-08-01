@@ -702,6 +702,12 @@ async function main(): Promise<void> {
       },
     });
 
+    await prisma.customerAccount.deleteMany({
+      where: {
+        normalizedEmail,
+      },
+    });
+
     if (createdProductIds.length > 0) {
       await prisma.product.deleteMany({
         where: {

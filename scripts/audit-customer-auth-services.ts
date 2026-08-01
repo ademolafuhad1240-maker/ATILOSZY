@@ -209,7 +209,7 @@ async function main(): Promise<void> {
     );
 
     console.log(
-      "PASS: Storefront-scoped registration completed.",
+      "PASS: Platform customer registration completed.",
     );
 
     await expectAuthError(
@@ -233,8 +233,8 @@ async function main(): Promise<void> {
       "PASS: Duplicate storefront registration was rejected.",
     );
 
-    const zeeRegistration =
-      await registerCustomer({
+    await expectAuthError(
+      registerCustomer({
         storefrontCode: "ZBF",
         email: emailInput,
         phone: phoneInput,
@@ -245,12 +245,9 @@ async function main(): Promise<void> {
         privacyAccepted: true,
         tokenSecret:
           AUDIT_TOKEN_SECRET,
-      });
-
-    assertCondition(
-      zeeRegistration.user.id !==
-        atiloszyRegistration.user.id,
-      "Cross-store registrations shared a user ID.",
+      }),
+      "ACCOUNT_CONFLICT",
+      "The same SORVYRA account was registered twice across storefronts.",
     );
 
     const crossStoreCount =
@@ -261,12 +258,12 @@ async function main(): Promise<void> {
       });
 
     assertCondition(
-      crossStoreCount === 2,
-      "The same identity was not isolated across storefronts.",
+      crossStoreCount === 1,
+      "Registration duplicated the platform customer before first sign-in.",
     );
 
     console.log(
-      "PASS: The same identity remained isolated across storefronts.",
+      "PASS: Duplicate registration is rejected across storefronts.",
     );
 
     await expectAuthError(
@@ -398,6 +395,57 @@ async function main(): Promise<void> {
       reason:
         "EMAIL_ONLY_AUDIT_COMPLETE",
     });
+
+    const crossStoreLogin =
+      await loginCustomer({
+        storefrontCode: "ZBF",
+        email: emailInput,
+        password,
+        tokenSecret:
+          AUDIT_TOKEN_SECRET,
+      });
+
+    assertCondition(
+      crossStoreLogin.user.storefrontId ===
+        zeeBeauty.id,
+      "The platform account did not receive ZEE Beauty access.",
+    );
+
+    const linkedUsers =
+      await prisma.user.findMany({
+        where: {
+          normalizedEmail,
+        },
+        select: {
+          customerAccountId: true,
+          storefrontId: true,
+        },
+      });
+
+    assertCondition(
+      linkedUsers.length === 2 &&
+        linkedUsers.every(
+          (linkedUser) =>
+            linkedUser.customerAccountId ===
+            linkedUsers[0]
+              ?.customerAccountId,
+        ),
+      "Cross-store customer memberships did not share one platform identity.",
+    );
+
+    await revokeSession({
+      storefrontCode: "ZBF",
+      sessionToken:
+        crossStoreLogin.sessionToken,
+      tokenSecret:
+        AUDIT_TOKEN_SECRET,
+      reason:
+        "CROSS_STOREFRONT_AUDIT_COMPLETE",
+    });
+
+    console.log(
+      "PASS: One verified account signs in across storefronts while retaining local user memberships.",
+    );
 
     await expectAuthError(
       verifyCustomerEmail({
@@ -658,6 +706,12 @@ async function main(): Promise<void> {
     );
   } finally {
     await prisma.user.deleteMany({
+      where: {
+        normalizedEmail,
+      },
+    });
+
+    await prisma.customerAccount.deleteMany({
       where: {
         normalizedEmail,
       },

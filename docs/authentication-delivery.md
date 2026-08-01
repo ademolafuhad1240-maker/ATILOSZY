@@ -1,7 +1,8 @@
 # SORVYRA authentication delivery
 
-SORVYRA STORE keeps customer authentication storefront-scoped while
-using one provider-neutral message-delivery contract. Registration,
+SORVYRA STORE uses one platform customer account across every active
+storefront while keeping each storefront session, cart, checkout,
+order and currency boundary isolated. Registration,
 verification resends and password recovery create their tokens and
 challenges on the server. Provider adapters receive only the message
 details required to deliver those server-generated values.
@@ -83,6 +84,14 @@ sending email is sufficient.
 
 - Registration requires a fully configured provider before any
   customer record is created by the public API.
+- One email may register only one SORVYRA STORE customer account.
+- After verification, one successful sign-in establishes a separate
+  protected session for every active storefront. Those sessions map
+  to storefront-local customer memberships; they do not combine carts
+  or orders.
+- Existing storefront customer records are linked to a platform
+  customer identity by an additive migration. The migration does not
+  delete or rewrite carts, orders, payments or inventory.
 - A successful provider request means the message was accepted for
   delivery. It does not prove that the recipient received or opened it.
 - Email verification links point to the selected storefront's
@@ -92,8 +101,9 @@ sending email is sufficient.
 - Phone messages are optional. When the combined provider is selected,
   they contain the server-generated code and a storefront verification
   link carrying only the challenge identifier.
-- Password-reset links point to the selected storefront's
-  `/account/reset-password` page.
+- Password-reset links use one of the account's existing storefront
+  memberships and update the password across every linked membership.
+- Password reset revokes active sessions across all storefronts.
 - Resend requests use the verification database record as their
   idempotency identity.
 - Provider timeouts, network failures, HTTP rejections and malformed
@@ -113,12 +123,15 @@ ready. In Railway staging:
 2. Add the Resend credential as a sealed variable.
 3. Use a verified Resend staging domain.
 4. Change `AUTH_DELIVERY_PROVIDER` to `resend`.
-5. Redeploy and create a temporary storefront account.
-6. Confirm the email link activates only that storefront account.
+5. Redeploy and create a temporary SORVYRA STORE account from one
+   storefront.
+6. Confirm the email link activates the platform customer account.
 7. Confirm the stored phone remains unverified.
-8. Confirm password recovery sends a single-use storefront-specific
-   link.
-9. Remove the temporary account and return the provider to `disabled`
+8. Sign in once and confirm account access works across multiple
+   storefronts while each cart remains independent.
+9. Confirm password recovery sends a single-use link and invalidates
+   sessions across storefronts.
+10. Remove the temporary account and return the provider to `disabled`
     if staging delivery should not remain available.
 
 Do not use live customer lists for staging tests. If optional Twilio
@@ -131,6 +144,7 @@ Run the deterministic adapter audit:
 
 ```text
 npm run audit:auth-delivery-adapters
+npm run audit:platform-customer-access
 ```
 
 The audit mocks all provider HTTP requests. It covers disabled-default

@@ -38,6 +38,7 @@ export interface LoginCustomerInput {
   ipAddress?: string;
   userAgent?: string;
   sessionTtlMinutes?: number;
+  createAllStorefrontSessions?: boolean;
 }
 
 export interface LoginResult {
@@ -52,6 +53,11 @@ export interface LoginResult {
     email: string;
     status: string;
   };
+  storefrontSessions: Array<{
+    storefrontCode: string;
+    sessionToken: string;
+    expiresAt: Date;
+  }>;
 }
 
 export interface PlatformAdministratorLoginInput {

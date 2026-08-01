@@ -119,7 +119,7 @@ export function AuthShell({
         <div className={styles.layout}>
           <section className={styles.intro}>
             <span className={styles.kicker}>
-              Private storefront account
+              One protected SORVYRA account
             </span>
 
             <h1 className={styles.title}>
@@ -136,7 +136,7 @@ export function AuthShell({
               <span
                 className={styles.trustItem}
               >
-                Store-isolated account
+                Storefront-isolated commerce
               </span>
 
               <span

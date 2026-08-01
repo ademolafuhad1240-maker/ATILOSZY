@@ -144,9 +144,9 @@ export function LoginForm({
         </h2>
 
         <p className={styles.panelText}>
-          Use the email and password
-          registered specifically with{" "}
-          {storefront.shortName}.
+          Use your SORVYRA STORE email
+          and password. The same account
+          works across every storefront.
         </p>
       </div>
 
@@ -226,7 +226,7 @@ export function LoginForm({
           Forgot your password?
         </Link>
         {" · "}
-        New to this storefront?{" "}
+        New to SORVYRA STORE?{" "}
         <Link
           href={storefront.registerHref}
           className={styles.inlineLink}
@@ -359,10 +359,10 @@ export function RegistrationForm({
         </h2>
 
         <p className={styles.panelText}>
-          This account belongs only to{" "}
-          {storefront.name}. Accounts,
-          carts and orders remain separate
-          between SORVYRA storefronts.
+          Create one SORVYRA STORE
+          account for every storefront.
+          Each storefront still keeps its
+          own cart, checkout and orders.
         </p>
       </div>
 
@@ -487,7 +487,7 @@ export function RegistrationForm({
           />
 
           <span>
-            I accept this storefront’s
+            I accept the SORVYRA STORE
             customer terms.
           </span>
         </label>
@@ -549,12 +549,12 @@ export function RegistrationForm({
         >
           {submitting
             ? "Creating account…"
-            : "Create storefront account"}
+            : "Create SORVYRA account"}
         </button>
       </form>
 
       <p className={styles.formFooter}>
-        Already registered here?{" "}
+        Already have a SORVYRA account?{" "}
         <Link
           href={storefront.loginHref}
           className={styles.inlineLink}

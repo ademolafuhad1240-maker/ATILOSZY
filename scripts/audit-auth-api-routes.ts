@@ -603,6 +603,22 @@ async function main(): Promise<void> {
       "Login did not set a session cookie.",
     );
 
+    for (const storefrontCode of [
+      "ati",
+      "zbf",
+      "den",
+      "zch",
+    ]) {
+      assertCondition(
+        login.setCookie
+          .toLowerCase()
+          .includes(
+            `sorvyra_session_${storefrontCode}=`,
+          ),
+        `Login did not establish the ${storefrontCode.toUpperCase()} storefront session.`,
+      );
+    }
+
     assertCondition(
       !responseContainsKey(
         login.json,
@@ -642,7 +658,7 @@ async function main(): Promise<void> {
     );
 
     console.log(
-      "PASS: Login sets a protected storefront-specific cookie.",
+      "PASS: One login sets protected sessions for every storefront.",
     );
 
     const currentSession =
@@ -753,6 +769,14 @@ async function main(): Promise<void> {
     throw error;
   } finally {
     await prisma.user.deleteMany({
+      where: {
+        normalizedEmail: {
+          in: normalizedEmails,
+        },
+      },
+    });
+
+    await prisma.customerAccount.deleteMany({
       where: {
         normalizedEmail: {
           in: normalizedEmails,
