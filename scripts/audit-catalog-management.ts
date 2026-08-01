@@ -139,14 +139,19 @@ function main(): void {
       "Product photos",
       "Make primary",
       "catalogImages",
+      "Product URL name",
+      "Spaces and capital letters",
       "reserved by",
       "/api/auth/logout",
       "Sign out",
     ]) &&
+      !managerUi.includes(
+        'pattern="[a-z0-9]+(?:-[a-z0-9]+)*"',
+      ) &&
       managerPortal.includes(
         "/manager/catalogue?storefrontCode=",
       ),
-    "The approved manager portal is missing catalogue, price or inventory controls.",
+    "The approved manager portal is missing catalogue controls or still blocks readable product URL names before server normalization.",
   );
   console.log(
     "PASS: Approved managers receive product, publication, pricing, image and inventory controls.",

@@ -1522,15 +1522,23 @@ export default function CatalogueManager({
                   }
                 >
                   <span>
-                    Storefront URL name
+                    Product URL name
                   </span>
                   <input
+                    aria-describedby="catalog-listing-slug-help"
                     name="listingSlug"
-                    placeholder="classic-leather-shoe"
-                    pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                    placeholder="Classic Leather Shoe"
                     maxLength={140}
                     required
                   />
+                  <small
+                    id="catalog-listing-slug-help"
+                  >
+                    Spaces and capital letters
+                    are accepted. SORVYRA
+                    converts this into a safe,
+                    hyphenated storefront URL.
+                  </small>
                 </label>
                 <label
                   className={
