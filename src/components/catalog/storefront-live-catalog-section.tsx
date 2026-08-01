@@ -223,6 +223,24 @@ export default async function StorefrontLiveCatalogSection({
                           : variant.title}
                       </p>
 
+                      <p className={styles.stock}>
+                        Per {variant.sellingUnitLabel}
+                        {variant.unitsPerSellingUnit > 1
+                          ? ` (${variant.unitsPerSellingUnit} pieces)`
+                          : ""}
+                      </p>
+
+                      {product.variants.length === 1 &&
+                      variant.quantityPriceTiers[0] ? (
+                        <p className={styles.stock}>
+                          Buy {variant.quantityPriceTiers[0].minimumQuantity}+ at {" "}
+                          {formatMoney(
+                            variant.quantityPriceTiers[0].unitAmount,
+                            variant.price.currencyCode,
+                          )} each
+                        </p>
+                      ) : null}
+
                       <p
                         className={
                           styles.price
@@ -283,6 +301,7 @@ export default async function StorefrontLiveCatalogSection({
                         cartHref={storefront.cartHref}
                         availableQuantity={variant.availableQuantity}
                         allowBackorder={variant.allowBackorder}
+                        sellingUnitLabel={variant.sellingUnitLabel}
                         disabled={!variant.isInStock}
                       />
                     )}

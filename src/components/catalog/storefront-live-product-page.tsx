@@ -296,6 +296,27 @@ export async function StorefrontLiveProductPage({
                   ) : null}
                 </p>
 
+                <p className={styles.stock}>
+                  Price per {variant.sellingUnitLabel}
+                  {variant.unitsPerSellingUnit > 1
+                    ? ` (${variant.unitsPerSellingUnit} pieces)`
+                    : ""}
+                </p>
+
+                {variant.quantityPriceTiers.length > 0 ? (
+                  <ul className={styles.optionList}>
+                    {variant.quantityPriceTiers.map((tier) => (
+                      <li className={styles.option} key={tier.minimumQuantity}>
+                        Buy {tier.minimumQuantity}+ {variant.sellingUnitLabel}: {" "}
+                        {formatMoney(
+                          tier.unitAmount,
+                          variant.price.currencyCode,
+                        )} each
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
                 <p
                   className={
                     styles.stock
@@ -330,6 +351,9 @@ export async function StorefrontLiveProductPage({
                   allowBackorder={
                     variant
                       .allowBackorder
+                  }
+                  sellingUnitLabel={
+                    variant.sellingUnitLabel
                   }
                   disabled={
                     !variant.isInStock

@@ -348,6 +348,10 @@ function orderView(
         variantTitle:
           item.variantTitle,
         sku: item.sku,
+        sellingUnitLabel:
+          item.sellingUnitLabel,
+        unitsPerSellingUnit:
+          item.unitsPerSellingUnit,
         quantity: item.quantity,
         lineTotal:
           item.lineTotal.toFixed(

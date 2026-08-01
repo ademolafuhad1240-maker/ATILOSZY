@@ -127,6 +127,16 @@ async function createAuditProduct(
       sku:
         `${input.skuPrefix}-CSVC-${input.token}`,
       title: "Audit variant",
+      sellingUnitLabel:
+        input.amount ===
+        "15000.00"
+          ? "dozen"
+          : "item",
+      unitsPerSellingUnit:
+        input.amount ===
+        "15000.00"
+          ? 12
+          : 1,
       price: {
         amount: input.amount,
         compareAtAmount:
@@ -134,6 +144,17 @@ async function createAuditProduct(
           "15000.00"
             ? "18000.00"
             : null,
+        quantityTiers:
+          input.amount ===
+          "15000.00"
+            ? [
+                {
+                  minimumQuantity: 3,
+                  unitAmount:
+                    "13000.00",
+                },
+              ]
+            : [],
       },
       initialStock:
         input.initialStock,
@@ -347,8 +368,37 @@ async function main(): Promise<void> {
       3,
     );
 
+    assert.equal(
+      afterMerge.items[0]
+        .unitPrice,
+      "13000.00",
+    );
+
+    assert.equal(
+      afterMerge.items[0]
+        .sellingUnitLabel,
+      "dozen",
+    );
+
+    assert.equal(
+      afterMerge.items[0]
+        .unitsPerSellingUnit,
+      12,
+    );
+
+    assert.equal(
+      afterMerge.items[0]
+        .appliedMinimumQuantity,
+      3,
+    );
+
+    assert.equal(
+      afterMerge.subtotal,
+      "39000.00",
+    );
+
     console.log(
-      "PASS: Adding the same variant merges its cart quantity.",
+      "PASS: Adding the same selling unit merges quantity and activates the server-side price tier.",
     );
 
     const cartItem =
@@ -369,7 +419,7 @@ async function main(): Promise<void> {
 
     assert.equal(
       afterQuantityUpdate.subtotal,
-      "60000.00",
+      "52000.00",
     );
 
     console.log(
@@ -523,7 +573,7 @@ async function main(): Promise<void> {
     assert.equal(
       beforeRefresh.items[0]
         .unitPrice,
-      "15000.00",
+      "13000.00",
     );
 
     const afterRefresh =

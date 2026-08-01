@@ -521,11 +521,21 @@ export function StorefrontCart({
                           {formatMoney(
                             item.unitPrice,
                           )}
-                          {" each · "}
+                          {` per ${item.sellingUnitLabel} · `}
                           {formatMoney(
                             item.lineTotal,
                           )}
                           {" total"}
+                        </p>
+
+                        <p className={styles.itemMeta}>
+                          {item.unitsPerSellingUnit > 1
+                            ? `${item.unitsPerSellingUnit} pieces in each ${item.sellingUnitLabel}`
+                            : `Sold by ${item.sellingUnitLabel}`}
+                          {item.appliedMinimumQuantity !== null &&
+                          Number(item.quantityDiscountPerUnit) > 0
+                            ? ` · Bulk price applied from ${item.appliedMinimumQuantity}`
+                            : ""}
                         </p>
                       </div>
 
@@ -542,7 +552,7 @@ export function StorefrontCart({
                           min={1}
                           max={999}
                           inputMode="numeric"
-                          aria-label={`Quantity for ${item.productName}`}
+                          aria-label={`Quantity in ${item.sellingUnitLabel} for ${item.productName}`}
                           value={
                             quantities[
                               item.id

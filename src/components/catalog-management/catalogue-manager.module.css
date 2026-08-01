@@ -241,6 +241,52 @@
   flex-wrap: wrap;
 }
 
+.quantityPricing {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid
+    rgba(20, 31, 36, 0.1);
+  padding-top: 0.85rem;
+}
+
+.quantityPricingHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.quantityPricingHeading p,
+.quantityPricingEmpty,
+.quantityPricingNote {
+  margin: 0.2rem 0 0;
+  color: #687278;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.quantityTierList {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.quantityTier {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr)
+    auto;
+  align-items: end;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: #f4f1e8;
+}
+
+.quantityTier .dangerLink {
+  min-height: 2.8rem;
+}
+
 .dangerLink {
   border: 0;
   background: transparent;
@@ -566,12 +612,17 @@
   }
 
   .variantHeading,
-  .variantCardHeading {
+  .variantCardHeading,
+  .quantityPricingHeading {
     align-items: stretch;
     flex-direction: column;
   }
 
   .variantGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .quantityTier {
     grid-template-columns: 1fr;
   }
 

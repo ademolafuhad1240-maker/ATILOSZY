@@ -74,6 +74,9 @@ function main(): void {
   const publicProductPage = read(
     "src/components/catalog/storefront-live-product-page.tsx",
   );
+  const schema = read("prisma/schema.prisma");
+  const cartService = read("src/server/cart/service.ts");
+  const checkoutService = read("src/server/checkout/service.ts");
 
   assertCondition(
     includesAll(service, [
@@ -163,9 +166,9 @@ function main(): void {
       "Existing variants cannot be deleted.",
       "variantOption.deleteMany",
       "candidate.status",
-    ]) &&
+      ]) &&
       includesAll(managerUi, [
-        "Sizes, colours and stock",
+        "Variants, selling units and stock",
         "Add another variant",
         "catalogVariants",
         'name="variantId"',
@@ -183,6 +186,39 @@ function main(): void {
   );
   console.log(
     "PASS: Managers control size and colour combinations with variant-specific pricing and stock, and customers must choose the exact variant.",
+  );
+
+  assertCondition(
+    includesAll(schema, [
+      "sellingUnitLabel",
+      "unitsPerSellingUnit",
+      "StorefrontPriceTier",
+      "quantityDiscountMinimumSnapshot",
+      "quantityDiscountMinimum",
+    ]) &&
+      includesAll(managerUi, [
+        "Selling unit name",
+        "Pieces in each selling unit",
+        "Quantity discounts",
+        "Add price break",
+        "minimumQuantity",
+        "unitAmount",
+      ]) &&
+      includesAll(cartService, [
+        "resolveQuantityPrice",
+        "baseUnitPrice",
+        "quantityDiscountMinimumSnapshot",
+      ]) &&
+      includesAll(checkoutService, [
+        "resolveQuantityPrice",
+        "productDiscountTotal",
+        "quantityDiscountMinimum",
+        "sellingUnitLabel",
+      ]),
+    "Selling units or server-side quantity discount calculations are incomplete.",
+  );
+  console.log(
+    "PASS: Selling units and historical quantity price tiers are enforced from catalogue through cart, checkout and order snapshots.",
   );
 
   assertCondition(

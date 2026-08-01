@@ -60,6 +60,9 @@ interface EditorVariant {
   title: string;
   size: string;
   color: string;
+  sellingUnitLabel: string;
+  unitsPerSellingUnit: string;
+  quantityPriceTiers: EditorQuantityPriceTier[];
   priceAmount: string;
   compareAtAmount: string;
   costAmount: string;
@@ -68,6 +71,12 @@ interface EditorVariant {
   isTracked: boolean;
   allowBackorder: boolean;
   status: "ACTIVE" | "INACTIVE" | "DISCONTINUED";
+}
+
+interface EditorQuantityPriceTier {
+  key: string;
+  minimumQuantity: string;
+  unitAmount: string;
 }
 
 function stringValue(
@@ -151,6 +160,12 @@ function productPayload(
     title: string;
     size: string;
     color: string;
+    sellingUnitLabel: string;
+    unitsPerSellingUnit: number;
+    quantityPriceTiers: Array<{
+      minimumQuantity: number;
+      unitAmount: string;
+    }>;
     priceAmount: string;
     compareAtAmount: string;
     costAmount: string;
@@ -757,6 +772,13 @@ function ProductVariantFields({
           title: variant.title,
           size: variantOption(variant, ["size"]),
           color: variantOption(variant, ["colour", "color"]),
+          sellingUnitLabel: variant.sellingUnitLabel,
+          unitsPerSellingUnit: String(variant.unitsPerSellingUnit),
+          quantityPriceTiers: variant.quantityPriceTiers.map((tier) => ({
+            key: `${variant.id}-${tier.minimumQuantity}`,
+            minimumQuantity: String(tier.minimumQuantity),
+            unitAmount: tier.unitAmount,
+          })),
           priceAmount: variant.price.amount,
           compareAtAmount: variant.price.compareAtAmount ?? "",
           costAmount: variant.price.costAmount ?? "",
@@ -772,6 +794,9 @@ function ProductVariantFields({
             title: "Standard",
             size: "",
             color: "",
+            sellingUnitLabel: "item",
+            unitsPerSellingUnit: "1",
+            quantityPriceTiers: [],
             priceAmount: "",
             compareAtAmount: "",
             costAmount: "",
@@ -806,6 +831,13 @@ function ProductVariantFields({
           title: `Variant ${current.length + 1}`,
           size: "",
           color: "",
+          sellingUnitLabel: previous?.sellingUnitLabel ?? "item",
+          unitsPerSellingUnit: previous?.unitsPerSellingUnit ?? "1",
+          quantityPriceTiers:
+            previous?.quantityPriceTiers.map((tier, tierIndex) => ({
+              ...tier,
+              key: `new-${Date.now()}-${current.length}-${tierIndex}`,
+            })) ?? [],
           priceAmount: previous?.priceAmount ?? "",
           compareAtAmount: previous?.compareAtAmount ?? "",
           costAmount: previous?.costAmount ?? "",
@@ -825,6 +857,15 @@ function ProductVariantFields({
     title: variant.title,
     size: variant.size,
     color: variant.color,
+    sellingUnitLabel: variant.sellingUnitLabel,
+    unitsPerSellingUnit: Number.parseInt(
+      variant.unitsPerSellingUnit || "1",
+      10,
+    ),
+    quantityPriceTiers: variant.quantityPriceTiers.map((tier) => ({
+      minimumQuantity: Number.parseInt(tier.minimumQuantity, 10),
+      unitAmount: tier.unitAmount,
+    })),
     priceAmount: variant.priceAmount,
     compareAtAmount: variant.compareAtAmount,
     costAmount: variant.costAmount,
@@ -849,10 +890,10 @@ function ProductVariantFields({
       />
       <div className={styles.variantHeading}>
         <div>
-          <h3>Sizes, colours and stock</h3>
+          <h3>Variants, selling units and stock</h3>
           <p>
             Add one row for every sellable combination. Each combination has
-            its own SKU, price and inventory.
+            its own SKU, pack size, price, discounts and inventory.
           </p>
         </div>
         <button
@@ -932,6 +973,35 @@ function ProductVariantFields({
                 />
               </label>
               <label className={styles.field}>
+                <span>Selling unit name</span>
+                <input
+                  value={variant.sellingUnitLabel}
+                  onChange={(event) =>
+                    updateVariant(variant.key, {
+                      sellingUnitLabel: event.target.value,
+                    })
+                  }
+                  maxLength={80}
+                  placeholder="item, 3-piece pack, half-dozen, dozen"
+                  required
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Pieces in each selling unit</span>
+                <input
+                  value={variant.unitsPerSellingUnit}
+                  onChange={(event) =>
+                    updateVariant(variant.key, {
+                      unitsPerSellingUnit: event.target.value,
+                    })
+                  }
+                  type="number"
+                  min={1}
+                  step={1}
+                  required
+                />
+              </label>
+              <label className={styles.field}>
                 <span>Selling price ({catalog.storefront.currencyCode})</span>
                 <input
                   value={variant.priceAmount}
@@ -973,7 +1043,7 @@ function ProductVariantFields({
               </label>
               {!variant.id ? (
                 <label className={styles.field}>
-                  <span>Opening stock</span>
+                  <span>Opening stock (selling units)</span>
                   <input
                     value={variant.initialStock ?? "0"}
                     onChange={(event) =>
@@ -989,7 +1059,7 @@ function ProductVariantFields({
                 </label>
               ) : null}
               <label className={styles.field}>
-                <span>Reorder alert level</span>
+                <span>Reorder alert (selling units)</span>
                 <input
                   value={variant.reorderLevel}
                   onChange={(event) =>
@@ -1021,6 +1091,120 @@ function ProductVariantFields({
                 </select>
               </label>
             </div>
+
+            <section className={styles.quantityPricing}>
+              <div className={styles.quantityPricingHeading}>
+                <div>
+                  <strong>Quantity discounts</strong>
+                  <p>
+                    Optional. Set a lower price per selling unit when the
+                    customer buys at least this quantity.
+                  </p>
+                </div>
+                <button
+                  className={styles.secondaryButton}
+                  type="button"
+                  disabled={variant.quantityPriceTiers.length >= 10}
+                  onClick={() =>
+                    updateVariant(variant.key, {
+                      quantityPriceTiers: [
+                        ...variant.quantityPriceTiers,
+                        {
+                          key: `tier-${Date.now()}-${variant.quantityPriceTiers.length}`,
+                          minimumQuantity: "3",
+                          unitAmount: "",
+                        },
+                      ],
+                    })
+                  }
+                >
+                  Add price break
+                </button>
+              </div>
+
+              {variant.quantityPriceTiers.length === 0 ? (
+                <p className={styles.quantityPricingEmpty}>
+                  No quantity discount. Every selling unit uses the regular
+                  price.
+                </p>
+              ) : (
+                <div className={styles.quantityTierList}>
+                  {variant.quantityPriceTiers.map((tier, tierIndex) => (
+                    <div className={styles.quantityTier} key={tier.key}>
+                      <label className={styles.field}>
+                        <span>Minimum selling units</span>
+                        <input
+                          type="number"
+                          min={2}
+                          step={1}
+                          value={tier.minimumQuantity}
+                          onChange={(event) =>
+                            updateVariant(variant.key, {
+                              quantityPriceTiers:
+                                variant.quantityPriceTiers.map(
+                                  (candidate, candidateIndex) =>
+                                    candidateIndex === tierIndex
+                                      ? {
+                                          ...candidate,
+                                          minimumQuantity: event.target.value,
+                                        }
+                                      : candidate,
+                                ),
+                            })
+                          }
+                          required
+                        />
+                      </label>
+                      <label className={styles.field}>
+                        <span>
+                          Price each ({catalog.storefront.currencyCode})
+                        </span>
+                        <input
+                          inputMode="decimal"
+                          value={tier.unitAmount}
+                          onChange={(event) =>
+                            updateVariant(variant.key, {
+                              quantityPriceTiers:
+                                variant.quantityPriceTiers.map(
+                                  (candidate, candidateIndex) =>
+                                    candidateIndex === tierIndex
+                                      ? {
+                                          ...candidate,
+                                          unitAmount: event.target.value,
+                                        }
+                                      : candidate,
+                                ),
+                            })
+                          }
+                          placeholder="Lower than the regular price"
+                          required
+                        />
+                      </label>
+                      <button
+                        className={styles.dangerLink}
+                        type="button"
+                        onClick={() =>
+                          updateVariant(variant.key, {
+                            quantityPriceTiers:
+                              variant.quantityPriceTiers.filter(
+                                (_candidate, candidateIndex) =>
+                                  candidateIndex !== tierIndex,
+                              ),
+                          })
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className={styles.quantityPricingNote}>
+                Stock and customer quantity count selling units. For example,
+                5 dozen means 5 stock units containing 60 pieces in total.
+              </p>
+            </section>
 
             <div className={styles.variantChecks}>
               <label className={styles.check}>
@@ -1176,7 +1360,7 @@ function ProductFields({
 
       <label className={styles.field}>
         <span>
-          Maximum per order
+          Maximum selling units per order
         </span>
         <input
           name="maxPerOrder"
@@ -1934,7 +2118,7 @@ export default function CatalogueManager({
                             0,
                           )}
                         </strong>
-                        <span>available</span>
+                        <span>selling units available</span>
                         <small>
                           {product.variants.reduce(
                             (total, variant) =>
@@ -2031,7 +2215,8 @@ export default function CatalogueManager({
                             {product.variants.map((variant) => (
                               <option key={variant.id} value={variant.id}>
                                 {variant.title} · {variant.sku} ·{" "}
-                                {variant.inventory.availableQuantity} available
+                                {variant.inventory.availableQuantity}{" "}
+                                {variant.sellingUnitLabel} available
                               </option>
                             ))}
                           </select>
@@ -2070,7 +2255,7 @@ export default function CatalogueManager({
                           }
                         >
                           <span>
-                            Quantity change
+                            Selling-unit quantity change
                           </span>
                           <input
                             name="quantityDelta"
@@ -2135,6 +2320,7 @@ export default function CatalogueManager({
                                   {
                                     movement.quantityDelta
                                   }{" "}
+                                  {variant.sellingUnitLabel}{" "}
                                   ·{" "}
                                   {readable(
                                     movement.type,

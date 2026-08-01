@@ -22,6 +22,7 @@ import {
   normalizeImageUrl,
   normalizeSku,
   normalizeSlug,
+  moneyToMinorUnits,
   optionalText,
   requireInteger,
   requireMoney,
@@ -224,10 +225,56 @@ function normalizeCatalogVariant(
           `${label} cost price`,
           true,
         );
+  if ((input.price.quantityTiers?.length ?? 0) > 10) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} cannot have more than 10 quantity discounts.`,
+    );
+  }
+
+  const quantityTiers = (input.price.quantityTiers ?? [])
+    .map((tier, tierIndex) => ({
+      minimumQuantity: requireInteger(
+        tier.minimumQuantity,
+        `${label} discount ${tierIndex + 1} minimum quantity`,
+        2,
+      ),
+      unitAmount: requireMoney(
+        tier.unitAmount,
+        `${label} discount ${tierIndex + 1} unit price`,
+      ),
+    }))
+    .sort((left, right) => left.minimumQuantity - right.minimumQuantity);
+
+  if (
+    new Set(quantityTiers.map((tier) => tier.minimumQuantity)).size !==
+    quantityTiers.length
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} discount quantities must be unique.`,
+    );
+  }
+
+  for (const [tierIndex, tier] of quantityTiers.entries()) {
+    const previousAmount =
+      tierIndex === 0 ? amount : quantityTiers[tierIndex - 1]!.unitAmount;
+
+    if (
+      moneyToMinorUnits(tier.unitAmount) >=
+      moneyToMinorUnits(previousAmount)
+    ) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        `${label} quantity discounts must become cheaper as quantity increases.`,
+      );
+    }
+  }
 
   if (
     compareAtAmount !== null &&
-    Number(compareAtAmount) <= Number(amount)
+    moneyToMinorUnits(compareAtAmount) <=
+      moneyToMinorUnits(amount)
   ) {
     throw new CatalogServiceError(
       "VALIDATION",
@@ -281,6 +328,14 @@ function normalizeCatalogVariant(
     barcode: optionalText(input.barcode, `${label} barcode`, 80),
     title: requireText(input.title, `${label} title`, 240),
     status,
+    sellingUnitLabel:
+      optionalText(input.sellingUnitLabel, `${label} selling unit`, 80) ??
+      "item",
+    unitsPerSellingUnit: requireInteger(
+      input.unitsPerSellingUnit ?? 1,
+      `${label} pieces per selling unit`,
+      1,
+    ),
     weightGrams:
       input.weightGrams === null || input.weightGrams === undefined
         ? null
@@ -293,6 +348,7 @@ function normalizeCatalogVariant(
       costAmount,
       startsAt: input.price.startsAt ?? null,
       endsAt: input.price.endsAt ?? null,
+      quantityTiers,
     },
     inventory: {
       initialStock,
@@ -516,6 +572,8 @@ export async function createCatalogProduct(
                 barcode: variant.barcode,
                 title: variant.title,
                 status: variant.status,
+                sellingUnitLabel: variant.sellingUnitLabel,
+                unitsPerSellingUnit: variant.unitsPerSellingUnit,
                 isDefault: index === 0,
                 weightGrams: variant.weightGrams,
                 options:
@@ -533,6 +591,12 @@ export async function createCatalogProduct(
                     startsAt: variant.price.startsAt,
                     endsAt: variant.price.endsAt,
                     isActive: true,
+                    quantityTiers:
+                      variant.price.quantityTiers.length > 0
+                        ? {
+                            create: variant.price.quantityTiers,
+                          }
+                        : undefined,
                   },
                 },
                 inventory: {

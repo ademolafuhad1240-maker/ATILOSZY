@@ -48,6 +48,7 @@ import {
   normalizeSku,
   normalizeSlug,
   normalizeStorefrontCode,
+  moneyToMinorUnits,
   optionalText,
   requireInteger,
   requireMoney,
@@ -109,6 +110,12 @@ interface NormalizedManagedVariant {
   isTracked: boolean;
   allowBackorder: boolean;
   status: ProductVariantStatus;
+  sellingUnitLabel: string;
+  unitsPerSellingUnit: number;
+  quantityPriceTiers: Array<{
+    minimumQuantity: number;
+    unitAmount: string;
+  }>;
 }
 
 type ResolvedManagedCatalogImage =
@@ -391,7 +398,8 @@ function normalizeManagedVariant(
 
   if (
     compareAtAmount !== null &&
-    Number(compareAtAmount) <= Number(priceAmount)
+    moneyToMinorUnits(compareAtAmount) <=
+      moneyToMinorUnits(priceAmount)
   ) {
     throw new CatalogServiceError(
       "VALIDATION",
@@ -406,6 +414,54 @@ function normalizeManagedVariant(
       "VALIDATION",
       `${label} availability is invalid.`,
     );
+  }
+
+  if ((input.quantityPriceTiers?.length ?? 0) > 10) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} cannot have more than 10 quantity discounts.`,
+    );
+  }
+
+  const quantityPriceTiers = (input.quantityPriceTiers ?? [])
+    .map((tier, tierIndex) => ({
+      minimumQuantity: requireInteger(
+        tier.minimumQuantity,
+        `${label} discount ${tierIndex + 1} minimum quantity`,
+        2,
+      ),
+      unitAmount: requireMoney(
+        tier.unitAmount,
+        `${label} discount ${tierIndex + 1} unit price`,
+      ),
+    }))
+    .sort((left, right) => left.minimumQuantity - right.minimumQuantity);
+
+  if (
+    new Set(quantityPriceTiers.map((tier) => tier.minimumQuantity)).size !==
+    quantityPriceTiers.length
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} discount quantities must be unique.`,
+    );
+  }
+
+  for (const [tierIndex, tier] of quantityPriceTiers.entries()) {
+    const previousAmount =
+      tierIndex === 0
+        ? priceAmount
+        : quantityPriceTiers[tierIndex - 1]!.unitAmount;
+
+    if (
+      moneyToMinorUnits(tier.unitAmount) >=
+      moneyToMinorUnits(previousAmount)
+    ) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        `${label} quantity discounts must become cheaper as quantity increases.`,
+      );
+    }
   }
 
   return {
@@ -449,6 +505,15 @@ function normalizeManagedVariant(
             );
           })(),
     status,
+    sellingUnitLabel:
+      optionalText(input.sellingUnitLabel, `${label} selling unit`, 80) ??
+      "item",
+    unitsPerSellingUnit: requireInteger(
+      input.unitsPerSellingUnit ?? 1,
+      `${label} pieces per selling unit`,
+      1,
+    ),
+    quantityPriceTiers,
   };
 }
 
@@ -494,8 +559,8 @@ function normalizeManagedProductFields(
 
   if (
     compareAtAmount !== null &&
-    Number(compareAtAmount) <=
-      Number(priceAmount)
+    moneyToMinorUnits(compareAtAmount) <=
+      moneyToMinorUnits(priceAmount)
   ) {
     throw new CatalogServiceError(
       "VALIDATION",
@@ -760,6 +825,13 @@ export async function getManagerCatalog(
                 orderBy: {
                   createdAt: "desc",
                 },
+                include: {
+                  quantityTiers: {
+                    orderBy: {
+                      minimumQuantity: "asc",
+                    },
+                  },
+                },
               },
               inventory: {
                 include: {
@@ -803,6 +875,12 @@ export async function getManagerCatalog(
         options: variant.options.map((option) => ({
           name: option.name,
           value: option.value,
+        })),
+        sellingUnitLabel: variant.sellingUnitLabel,
+        unitsPerSellingUnit: variant.unitsPerSellingUnit,
+        quantityPriceTiers: price.quantityTiers.map((tier) => ({
+          minimumQuantity: tier.minimumQuantity,
+          unitAmount: tier.unitAmount.toString(),
         })),
         price: {
           amount: price.amount.toString(),
@@ -978,6 +1056,9 @@ export async function createManagedCatalogProduct(
         isTracked: fields.isTracked,
         allowBackorder: fields.allowBackorder,
         status: ProductVariantStatus.ACTIVE,
+        sellingUnitLabel: "item",
+        unitsPerSellingUnit: 1,
+        quantityPriceTiers: [],
       },
     ];
   const catalogVariants = managedVariants.map((variant, index) => {
@@ -992,6 +1073,8 @@ export async function createManagedCatalogProduct(
       sku: variant.sku,
       title: variant.title,
       status: variant.status,
+      sellingUnitLabel: variant.sellingUnitLabel,
+      unitsPerSellingUnit: variant.unitsPerSellingUnit,
       options: [
         ...(variant.size
           ? [{ name: "Size", value: variant.size, position: 1 }]
@@ -1005,6 +1088,7 @@ export async function createManagedCatalogProduct(
         compareAtAmount: variant.compareAtAmount,
         costAmount: variant.costAmount,
         type: PriceType.REGULAR,
+        quantityTiers: variant.quantityPriceTiers,
       },
       initialStock: variant.initialStock,
       reorderLevel: variant.reorderLevel,
@@ -1228,6 +1312,9 @@ export async function updateManagedCatalogProduct(
               isTracked: fields.isTracked,
               allowBackorder: fields.allowBackorder,
               status: ProductVariantStatus.ACTIVE,
+              sellingUnitLabel: "item",
+              unitsPerSellingUnit: 1,
+              quantityPriceTiers: [],
             },
           ];
         const existingById = new Map(
@@ -1361,6 +1448,12 @@ export async function updateManagedCatalogProduct(
               data: {
                 title: candidate.title,
                 status,
+                ...(fields.variants
+                  ? {
+                      sellingUnitLabel: candidate.sellingUnitLabel,
+                      unitsPerSellingUnit: candidate.unitsPerSellingUnit,
+                    }
+                  : {}),
               },
             });
 
@@ -1399,6 +1492,12 @@ export async function updateManagedCatalogProduct(
                 costAmount: candidate.costAmount,
                 startsAt: changedAt,
                 isActive: true,
+                quantityTiers:
+                  candidate.quantityPriceTiers.length > 0
+                    ? {
+                        create: candidate.quantityPriceTiers,
+                      }
+                    : undefined,
               },
             });
             await transaction.inventory.upsert({
@@ -1433,6 +1532,8 @@ export async function updateManagedCatalogProduct(
                 title: candidate.title,
                 status,
                 isDefault: false,
+                sellingUnitLabel: candidate.sellingUnitLabel,
+                unitsPerSellingUnit: candidate.unitsPerSellingUnit,
                 options:
                   options.length > 0 ? { create: options } : undefined,
                 prices: {
@@ -1444,6 +1545,12 @@ export async function updateManagedCatalogProduct(
                     costAmount: candidate.costAmount,
                     startsAt: changedAt,
                     isActive: true,
+                    quantityTiers:
+                      candidate.quantityPriceTiers.length > 0
+                        ? {
+                            create: candidate.quantityPriceTiers,
+                          }
+                        : undefined,
                   },
                 },
                 inventory: {

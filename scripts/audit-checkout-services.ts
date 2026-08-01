@@ -257,9 +257,19 @@ async function main(): Promise<void> {
             `ATI-CHECKOUT-${token}`,
           title:
             "Checkout audit variant",
+          sellingUnitLabel:
+            "dozen",
+          unitsPerSellingUnit: 12,
           price: {
             amount:
               "15000.00",
+            quantityTiers: [
+              {
+                minimumQuantity: 3,
+                unitAmount:
+                  "13000.00",
+              },
+            ],
           },
           initialStock: 10,
           reorderLevel: 1,
@@ -311,7 +321,7 @@ async function main(): Promise<void> {
       userId: atiUser.id,
       productVariantId:
         product.variantId,
-      quantity: 2,
+      quantity: 3,
     });
 
     const checkoutInput = {
@@ -355,17 +365,39 @@ async function main(): Promise<void> {
     );
 
     assertCondition(
-      firstOrder.productTotal ===
-        "30000.00" &&
+      firstOrder.productSubtotal ===
+        "45000.00" &&
+        firstOrder.discountTotal ===
+          "6000.00" &&
+        firstOrder.productTotal ===
+          "39000.00" &&
         firstOrder.grandTotal ===
-          "30000.00",
+          "39000.00",
       "The order totals are incorrect.",
     );
 
     assertCondition(
       firstOrder.items.length === 1 &&
         firstOrder.items[0]
-          ?.quantity === 2,
+          ?.quantity === 3 &&
+        firstOrder.items[0]
+          ?.sellingUnitLabel ===
+          "dozen" &&
+        firstOrder.items[0]
+          ?.unitsPerSellingUnit ===
+          12 &&
+        firstOrder.items[0]
+          ?.quantityDiscountMinimum ===
+          3 &&
+        firstOrder.items[0]
+          ?.lineSubtotal ===
+          "45000.00" &&
+        firstOrder.items[0]
+          ?.discountTotal ===
+          "6000.00" &&
+        firstOrder.items[0]
+          ?.lineTotal ===
+          "39000.00",
       "The order item snapshot is incorrect.",
     );
 
@@ -380,7 +412,7 @@ async function main(): Promise<void> {
         1 &&
         firstOrder.payments[0]
           ?.amount ===
-          "30000.00",
+          "39000.00",
       "The pending product payment record is incorrect.",
     );
 
@@ -414,12 +446,12 @@ async function main(): Promise<void> {
         .quantityReserved ===
         inventoryBefore
           .quantityReserved +
-          2,
+          3,
       "Checkout did not reserve inventory.",
     );
 
     console.log(
-      "PASS: Checkout atomically created order snapshots, payment, cart state and inventory reservation.",
+      "PASS: Checkout atomically applied quantity pricing, snapshotted selling units, created payment and reserved pack inventory.",
     );
 
     const repeatedOrder =

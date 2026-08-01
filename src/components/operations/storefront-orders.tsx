@@ -753,7 +753,7 @@ export default function StorefrontOrders({
                               }
                             >
                               {item.quantity}
-                              {" × "}
+                              {` ${item.sellingUnitLabel} × `}
                               {
                                 item.productName
                               }
@@ -761,6 +761,9 @@ export default function StorefrontOrders({
                               {
                                 item.variantTitle
                               }
+                              {item.unitsPerSellingUnit > 1
+                                ? ` · ${item.unitsPerSellingUnit} pieces per ${item.sellingUnitLabel}`
+                                : ""}
                             </p>
                           ),
                         )}

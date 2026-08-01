@@ -24,6 +24,8 @@ export interface StaffOrderItemView {
   productName: string;
   variantTitle: string;
   sku: string;
+  sellingUnitLabel: string;
+  unitsPerSellingUnit: number;
   quantity: number;
   lineTotal: string;
 }

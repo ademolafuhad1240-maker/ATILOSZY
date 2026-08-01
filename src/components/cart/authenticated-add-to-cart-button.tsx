@@ -25,6 +25,7 @@ export default function AuthenticatedAddToCartButton({
   cartHref,
   availableQuantity,
   allowBackorder,
+  sellingUnitLabel = "item",
   disabled = false,
 }: {
   storefrontCode: string;
@@ -35,6 +36,7 @@ export default function AuthenticatedAddToCartButton({
     | number
     | null;
   allowBackorder: boolean;
+  sellingUnitLabel?: string;
   disabled?: boolean;
 }) {
   const [
@@ -163,7 +165,9 @@ export default function AuthenticatedAddToCartButton({
             styles.quantityLabel
           }
         >
-          <span>Quantity</span>
+          <span>
+            Quantity ({sellingUnitLabel})
+          </span>
 
           <input
             className={

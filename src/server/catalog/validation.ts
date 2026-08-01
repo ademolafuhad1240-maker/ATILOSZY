@@ -75,7 +75,7 @@ export function requireInteger(
   label: string,
   minimum: number,
 ): number {
-  if (!Number.isInteger(value) || value < minimum) {
+  if (!Number.isSafeInteger(value) || value < minimum) {
     throw new CatalogServiceError(
       "VALIDATION",
       `${label} must be an integer greater than or equal to ${minimum}.`,
@@ -99,20 +99,36 @@ export function requireMoney(
     );
   }
 
-  const numericValue = Number(normalized);
+  const [whole, fraction = ""] = normalized.split(".");
+  const canonicalWhole = BigInt(whole).toString();
+  const minorUnits =
+    BigInt(canonicalWhole) * 100n +
+    BigInt(fraction.padEnd(2, "0"));
 
-  if (
-    !Number.isFinite(numericValue) ||
-    numericValue < 0 ||
-    (!allowZero && numericValue === 0)
-  ) {
+  if (canonicalWhole.length > 16) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} exceeds the supported amount range.`,
+    );
+  }
+
+  if (!allowZero && minorUnits === 0n) {
     throw new CatalogServiceError(
       "VALIDATION",
       `${label} must be ${allowZero ? "zero or greater" : "greater than zero"}.`,
     );
   }
 
-  return numericValue.toFixed(2);
+  return `${canonicalWhole}.${fraction.padEnd(2, "0")}`;
+}
+
+export function moneyToMinorUnits(value: string): bigint {
+  const [whole, fraction = ""] = value.split(".");
+
+  return (
+    BigInt(whole) * 100n +
+    BigInt(fraction.padEnd(2, "0").slice(0, 2))
+  );
 }
 
 export function optionalText(

@@ -30,6 +30,9 @@ import {
   requireCartQuantity,
   requireIdentifier,
 } from "./validation";
+import {
+  resolveQuantityPrice,
+} from "@/server/catalog/quantity-pricing";
 
 const CART_LIFETIME_DAYS = 30;
 
@@ -202,6 +205,15 @@ function buildCartView(
         variantTitle:
           item.variantTitleSnapshot,
         sku: item.skuSnapshot,
+        sellingUnitLabel: item.sellingUnitLabelSnapshot,
+        unitsPerSellingUnit: item.unitsPerSellingUnitSnapshot,
+        quantityDiscountPerUnit: formatMinorUnits(
+          moneyToMinorUnits(item.baseUnitPrice ?? item.unitPrice) > unitMinor
+            ? moneyToMinorUnits(item.baseUnitPrice ?? item.unitPrice) - unitMinor
+            : 0n,
+        ),
+        appliedMinimumQuantity:
+          item.quantityDiscountMinimumSnapshot,
       };
     },
   );
@@ -585,6 +597,9 @@ async function resolveSellableVariant(
                 },
               ],
             },
+            include: {
+              quantityTiers: true,
+            },
           },
           inventory: true,
         },
@@ -608,6 +623,13 @@ async function resolveSellableVariant(
       "The selected product does not have a current storefront price.",
     );
   }
+
+  const quantityPrice = resolveQuantityPrice({
+    quantity: input.requestedQuantity,
+    baseAmount: price.amount,
+    compareAtAmount: price.compareAtAmount,
+    tiers: price.quantityTiers,
+  });
 
   const maximumQuantity =
     variant.storefrontProduct
@@ -663,6 +685,7 @@ async function resolveSellableVariant(
   return {
     variant,
     price,
+    quantityPrice,
     availableQuantity:
       inventory.isTracked
         ? Math.max(
@@ -842,10 +865,13 @@ export async function addCartItem(
         quantity:
           requestedQuantity,
         unitPrice:
-          sellable.price.amount,
+          sellable.quantityPrice.effectiveUnitPrice,
+        baseUnitPrice:
+          sellable.quantityPrice.baseUnitPrice,
         compareAtUnitPrice:
-          sellable.price
-            .compareAtAmount,
+          sellable.quantityPrice.comparisonUnitPrice,
+        quantityDiscountMinimumSnapshot:
+          sellable.quantityPrice.appliedMinimumQuantity,
         productNameSnapshot:
           sellable.variant
             .storefrontProduct
@@ -854,6 +880,10 @@ export async function addCartItem(
           sellable.variant.title,
         skuSnapshot:
           sellable.variant.sku,
+        sellingUnitLabelSnapshot:
+          sellable.variant.sellingUnitLabel,
+        unitsPerSellingUnitSnapshot:
+          sellable.variant.unitsPerSellingUnit,
       };
 
       if (existingItem) {
@@ -993,10 +1023,13 @@ export async function updateCartItemQuantity(
           storefrontPriceId:
             sellable.price.id,
           unitPrice:
-            sellable.price.amount,
+            sellable.quantityPrice.effectiveUnitPrice,
+          baseUnitPrice:
+            sellable.quantityPrice.baseUnitPrice,
           compareAtUnitPrice:
-            sellable.price
-              .compareAtAmount,
+            sellable.quantityPrice.comparisonUnitPrice,
+          quantityDiscountMinimumSnapshot:
+            sellable.quantityPrice.appliedMinimumQuantity,
           productNameSnapshot:
             sellable.variant
               .storefrontProduct
@@ -1005,6 +1038,10 @@ export async function updateCartItemQuantity(
             sellable.variant.title,
           skuSnapshot:
             sellable.variant.sku,
+          sellingUnitLabelSnapshot:
+            sellable.variant.sellingUnitLabel,
+          unitsPerSellingUnitSnapshot:
+            sellable.variant.unitsPerSellingUnit,
         },
       });
 
@@ -1205,10 +1242,13 @@ export async function refreshActiveCart(
               storefrontPriceId:
                 sellable.price.id,
               unitPrice:
-                sellable.price.amount,
+                sellable.quantityPrice.effectiveUnitPrice,
+              baseUnitPrice:
+                sellable.quantityPrice.baseUnitPrice,
               compareAtUnitPrice:
-                sellable.price
-                  .compareAtAmount,
+                sellable.quantityPrice.comparisonUnitPrice,
+              quantityDiscountMinimumSnapshot:
+                sellable.quantityPrice.appliedMinimumQuantity,
               productNameSnapshot:
                 sellable.variant
                   .storefrontProduct
@@ -1217,6 +1257,10 @@ export async function refreshActiveCart(
                 sellable.variant.title,
               skuSnapshot:
                 sellable.variant.sku,
+              sellingUnitLabelSnapshot:
+                sellable.variant.sellingUnitLabel,
+              unitsPerSellingUnitSnapshot:
+                sellable.variant.unitsPerSellingUnit,
             },
           },
         );

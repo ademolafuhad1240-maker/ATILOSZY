@@ -36,6 +36,10 @@ export interface CartItemView {
   productName: string;
   variantTitle: string;
   sku: string;
+  sellingUnitLabel: string;
+  unitsPerSellingUnit: number;
+  quantityDiscountPerUnit: string;
+  appliedMinimumQuantity: number | null;
 }
 
 export interface CartView {

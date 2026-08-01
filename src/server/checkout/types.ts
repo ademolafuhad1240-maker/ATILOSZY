@@ -68,6 +68,9 @@ export interface CheckoutOrderItemView {
   productName: string;
   variantTitle: string;
   sku: string;
+  sellingUnitLabel: string;
+  unitsPerSellingUnit: number;
+  quantityDiscountMinimum: number | null;
   quantity: number;
   unitPrice: string;
   compareAtUnitPrice:

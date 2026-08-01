@@ -414,6 +414,9 @@ function optionalCatalogVariants(
       "isTracked",
       "allowBackorder",
       "status",
+      "sellingUnitLabel",
+      "unitsPerSellingUnit",
+      "quantityPriceTiers",
     ]);
 
     if (Object.keys(variant).some((field) => !allowed.has(field))) {
@@ -443,6 +446,54 @@ function optionalCatalogVariants(
     }
 
     const initialStock = object.initialStock;
+    const quantityPriceTiersValue = object.quantityPriceTiers;
+
+    if (
+      quantityPriceTiersValue !== undefined &&
+      (!Array.isArray(quantityPriceTiersValue) ||
+        quantityPriceTiersValue.length > 10)
+    ) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        `Variant ${index + 1} quantity discounts are invalid.`,
+      );
+    }
+
+    const quantityPriceTiers = (quantityPriceTiersValue ?? []).map(
+      (tierValue, tierIndex) => {
+        if (
+          typeof tierValue !== "object" ||
+          tierValue === null ||
+          Array.isArray(tierValue)
+        ) {
+          throw new CatalogServiceError(
+            "VALIDATION",
+            `Variant ${index + 1} discount ${tierIndex + 1} is invalid.`,
+          );
+        }
+
+        const tier = tierValue as JsonObject;
+
+        if (
+          Object.keys(tier).some(
+            (field) => !["minimumQuantity", "unitAmount"].includes(field),
+          )
+        ) {
+          throw new CatalogServiceError(
+            "VALIDATION",
+            "Discount currency and price identity are controlled by the server.",
+          );
+        }
+
+        return {
+          minimumQuantity: requireCatalogInteger(
+            tier,
+            "minimumQuantity",
+          ),
+          unitAmount: requireCatalogString(tier, "unitAmount", 40),
+        };
+      },
+    );
 
     if (
       initialStock !== undefined &&
@@ -471,6 +522,13 @@ function optionalCatalogVariants(
       allowBackorder:
         requireCatalogBoolean(object, "allowBackorder"),
       status,
+      sellingUnitLabel:
+        optionalCatalogString(object, "sellingUnitLabel", 80) ?? undefined,
+      unitsPerSellingUnit:
+        object.unitsPerSellingUnit === undefined
+          ? undefined
+          : requireCatalogInteger(object, "unitsPerSellingUnit"),
+      quantityPriceTiers,
     };
   });
 }

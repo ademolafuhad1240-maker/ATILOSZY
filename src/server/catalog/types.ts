@@ -20,6 +20,12 @@ export interface CatalogPriceInput {
   type?: PriceType;
   startsAt?: Date | null;
   endsAt?: Date | null;
+  quantityTiers?: readonly CatalogQuantityPriceTierInput[];
+}
+
+export interface CatalogQuantityPriceTierInput {
+  minimumQuantity: number;
+  unitAmount: string;
 }
 
 export interface CatalogImageInput {
@@ -37,6 +43,8 @@ export interface CatalogProductVariantInput {
   sku: string;
   title: string;
   status?: ProductVariantStatus;
+  sellingUnitLabel?: string;
+  unitsPerSellingUnit?: number;
   barcode?: string | null;
   options?: readonly CatalogVariantOptionInput[];
   price: CatalogPriceInput;
@@ -106,6 +114,14 @@ export interface PublicCatalogVariant {
   availableQuantity: number | null;
   isInStock: boolean;
   allowBackorder: boolean;
+  sellingUnitLabel: string;
+  unitsPerSellingUnit: number;
+  quantityPriceTiers: PublicQuantityPriceTier[];
+}
+
+export interface PublicQuantityPriceTier {
+  minimumQuantity: number;
+  unitAmount: string;
 }
 
 export interface PublicCatalogProduct {
@@ -205,6 +221,9 @@ export interface ManagerCatalogVariant {
     title: string;
     status: ProductVariantStatus;
     options: PublicCatalogOption[];
+    sellingUnitLabel: string;
+    unitsPerSellingUnit: number;
+    quantityPriceTiers: PublicQuantityPriceTier[];
     price: {
       amount: string;
       compareAtAmount: string | null;
@@ -295,6 +314,9 @@ export interface ManagedCatalogVariantInput {
   isTracked: boolean;
   allowBackorder: boolean;
   status?: ProductVariantStatus;
+  sellingUnitLabel?: string;
+  unitsPerSellingUnit?: number;
+  quantityPriceTiers?: readonly CatalogQuantityPriceTierInput[];
 }
 
 export interface CreateManagedCatalogProductInput

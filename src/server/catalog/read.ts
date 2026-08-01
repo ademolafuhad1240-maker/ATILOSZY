@@ -24,11 +24,23 @@ interface PriceRecord {
     toString(): string;
   } | null;
   currencyCode: string;
+  quantityTiers: readonly {
+    minimumQuantity: number;
+    unitAmount: {
+      toString(): string;
+    };
+  }[];
 }
+
+type SelectedPublicPrice =
+  PublicCatalogPrice & {
+    quantityTiers:
+      PriceRecord["quantityTiers"];
+  };
 
 function chooseCurrentPrice(
   prices: readonly PriceRecord[],
-): PublicCatalogPrice | null {
+): SelectedPublicPrice | null {
   const selected =
     prices.find((price) => price.type === PriceType.SALE) ??
     prices.find((price) => price.type === PriceType.REGULAR) ??
@@ -44,6 +56,8 @@ function chooseCurrentPrice(
     compareAtAmount:
       selected.compareAtAmount?.toString() ?? null,
     currencyCode: selected.currencyCode,
+    quantityTiers:
+      selected.quantityTiers,
   };
 }
 
@@ -191,6 +205,13 @@ async function queryPublicCatalogue(
                 },
               ],
             },
+            include: {
+              quantityTiers: {
+                orderBy: {
+                  minimumQuantity: "asc",
+                },
+              },
+            },
           },
           inventory: true,
         },
@@ -238,6 +259,11 @@ async function queryPublicCatalogue(
         inventory.allowBackorder ||
         (availableQuantity ?? 0) > 0;
 
+      const {
+        quantityTiers,
+        ...publicPrice
+      } = price;
+
       variants.push({
         id: variant.id,
         sku: variant.sku,
@@ -246,7 +272,7 @@ async function queryPublicCatalogue(
           name: option.name,
           value: option.value,
         })),
-        price,
+        price: publicPrice,
         imageUrl:
           variant.images[0]?.url ??
           listing.images[0]?.url ??
@@ -255,6 +281,12 @@ async function queryPublicCatalogue(
         isInStock,
         allowBackorder:
           inventory?.allowBackorder ?? false,
+        sellingUnitLabel: variant.sellingUnitLabel,
+        unitsPerSellingUnit: variant.unitsPerSellingUnit,
+        quantityPriceTiers: quantityTiers.map((tier) => ({
+          minimumQuantity: tier.minimumQuantity,
+          unitAmount: tier.unitAmount.toString(),
+        })),
       });
     }
 

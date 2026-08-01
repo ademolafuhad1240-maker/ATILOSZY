@@ -25,6 +25,11 @@ Managers can:
   photos, with the first photo used as the storefront cover;
 - set size and colour combinations, each with its own locked SKU,
   regular price, compare-at price, internal cost and opening stock;
+- define how each variant is sold (`item`, `3-piece pack`, `half-dozen`,
+  `dozen`, or another clear selling-unit name) and how many pieces it
+  contains;
+- add up to ten quantity price breaks, such as a lower price per dozen
+  when the customer buys three or more dozens;
 - publish, hide, return to draft or archive a listing;
 - configure featured status and per-order limits, plus variant-specific
   inventory tracking, reorder levels, availability and backordering;
@@ -58,9 +63,24 @@ cart and order history can continue referring to historical prices.
 Stock adjustments use the existing atomic inventory service and
 cannot reduce on-hand stock below reserved stock.
 
-The variant milestone uses the existing `ProductVariant`,
-`VariantOption`, `StorefrontPrice`, and `Inventory` tables, so it does
-not require a schema migration or any new Railway variable.
+Selling-unit metadata is stored on `ProductVariant`. Quantity price
+breaks are children of the historical `StorefrontPrice` record, so a
+later manager price change cannot rewrite an old order's calculation.
+The cart always resolves the highest eligible price break, and checkout
+recalculates it server-side before reserving inventory. The browser does
+not control the authoritative unit price, discount, currency, threshold,
+or order total.
+
+Inventory and cart quantities count sellable units, not loose pieces.
+For example, a variant configured as `dozen` with 12 pieces and stock 5
+has five sellable dozens (60 pieces). A customer quantity of 3 means
+three dozens, and a “minimum 3” price break applies to all three dozens.
+The order snapshots the selling-unit name, pieces per unit, base
+subtotal, applied discount, and final total.
+
+This milestone adds an additive Prisma migration for selling-unit
+snapshots and historical quantity-price tiers. It does not require a new
+Railway environment variable.
 
 `ACTIVE` products appear in the public live catalogue. `DRAFT`,
 `HIDDEN`, and `ARCHIVED` products do not. Returning from the hosted
@@ -163,6 +183,7 @@ The static audit is safe in every environment:
 ```text
 npm run audit:catalog-management
 npm run audit:catalog-media
+npm run audit:quantity-pricing
 ```
 
 The database lifecycle audit creates a temporary verified manager,

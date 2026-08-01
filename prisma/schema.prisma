@@ -348,6 +348,8 @@ model ProductVariant {
   title               String
   status              ProductVariantStatus @default(ACTIVE)
   isDefault           Boolean              @default(false)
+  sellingUnitLabel    String               @default("item") @db.VarChar(80)
+  unitsPerSellingUnit Int                  @default(1)
   weightGrams         Int?
   lengthMm            Int?
   widthMm             Int?
@@ -408,27 +410,42 @@ model ProductImage {
 }
 
 model StorefrontPrice {
-  id               String         @id @default(cuid())
+  id               String                @id @default(cuid())
   productVariantId String
-  currencyCode     String         @db.VarChar(3)
-  type             PriceType      @default(REGULAR)
-  amount           Decimal        @db.Decimal(18, 2)
-  compareAtAmount  Decimal?       @db.Decimal(18, 2)
-  costAmount       Decimal?       @db.Decimal(18, 2)
+  currencyCode     String                @db.VarChar(3)
+  type             PriceType             @default(REGULAR)
+  amount           Decimal               @db.Decimal(18, 2)
+  compareAtAmount  Decimal?              @db.Decimal(18, 2)
+  costAmount       Decimal?              @db.Decimal(18, 2)
   startsAt         DateTime?
   endsAt           DateTime?
-  isActive         Boolean        @default(true)
-  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  currency         Currency       @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  isActive         Boolean               @default(true)
+  productVariant   ProductVariant        @relation(fields: [productVariantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  currency         Currency              @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
   cartItems        CartItem[]
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
   orderItems       OrderItem[]
+  quantityTiers    StorefrontPriceTier[]
 
   @@unique([id, productVariantId, currencyCode])
   @@index([productVariantId, isActive, startsAt, endsAt])
   @@index([currencyCode])
   @@map("storefront_prices")
+}
+
+model StorefrontPriceTier {
+  id                String          @id @default(cuid())
+  storefrontPriceId String
+  minimumQuantity   Int
+  unitAmount        Decimal         @db.Decimal(18, 2)
+  storefrontPrice   StorefrontPrice @relation(fields: [storefrontPriceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([storefrontPriceId, minimumQuantity])
+  @@index([storefrontPriceId, minimumQuantity])
+  @@map("storefront_price_tiers")
 }
 
 model Inventory {
@@ -759,25 +776,29 @@ model Cart {
 }
 
 model CartItem {
-  id                   String            @id @default(cuid())
-  cartId               String
-  storefrontId         String
-  storefrontProductId  String
-  productVariantId     String
-  storefrontPriceId    String
-  currencyCode         String            @db.VarChar(3)
-  quantity             Int               @default(1)
-  unitPrice            Decimal           @db.Decimal(18, 2)
-  compareAtUnitPrice   Decimal?          @db.Decimal(18, 2)
-  productNameSnapshot  String
-  variantTitleSnapshot String
-  skuSnapshot          String            @db.VarChar(80)
-  cart                 Cart              @relation(fields: [cartId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
-  storefrontProduct    StorefrontProduct @relation(fields: [storefrontProductId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
-  productVariant       ProductVariant    @relation(fields: [productVariantId, storefrontProductId], references: [id, storefrontProductId], onDelete: Restrict, onUpdate: Cascade)
-  storefrontPrice      StorefrontPrice   @relation(fields: [storefrontPriceId, productVariantId, currencyCode], references: [id, productVariantId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  id                              String            @id @default(cuid())
+  cartId                          String
+  storefrontId                    String
+  storefrontProductId             String
+  productVariantId                String
+  storefrontPriceId               String
+  currencyCode                    String            @db.VarChar(3)
+  quantity                        Int               @default(1)
+  unitPrice                       Decimal           @db.Decimal(18, 2)
+  baseUnitPrice                   Decimal?          @db.Decimal(18, 2)
+  compareAtUnitPrice              Decimal?          @db.Decimal(18, 2)
+  quantityDiscountMinimumSnapshot Int?
+  productNameSnapshot             String
+  variantTitleSnapshot            String
+  skuSnapshot                     String            @db.VarChar(80)
+  sellingUnitLabelSnapshot        String            @default("item") @db.VarChar(80)
+  unitsPerSellingUnitSnapshot     Int               @default(1)
+  cart                            Cart              @relation(fields: [cartId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+  storefrontProduct               StorefrontProduct @relation(fields: [storefrontProductId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
+  productVariant                  ProductVariant    @relation(fields: [productVariantId, storefrontProductId], references: [id, storefrontProductId], onDelete: Restrict, onUpdate: Cascade)
+  storefrontPrice                 StorefrontPrice   @relation(fields: [storefrontPriceId, productVariantId, currencyCode], references: [id, productVariantId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
+  createdAt                       DateTime          @default(now())
+  updatedAt                       DateTime          @updatedAt
 
   @@unique([cartId, productVariantId])
   @@index([cartId, createdAt])
@@ -962,28 +983,31 @@ model OrderFulfilmentEvent {
 }
 
 model OrderItem {
-  id                  String            @id @default(cuid())
-  orderId             String
-  storefrontId        String
-  currencyCode        String            @db.VarChar(3)
-  storefrontProductId String
-  productVariantId    String
-  storefrontPriceId   String
-  productName         String            @db.VarChar(240)
-  variantTitle        String            @db.VarChar(240)
-  sku                 String            @db.VarChar(120)
-  quantity            Int
-  unitPrice           Decimal           @db.Decimal(18, 2)
-  compareAtUnitPrice  Decimal?          @db.Decimal(18, 2)
-  lineSubtotal        Decimal           @db.Decimal(18, 2)
-  discountTotal       Decimal           @default(0) @db.Decimal(18, 2)
-  lineTotal           Decimal           @db.Decimal(18, 2)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  order               Order             @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
-  storefrontProduct   StorefrontProduct @relation(fields: [storefrontProductId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
-  productVariant      ProductVariant    @relation(fields: [productVariantId, storefrontProductId], references: [id, storefrontProductId], onDelete: Restrict, onUpdate: Cascade)
-  storefrontPrice     StorefrontPrice   @relation(fields: [storefrontPriceId, productVariantId, currencyCode], references: [id, productVariantId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
+  id                      String            @id @default(cuid())
+  orderId                 String
+  storefrontId            String
+  currencyCode            String            @db.VarChar(3)
+  storefrontProductId     String
+  productVariantId        String
+  storefrontPriceId       String
+  productName             String            @db.VarChar(240)
+  variantTitle            String            @db.VarChar(240)
+  sku                     String            @db.VarChar(120)
+  sellingUnitLabel        String            @default("item") @db.VarChar(80)
+  unitsPerSellingUnit     Int               @default(1)
+  quantity                Int
+  unitPrice               Decimal           @db.Decimal(18, 2)
+  compareAtUnitPrice      Decimal?          @db.Decimal(18, 2)
+  lineSubtotal            Decimal           @db.Decimal(18, 2)
+  discountTotal           Decimal           @default(0) @db.Decimal(18, 2)
+  quantityDiscountMinimum Int?
+  lineTotal               Decimal           @db.Decimal(18, 2)
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  order                   Order             @relation(fields: [orderId, storefrontId, currencyCode], references: [id, storefrontId, currencyCode], onDelete: Cascade, onUpdate: Cascade)
+  storefrontProduct       StorefrontProduct @relation(fields: [storefrontProductId, storefrontId], references: [id, storefrontId], onDelete: Restrict, onUpdate: Cascade)
+  productVariant          ProductVariant    @relation(fields: [productVariantId, storefrontProductId], references: [id, storefrontProductId], onDelete: Restrict, onUpdate: Cascade)
+  storefrontPrice         StorefrontPrice   @relation(fields: [storefrontPriceId, productVariantId, currencyCode], references: [id, productVariantId, currencyCode], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([orderId, productVariantId])
   @@index([orderId, createdAt])

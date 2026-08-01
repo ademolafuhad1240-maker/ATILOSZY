@@ -1443,9 +1443,17 @@ export default function StorefrontOrder({
 
                         <small>
                           {item.sku} ·
-                          Quantity{" "}
-                          {item.quantity}
+                          {" "}{item.quantity} {item.sellingUnitLabel}
+                          {item.unitsPerSellingUnit > 1
+                            ? ` (${item.unitsPerSellingUnit} pieces each)`
+                            : ""}
                         </small>
+
+                        {item.quantityDiscountMinimum !== null ? (
+                          <small>
+                            Quantity discount applied from {item.quantityDiscountMinimum}
+                          </small>
+                        ) : null}
                       </div>
 
                       <div
@@ -1458,7 +1466,7 @@ export default function StorefrontOrder({
                             item.unitPrice,
                             order.currencyCode,
                           )}{" "}
-                          each
+                          per {item.sellingUnitLabel}
                         </span>
 
                         <strong>

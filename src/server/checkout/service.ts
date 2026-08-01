@@ -16,6 +16,7 @@ import {
   UserStatus,
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { resolveQuantityPrice } from "@/server/catalog/quantity-pricing";
 
 import {
   CheckoutServiceError,
@@ -79,7 +80,11 @@ const checkoutCartInclude = {
           inventory: true,
         },
       },
-      storefrontPrice: true,
+      storefrontPrice: {
+        include: {
+          quantityTiers: true,
+        },
+      },
     },
   },
 } satisfies Prisma.CartInclude;
@@ -182,34 +187,6 @@ function formatMinorUnits(
   }${whole}.${fraction}`;
 }
 
-function optionalMoneyEquals(
-  left: {
-    toFixed(
-      decimalPlaces: number,
-    ): string;
-  } | null,
-  right: {
-    toFixed(
-      decimalPlaces: number,
-    ): string;
-  } | null,
-): boolean {
-  if (
-    left === null ||
-    right === null
-  ) {
-    return (
-      left === null &&
-      right === null
-    );
-  }
-
-  return (
-    left.toFixed(2) ===
-    right.toFixed(2)
-  );
-}
-
 function buildOrderView(
   order: OrderRecord,
 ): CheckoutOrderView {
@@ -282,6 +259,12 @@ function buildOrderView(
         variantTitle:
           item.variantTitle,
         sku: item.sku,
+        sellingUnitLabel:
+          item.sellingUnitLabel,
+        unitsPerSellingUnit:
+          item.unitsPerSellingUnit,
+        quantityDiscountMinimum:
+          item.quantityDiscountMinimum,
         quantity: item.quantity,
         unitPrice:
           item.unitPrice.toFixed(2),
@@ -845,13 +828,33 @@ function validateCheckoutItem(
     );
   }
 
+  const quantityPrice =
+    resolveQuantityPrice({
+      quantity: item.quantity,
+      baseAmount: price.amount,
+      compareAtAmount:
+        price.compareAtAmount,
+      tiers: price.quantityTiers,
+    });
+
   if (
-    price.amount.toFixed(2) !==
+    quantityPrice.effectiveUnitPrice !==
       item.unitPrice.toFixed(2) ||
-    !optionalMoneyEquals(
-      price.compareAtAmount,
-      item.compareAtUnitPrice,
-    )
+    quantityPrice.baseUnitPrice !==
+      (item.baseUnitPrice ??
+        item.unitPrice).toFixed(2) ||
+    quantityPrice.comparisonUnitPrice !==
+      (item.compareAtUnitPrice?.toFixed(
+        2,
+      ) ?? null) ||
+    quantityPrice.appliedMinimumQuantity !==
+      item.quantityDiscountMinimumSnapshot ||
+    item.sellingUnitLabelSnapshot !==
+      item.productVariant
+        .sellingUnitLabel ||
+    item.unitsPerSellingUnitSnapshot !==
+      item.productVariant
+        .unitsPerSellingUnit
   ) {
     throw new CheckoutServiceError(
       "CART_CHANGED",
@@ -1073,6 +1076,11 @@ export async function createCheckoutOrder(
 
       let productSubtotal = 0n;
 
+      let productDiscountTotal =
+        0n;
+
+      let productTotal = 0n;
+
       for (
         const item of cart.items
       ) {
@@ -1084,12 +1092,24 @@ export async function createCheckoutOrder(
 
         const lineSubtotal =
           moneyToMinorUnits(
+            item.baseUnitPrice ??
+              item.unitPrice,
+          ) *
+          BigInt(item.quantity);
+
+        const lineTotal =
+          moneyToMinorUnits(
             item.unitPrice,
           ) *
           BigInt(item.quantity);
 
         productSubtotal +=
           lineSubtotal;
+
+        productDiscountTotal +=
+          lineSubtotal - lineTotal;
+
+        productTotal += lineTotal;
 
         await reserveInventory(
           transaction,
@@ -1105,7 +1125,7 @@ export async function createCheckoutOrder(
       }
 
       if (
-        productSubtotal <= 0n
+        productTotal <= 0n
       ) {
         throw new CheckoutServiceError(
           "CART_CHANGED",
@@ -1152,16 +1172,18 @@ export async function createCheckoutOrder(
                     productSubtotal,
                   ),
                 discountTotal:
-                  "0.00",
+                  formatMinorUnits(
+                    productDiscountTotal,
+                  ),
                 productTotal:
                   formatMinorUnits(
-                    productSubtotal,
+                    productTotal,
                   ),
                 deliveryFeeTotal:
                   "0.00",
                 grandTotal:
                   formatMinorUnits(
-                    productSubtotal,
+                    productTotal,
                   ),
                 customerName:
                   context.customerName,
@@ -1201,6 +1223,15 @@ export async function createCheckoutOrder(
             (item) => {
               const lineSubtotal =
                 moneyToMinorUnits(
+                  item.baseUnitPrice ??
+                    item.unitPrice,
+                ) *
+                BigInt(
+                  item.quantity,
+                );
+
+              const lineTotal =
+                moneyToMinorUnits(
                   item.unitPrice,
                 ) *
                 BigInt(
@@ -1232,6 +1263,10 @@ export async function createCheckoutOrder(
                     .variantTitleSnapshot,
                 sku:
                   item.skuSnapshot,
+                sellingUnitLabel:
+                  item.sellingUnitLabelSnapshot,
+                unitsPerSellingUnit:
+                  item.unitsPerSellingUnitSnapshot,
                 quantity:
                   item.quantity,
                 unitPrice:
@@ -1244,10 +1279,15 @@ export async function createCheckoutOrder(
                     lineSubtotal,
                   ),
                 discountTotal:
-                  "0.00",
+                  formatMinorUnits(
+                    lineSubtotal -
+                      lineTotal,
+                  ),
+                quantityDiscountMinimum:
+                  item.quantityDiscountMinimumSnapshot,
                 lineTotal:
                   formatMinorUnits(
-                    lineSubtotal,
+                    lineTotal,
                   ),
               };
             },
@@ -1349,7 +1389,7 @@ export async function createCheckoutOrder(
                 .PENDING,
             amount:
               formatMinorUnits(
-                productSubtotal,
+                productTotal,
               ),
             idempotencyKey:
               `checkout:${orderId}:product`,

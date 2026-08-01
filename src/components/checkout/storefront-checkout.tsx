@@ -1128,9 +1128,18 @@ export default function StorefrontCheckout({
                       </span>
 
                       <small>
-                        {item.sku} · Qty{" "}
-                        {item.quantity}
+                        {item.sku} · {item.quantity} {item.sellingUnitLabel}
+                        {item.unitsPerSellingUnit > 1
+                          ? ` (${item.unitsPerSellingUnit} pieces each)`
+                          : ""}
                       </small>
+
+                      {item.appliedMinimumQuantity !== null &&
+                      Number(item.quantityDiscountPerUnit) > 0 ? (
+                        <small>
+                          Quantity discount applied from {item.appliedMinimumQuantity}
+                        </small>
+                      ) : null}
                     </div>
 
                     <b>
@@ -1161,6 +1170,15 @@ export default function StorefrontCheckout({
                   )}
                 </strong>
               </div>
+
+              {Number(cart.savings) > 0 ? (
+                <div>
+                  <span>Savings</span>
+                  <strong>
+                    {money(cart.savings, cart.currencyCode)}
+                  </strong>
+                </div>
+              ) : null}
 
               <div>
                 <span>
