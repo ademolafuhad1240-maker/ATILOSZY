@@ -95,10 +95,8 @@
 .grid {
   display: grid;
   grid-template-columns:
-    repeat(
-      auto-fit,
-      minmax(230px, 1fr)
-    );
+    repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 1rem;
 }
 
@@ -135,10 +133,13 @@
 }
 
 .productMedia {
-  min-height: 190px;
+  aspect-ratio: 4 / 5;
+  min-height: 0;
   margin: -1.15rem -1.15rem 0;
   border-radius: 1.35rem 1.35rem
     0.9rem 0.9rem;
+  background-color: #f1ece2;
+  background-size: contain;
 }
 
 .productHeroMedia {
@@ -358,5 +359,9 @@
 
   .cartLink {
     text-align: center;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
   }
 }
