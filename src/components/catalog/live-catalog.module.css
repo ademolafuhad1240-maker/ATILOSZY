@@ -334,14 +334,84 @@
   line-height: 1.75;
 }
 
-.variantGrid {
+.variantSelector {
+  display: grid;
+  gap: 1rem;
+}
+
+.selectorPanel {
+  border: 1px solid
+    rgba(16, 24, 39, 0.1);
+  border-radius: 1.5rem;
+  padding: 1.35rem;
+  background: color-mix(
+    in srgb,
+    var(--catalog-soft) 45%,
+    #ffffff
+  );
+}
+
+.selectGrid {
   display: grid;
   grid-template-columns:
     repeat(
       auto-fit,
-      minmax(260px, 1fr)
+      minmax(210px, 1fr)
     );
   gap: 1rem;
+}
+
+.optionSelectLabel {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--catalog-ink);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.optionSelect {
+  width: 100%;
+  min-height: 3.2rem;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--catalog-accent) 35%,
+      transparent
+    );
+  border-radius: 0.9rem;
+  padding: 0.75rem 2.5rem 0.75rem 0.9rem;
+  background: #ffffff;
+  color: var(--catalog-ink);
+  font: inherit;
+}
+
+.optionSelect:focus {
+  border-color: var(--catalog-accent);
+  outline: 3px solid
+    color-mix(
+      in srgb,
+      var(--catalog-accent) 18%,
+      transparent
+    );
+}
+
+.selectionPrompt {
+  margin: 0;
+  border: 1px dashed
+    color-mix(
+      in srgb,
+      var(--catalog-accent) 45%,
+      transparent
+    );
+  border-radius: 1.25rem;
+  padding: 1.2rem;
+  background: #ffffff;
+  color: color-mix(
+    in srgb,
+    var(--catalog-ink) 70%,
+    transparent
+  );
+  line-height: 1.6;
 }
 
 .variantCard {
@@ -392,7 +462,7 @@
 }
 
 .variantIntro {
-  grid-column: 1 / -1;
+  margin-top: 0.5rem;
 }
 
 .variantIntro h2,

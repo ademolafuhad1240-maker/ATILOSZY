@@ -7,7 +7,6 @@ import {
   getStorefrontCatalogConfig,
   type StorefrontCatalogConfig,
 } from "../../lib/storefront-catalog";
-import AuthenticatedAddToCartButton from "../cart/authenticated-add-to-cart-button";
 
 import styles from "./live-catalog.module.css";
 
@@ -215,8 +214,15 @@ export default async function StorefrontLiveCatalogSection({
                         }
                       >
                         {product.variants.length > 1
-                          ? `${product.variants.length} size / colour options`
-                          : variant.title}
+                          ? `${product.variants.length} options available`
+                          : variant.options.length > 0
+                            ? variant.options
+                                .map(
+                                  (option) =>
+                                    `${option.name}: ${option.value}`,
+                                )
+                                .join(" · ")
+                            : variant.title}
                       </p>
 
                       <p className={styles.stock}>
@@ -275,32 +281,19 @@ export default async function StorefrontLiveCatalogSection({
                           styles.stock
                         }
                       >
-                        {variant
-                          .availableQuantity ===
-                        null
-                          ? "Availability confirmed at checkout"
-                          : variant.isInStock
-                            ? `${variant.availableQuantity} available`
-                            : "Currently out of stock"}
+                        {product.variants.length > 1
+                          ? "Availability shown after selection"
+                          : variant.availableQuantity === null
+                            ? "Availability confirmed at checkout"
+                            : variant.isInStock
+                              ? `${variant.availableQuantity} available`
+                              : "Currently out of stock"}
                       </p>
                     </div>
 
-                    {product.variants.length > 1 ? (
-                      <Link className={styles.chooseVariant} href={detailHref}>
-                        Choose size and colour
-                      </Link>
-                    ) : (
-                      <AuthenticatedAddToCartButton
-                        storefrontCode={storefront.code}
-                        productVariantId={variant.id}
-                        loginHref={storefront.loginHref}
-                        cartHref={storefront.cartHref}
-                        availableQuantity={variant.availableQuantity}
-                        allowBackorder={variant.allowBackorder}
-                        sellingUnitLabel={variant.sellingUnitLabel}
-                        disabled={!variant.isInStock}
-                      />
-                    )}
+                    <Link className={styles.chooseVariant} href={detailHref}>
+                      View product &amp; choose options
+                    </Link>
                   </>
                 ) : (
                   <p
@@ -313,14 +306,6 @@ export default async function StorefrontLiveCatalogSection({
                   </p>
                 )}
 
-                <Link
-                  className={
-                    styles.productLink
-                  }
-                  href={detailHref}
-                >
-                  View product details
-                </Link>
               </article>
             );
           })}

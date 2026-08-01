@@ -893,7 +893,9 @@ function ProductVariantFields({
           <h3>Variants, selling units and stock</h3>
           <p>
             Add one row for every sellable combination. Each combination has
-            its own SKU, pack size, price, discounts and inventory.
+            its own SKU, pack size, price, discounts and inventory. Size and
+            colour values entered here become the customer dropdown choices
+            on the product page.
           </p>
         </div>
         <button

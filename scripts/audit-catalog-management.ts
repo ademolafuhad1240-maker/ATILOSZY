@@ -175,13 +175,25 @@ function main(): void {
         "Opening stock",
       ]) &&
       includesAll(publicGrid, [
-        "Choose size and colour",
-        "product.variants.length > 1",
+        "View product &amp; choose options",
+        "detailHref",
       ]) &&
       includesAll(publicProductPage, [
-        "Choose your size and colour",
-        "variant.options",
-      ]),
+        "StorefrontProductVariantSelector",
+        "variants={product.variants}",
+      ]) &&
+      includesAll(
+        read(
+          "src/components/catalog/storefront-product-variant-selector.tsx",
+        ),
+        [
+          "data-product-variant-selector",
+          "data-variant-option",
+          "AuthenticatedAddToCartButton",
+          "selectedVariant",
+          "<select",
+        ],
+      ),
     "Variant management does not preserve unique combinations, per-variant stock or explicit customer selection.",
   );
   console.log(
@@ -266,7 +278,7 @@ function main(): void {
     includesAll(publicGrid, [
       "primaryImageUrl",
       "productMedia",
-      "AuthenticatedAddToCartButton",
+      "detailHref",
     ]) &&
       includesAll(
         publicProductPage,
