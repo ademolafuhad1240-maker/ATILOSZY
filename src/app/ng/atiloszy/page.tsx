@@ -87,8 +87,8 @@ export default function AtiloszyPage() {
       </section>
 
       <section className="atiloszy-commerce-hero bg-[#03130c] px-5 py-6 text-white md:py-10">
-        <div className="mx-auto grid max-w-[1440px] gap-4 lg:grid-cols-[1.02fr_0.98fr]">
-          <div className="relative flex min-h-[600px] flex-col justify-center overflow-hidden border border-white/10 bg-[#082317] p-8 sm:p-12 lg:p-16">
+        <div className="mx-auto grid max-w-[1440px] gap-4 lg:grid-cols-[0.94fr_1.06fr]">
+          <div className="order-2 relative flex min-h-[600px] flex-col justify-center overflow-hidden border border-white/10 bg-[#082317] p-8 sm:p-12 lg:p-16">
             <div className="absolute right-[-120px] top-[-100px] h-80 w-80 rounded-full bg-[#16a664]/18 blur-3xl" />
             <div className="absolute bottom-[-120px] left-[-100px] h-72 w-72 rounded-full bg-[#d8bd69]/10 blur-3xl" />
 
@@ -142,7 +142,7 @@ export default function AtiloszyPage() {
             </div>
           </div>
 
-          <div className="grid min-h-[600px] grid-cols-2 grid-rows-2 gap-4">
+          <div className="order-1 grid min-h-[600px] grid-cols-2 grid-rows-2 gap-4">
             <div className="group relative col-span-2 overflow-hidden">
               <Image
                 src="https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=1400&auto=format&fit=crop&q=90"

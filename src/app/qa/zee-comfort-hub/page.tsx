@@ -91,8 +91,8 @@ export default function ZeeComfortHubPage() {
       </section>
 
       <section className="zee-comfort-commerce-hero bg-[#401326] px-5 py-6 text-white md:py-10">
-        <div className="mx-auto grid max-w-[1440px] gap-4 lg:grid-cols-[0.98fr_1.02fr]">
-          <div className="relative flex min-h-[620px] flex-col justify-center overflow-hidden border border-white/10 bg-[#5a1d35] p-8 sm:p-12 lg:p-16">
+        <div className="mx-auto grid max-w-[1440px] gap-4 lg:grid-cols-[0.94fr_1.06fr]">
+          <div className="order-2 relative flex min-h-[620px] flex-col justify-center overflow-hidden border border-white/10 bg-[#5a1d35] p-8 sm:p-12 lg:p-16">
             <div className="absolute right-[-100px] top-[-100px] h-80 w-80 rounded-full bg-[#efc4ce]/16 blur-3xl" />
             <div className="absolute bottom-[-110px] left-[-90px] h-72 w-72 rounded-full bg-[#f8e7e4]/8 blur-3xl" />
 
@@ -149,7 +149,7 @@ export default function ZeeComfortHubPage() {
             </div>
           </div>
 
-          <div className="grid min-h-[620px] grid-cols-2 grid-rows-2 gap-4">
+          <div className="order-1 grid min-h-[620px] grid-cols-2 grid-rows-2 gap-4">
             <div className="group relative col-span-2 overflow-hidden">
               <Image
                 src="/brand/zee-comfort-hub-essentials-hero.webp"
