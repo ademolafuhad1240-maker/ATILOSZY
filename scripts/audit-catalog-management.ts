@@ -169,10 +169,14 @@ function main(): void {
       ]) &&
       includesAll(managerUi, [
         "Variants, selling units and stock",
-        "Add another variant",
+        "Add size / colour variant",
         "catalogVariants",
         'name="variantId"',
         "Opening stock",
+        "suggestVariantSku",
+        "SKU ·",
+        "locked",
+        "editable",
       ]) &&
       includesAll(publicGrid, [
         "View product &amp; choose options",

@@ -167,6 +167,13 @@
   gap: 0.4rem;
 }
 
+.field input[readonly] {
+  border-style: dashed;
+  background: #ece9e1;
+  color: #697176;
+  cursor: not-allowed;
+}
+
 .wideField {
   grid-column: 1 / -1;
 }

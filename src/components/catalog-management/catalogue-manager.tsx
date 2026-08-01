@@ -756,6 +756,49 @@ function variantOption(
   );
 }
 
+function skuSegment(value: string): string {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/gu, "-")
+    .replace(/^-+|-+$/gu, "")
+    .slice(0, 48);
+}
+
+function suggestVariantSku({
+  storefrontCode,
+  productSlug,
+  variants,
+}: {
+  storefrontCode: string;
+  productSlug?: string;
+  variants: readonly EditorVariant[];
+}): string {
+  const prefix = `${storefrontCode.toUpperCase()}-`;
+  const firstSku = variants[0]?.sku.trim().toUpperCase() ?? "";
+  const firstSkuStem = firstSku.startsWith(prefix)
+    ? firstSku
+        .slice(prefix.length)
+        .replace(/-\d+$/u, "")
+    : "";
+  const stem =
+    skuSegment(firstSkuStem) ||
+    skuSegment(productSlug ?? "") ||
+    "VARIANT";
+  const existingSkus = new Set(
+    variants.map((variant) => variant.sku.trim().toUpperCase()),
+  );
+  let sequence = variants.length + 1;
+  let candidate = "";
+
+  do {
+    candidate = `${prefix}${stem}-${String(sequence).padStart(2, "0")}`;
+    sequence += 1;
+  } while (existingSkus.has(candidate));
+
+  return candidate;
+}
+
 function ProductVariantFields({
   catalog,
   product,
@@ -823,11 +866,16 @@ function ProductVariantFields({
   function addVariant() {
     setVariants((current) => {
       const previous = current[current.length - 1];
+      const sku = suggestVariantSku({
+        storefrontCode: catalog.storefront.code,
+        productSlug: product?.slug,
+        variants: current,
+      });
       return [
         ...current,
         {
           key: `new-${Date.now()}-${current.length}`,
-          sku: `${catalog.storefront.code}-`,
+          sku,
           title: `Variant ${current.length + 1}`,
           size: "",
           color: "",
@@ -903,7 +951,7 @@ function ProductVariantFields({
           type="button"
           onClick={addVariant}
         >
-          Add another variant
+          Add size / colour variant
         </button>
       </div>
 
@@ -941,16 +989,24 @@ function ProductVariantFields({
                 />
               </label>
               <label className={styles.field}>
-                <span>SKU</span>
+                <span>
+                  SKU · {variant.id ? "locked" : "editable"}
+                </span>
                 <input
                   value={variant.sku}
                   onChange={(event) =>
                     updateVariant(variant.key, { sku: event.target.value })
                   }
+                  aria-describedby={`sku-help-${variant.key}`}
                   maxLength={80}
                   readOnly={Boolean(variant.id)}
                   required
                 />
+                <small id={`sku-help-${variant.key}`}>
+                  {variant.id
+                    ? "This saved SKU protects inventory and order history. Add a new size / colour variant to receive a new editable SKU."
+                    : `Editable unique code. Keep the ${catalog.storefront.code}- prefix.`}
+                </small>
               </label>
               <label className={styles.field}>
                 <span>Size</span>
