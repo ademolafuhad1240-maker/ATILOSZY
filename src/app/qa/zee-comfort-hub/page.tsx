@@ -43,7 +43,7 @@ export default function ZeeComfortHubPage() {
           >
             <div className="relative h-16 w-20 overflow-hidden border border-[#efc4ce]/25 bg-[#f6e3e6]">
               <Image
-                src="/brand/zee-comfort-hub-logo.png"
+                src="/brand/zee-comfort-hub-logo-2026.webp"
                 alt="Zee COMFORT HUB logo"
                 fill
                 sizes="80px"

@@ -75,6 +75,33 @@
   backdrop-filter: blur(20px);
 }
 
+.heroIntro {
+  min-width: 0;
+}
+
+.brandIdentity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.brandLogo {
+  position: relative;
+  width: 5.25rem;
+  height: 5.25rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--checkout-accent) 42%, transparent);
+  border-radius: 1.35rem;
+  background: #ffffff;
+  box-shadow: 0 1.25rem 3.5rem rgba(0, 0, 0, 0.24);
+}
+
+.brandLogoImage {
+  object-fit: contain;
+}
+
 .eyebrow,
 .stateLabel {
   margin: 0 0 0.8rem;
@@ -83,6 +110,11 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--checkout-accent);
+}
+
+.brandIdentity .eyebrow {
+  margin: 0;
+  line-height: 1.8;
 }
 
 .hero h1 {

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   useEffect,
@@ -475,15 +476,27 @@ export default function StorefrontCheckout({
       <section
         className={styles.hero}
       >
-        <div>
-          <p
-            className={
-              styles.eyebrow
-            }
-          >
-            Secure storefront
-            checkout
-          </p>
+        <div className={styles.heroIntro}>
+          <div className={styles.brandIdentity}>
+            <div className={styles.brandLogo}>
+              <Image
+                src={storefront.logoPath}
+                alt={`${storefront.name} logo`}
+                fill
+                sizes="84px"
+                className={styles.brandLogoImage}
+              />
+            </div>
+
+            <p
+              className={
+                styles.eyebrow
+              }
+            >
+              {storefront.shortName}<br />
+              Secure storefront checkout
+            </p>
+          </div>
 
           <h1>
             Review and prepare

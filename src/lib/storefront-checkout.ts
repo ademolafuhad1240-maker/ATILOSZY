@@ -18,6 +18,7 @@ export interface StorefrontCheckoutConfig {
   loginHref: string;
   ordersHref: string;
   operationsHref: string;
+  logoPath: string;
   pickupEnabled: boolean;
   deliveryEnabled: boolean;
   installationEnabled: boolean;
@@ -51,6 +52,8 @@ const configurations:
         "/ng/atiloszy/account/orders",
       operationsHref:
         "/ng/atiloszy/staff/orders",
+      logoPath:
+        "/brand/atiloszy-logo-original.png",
       pickupEnabled: true,
       deliveryEnabled: true,
       installationEnabled: false,
@@ -81,6 +84,8 @@ const configurations:
         "/ng/zee-beauty-fashion/account/orders",
       operationsHref:
         "/ng/zee-beauty-fashion/staff/orders",
+      logoPath:
+        "/brand/zee-beauty-fashion-logo.webp",
       pickupEnabled: true,
       deliveryEnabled: true,
       installationEnabled: false,
@@ -110,6 +115,8 @@ const configurations:
         "/ng/denald/account/orders",
       operationsHref:
         "/ng/denald/staff/orders",
+      logoPath:
+        "/brand/denald-logo-clean.png",
       pickupEnabled: true,
       deliveryEnabled: true,
       installationEnabled: true,
@@ -140,6 +147,8 @@ const configurations:
         "/qa/zee-comfort-hub/account/orders",
       operationsHref:
         "/qa/zee-comfort-hub/staff/orders",
+      logoPath:
+        "/brand/zee-comfort-hub-logo-2026.webp",
       pickupEnabled: true,
       deliveryEnabled: true,
       installationEnabled: false,

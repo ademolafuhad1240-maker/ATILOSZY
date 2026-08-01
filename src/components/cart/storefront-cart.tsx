@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   useEffect,
@@ -352,23 +353,35 @@ export function StorefrontCart({
     >
       <div className={styles.shell}>
         <header className={styles.header}>
-          <div>
-            <p className={styles.eyebrow}>
-              {storefront.shortName}
-            </p>
+          <div className={styles.brandHeading}>
+            <div className={styles.brandLogo}>
+              <Image
+                src={storefront.logoPath}
+                alt={`${storefront.name} logo`}
+                fill
+                sizes="76px"
+                className={styles.brandLogoImage}
+              />
+            </div>
 
-            <h1 className={styles.title}>
-              Your cart
-            </h1>
+            <div>
+              <p className={styles.eyebrow}>
+                {storefront.shortName}
+              </p>
 
-            <p className={styles.description}>
-              This cart belongs only to
-              your {storefront.shortName}{" "}
-              account. Products, prices,
-              currency and sessions remain
-              isolated from every other
-              SORVYRA storefront.
-            </p>
+              <h1 className={styles.title}>
+                Your cart
+              </h1>
+
+              <p className={styles.description}>
+                This cart belongs only to
+                your {storefront.shortName}{" "}
+                account. Products, prices,
+                currency and sessions remain
+                isolated from every other
+                SORVYRA storefront.
+              </p>
+            </div>
           </div>
 
           <nav

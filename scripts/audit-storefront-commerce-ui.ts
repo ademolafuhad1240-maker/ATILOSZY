@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const storefronts = [
   {
@@ -15,6 +15,7 @@ const storefronts = [
     shop: "src/app/ng/zee-beauty-fashion/shop/page.tsx",
     cartColors: ["#99506f", "#4a102f"],
     checkoutColors: ["#4a102f", "#f2bed2"],
+    logoPath: "/brand/zee-beauty-fashion-logo.webp",
   },
   {
     code: "DEN",
@@ -29,6 +30,7 @@ const storefronts = [
     shop: "src/app/qa/zee-comfort-hub/shop/page.tsx",
     cartColors: ["#9b5a6d", "#481428"],
     checkoutColors: ["#481428", "#efc4ce"],
+    logoPath: "/brand/zee-comfort-hub-logo-2026.webp",
   },
 ] as const;
 
@@ -61,6 +63,17 @@ function main(): void {
         `${path} still renders hardcoded demonstration products.`,
       );
     }
+
+    if ("logoPath" in storefront) {
+      assert.ok(
+        read(storefront.home).includes(storefront.logoPath),
+        `${storefront.home} does not render the approved logo.`,
+      );
+      assert.ok(
+        existsSync(`public${storefront.logoPath}`),
+        `Missing logo asset public${storefront.logoPath}.`,
+      );
+    }
   }
 
   const catalogue = read(
@@ -82,6 +95,21 @@ function main(): void {
   );
   assert.ok(cartComponent.includes("data-cart-storefront"));
   assert.ok(checkoutComponent.includes("data-checkout-page"));
+  assert.ok(cartComponent.includes("storefront.logoPath"));
+  assert.ok(checkoutComponent.includes("storefront.logoPath"));
+
+  const authShell = read("src/components/auth/auth-shell.tsx");
+  const authConfig = read("src/lib/storefront-auth.ts");
+  const checkoutConfig = read("src/lib/storefront-checkout.ts");
+  for (const logoPath of [
+    "/brand/zee-beauty-fashion-logo.webp",
+    "/brand/zee-comfort-hub-logo-2026.webp",
+  ]) {
+    assert.ok(authConfig.includes(logoPath));
+    assert.ok(checkoutConfig.includes(logoPath));
+  }
+  assert.ok(authShell.includes("storefront.logoPath"));
+  console.log("PASS: Approved storefront logos persist across store, account, cart and checkout pages.");
 
   const cartStyles = read(
     "src/components/cart/storefront-cart.module.css",

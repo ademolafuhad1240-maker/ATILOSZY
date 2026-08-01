@@ -128,7 +128,7 @@ const storefrontDefinitions = [
       locationLabel: "Osogbo, Osun State",
       locale: "en-NG",
       timezone: "Africa/Lagos",
-      logoPath: null,
+      logoPath: "/brand/zee-beauty-fashion-logo.webp",
       coverImage:
         "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1400&auto=format&fit=crop&q=88",
       kind: StorefrontKind.RETAIL,
@@ -241,7 +241,7 @@ const storefrontDefinitions = [
       locationLabel: "Fareej Abdul Aziz, Doha",
       locale: "en-QA",
       timezone: "Asia/Qatar",
-      logoPath: "/brand/zee-comfort-hub-logo.png",
+      logoPath: "/brand/zee-comfort-hub-logo-2026.webp",
       coverImage:
         "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1400&auto=format&fit=crop&q=88",
       kind: StorefrontKind.RETAIL,

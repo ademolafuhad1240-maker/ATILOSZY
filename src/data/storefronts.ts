@@ -76,7 +76,7 @@ export const storefronts: Storefront[] = [
       'Personal Care',
       'Household Items',
     ],
-    logo: null,
+    logo: '/brand/zee-beauty-fashion-logo.webp',
     coverImage:
       'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1400&auto=format&fit=crop&q=88',
     theme: 'zee-nigeria',
@@ -134,7 +134,7 @@ export const storefronts: Storefront[] = [
       'T-Shirts',
       'Loungewear',
     ],
-    logo: '/brand/zee-comfort-hub-logo.png',
+    logo: '/brand/zee-comfort-hub-logo-2026.webp',
     coverImage:
       'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1400&auto=format&fit=crop&q=88',
     theme: 'zee-qatar',

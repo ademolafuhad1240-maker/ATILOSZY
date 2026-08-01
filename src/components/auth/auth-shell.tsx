@@ -2,6 +2,7 @@ import type {
   CSSProperties,
   ReactNode,
 } from "react";
+import Image from "next/image";
 import Link from "next/link";
 
 import type {
@@ -59,9 +60,14 @@ export function AuthShell({
         >
           <span
             className={styles.brandMark}
-            aria-hidden="true"
           >
-            {storefront.code.slice(0, 1)}
+            <Image
+              src={storefront.logoPath}
+              alt=""
+              width={44}
+              height={44}
+              className={styles.brandLogo}
+            />
           </span>
 
           <span

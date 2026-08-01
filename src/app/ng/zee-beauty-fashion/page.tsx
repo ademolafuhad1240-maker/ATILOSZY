@@ -41,8 +41,14 @@ export default function ZeeBeautyFashionPage() {
             href="/ng/zee-beauty-fashion"
             className="flex items-center gap-4"
           >
-            <div className="grid h-16 w-16 place-items-center border border-[#f0b7cd]/30 bg-[#59173a] font-display text-3xl font-semibold">
-              Z
+            <div className="relative h-16 w-16 overflow-hidden border border-[#f0b7cd]/30 bg-white">
+              <Image
+                src="/brand/zee-beauty-fashion-logo.webp"
+                alt="ZEE Beauty & Fashion World logo"
+                fill
+                sizes="64px"
+                className="object-contain"
+              />
             </div>
 
             <div>

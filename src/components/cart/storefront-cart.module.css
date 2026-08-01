@@ -76,6 +76,28 @@
   margin-bottom: 2rem;
 }
 
+.brandHeading {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.15rem;
+}
+
+.brandLogo {
+  position: relative;
+  width: 4.75rem;
+  height: 4.75rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--cart-accent) 28%, transparent);
+  border-radius: 1.2rem;
+  background: #ffffff;
+  box-shadow: 0 1rem 3rem var(--cart-glow);
+}
+
+.brandLogoImage {
+  object-fit: contain;
+}
+
 .eyebrow {
   margin: 0 0 0.45rem;
   font-size: 0.76rem;
@@ -336,6 +358,10 @@
 
 @media (max-width: 820px) {
   .header {
+    flex-direction: column;
+  }
+
+  .brandHeading {
     flex-direction: column;
   }
 

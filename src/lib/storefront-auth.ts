@@ -17,6 +17,7 @@ export interface StorefrontAuthConfig {
   forgotPasswordHref: string;
   resetPasswordHref: string;
   verifyHref: string;
+  logoPath: string;
   accent: string;
   accentStrong: string;
   surface: string;
@@ -42,6 +43,8 @@ const storefronts = {
       "/ng/atiloszy/account/reset-password",
     verifyHref:
       "/ng/atiloszy/account/verify",
+    logoPath:
+      "/brand/atiloszy-logo-original.png",
     accent: "#b8a16a",
     accentStrong: "#8c7138",
     surface: "#f5efe3",
@@ -68,6 +71,8 @@ const storefronts = {
       "/ng/zee-beauty-fashion/account/reset-password",
     verifyHref:
       "/ng/zee-beauty-fashion/account/verify",
+    logoPath:
+      "/brand/zee-beauty-fashion-logo.webp",
     accent: "#b04b72",
     accentStrong: "#7e294d",
     surface: "#faedf2",
@@ -92,6 +97,8 @@ const storefronts = {
       "/ng/denald/account/reset-password",
     verifyHref:
       "/ng/denald/account/verify",
+    logoPath:
+      "/brand/denald-logo-clean.png",
     accent: "#15929c",
     accentStrong: "#08656d",
     surface: "#eaf6f6",
@@ -118,6 +125,8 @@ const storefronts = {
       "/qa/zee-comfort-hub/account/reset-password",
     verifyHref:
       "/qa/zee-comfort-hub/account/verify",
+    logoPath:
+      "/brand/zee-comfort-hub-logo-2026.webp",
     accent: "#a23c60",
     accentStrong: "#74243f",
     surface: "#faebf0",
