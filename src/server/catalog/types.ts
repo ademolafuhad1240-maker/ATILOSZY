@@ -33,6 +33,24 @@ export interface CatalogImageInput {
   height?: number | null;
 }
 
+export interface CatalogProductVariantInput {
+  sku: string;
+  title: string;
+  status?: ProductVariantStatus;
+  barcode?: string | null;
+  options?: readonly CatalogVariantOptionInput[];
+  price: CatalogPriceInput;
+  initialStock: number;
+  quantityReserved?: number;
+  reorderLevel?: number;
+  isTracked?: boolean;
+  allowBackorder?: boolean;
+  weightGrams?: number | null;
+  openingStockReason?: string | null;
+  openingStockReferenceType?: string | null;
+  openingStockReferenceId?: string | null;
+}
+
 export interface CreateCatalogProductInput {
   storefrontKey: string;
   categorySlug: string;
@@ -52,22 +70,8 @@ export interface CreateCatalogProductInput {
   availableUntil?: Date | null;
   image?: CatalogImageInput | null;
   images?: readonly CatalogImageInput[];
-  variant: {
-    sku: string;
-    title: string;
-    barcode?: string | null;
-    options?: readonly CatalogVariantOptionInput[];
-    price: CatalogPriceInput;
-    initialStock: number;
-    quantityReserved?: number;
-    reorderLevel?: number;
-    isTracked?: boolean;
-    allowBackorder?: boolean;
-    weightGrams?: number | null;
-    openingStockReason?: string | null;
-    openingStockReferenceType?: string | null;
-    openingStockReferenceId?: string | null;
-  };
+  variant: CatalogProductVariantInput;
+  variants?: readonly CatalogProductVariantInput[];
 }
 
 export interface CreatedCatalogProduct {
@@ -190,11 +194,17 @@ export interface ManagerCatalogProduct {
     altText: string | null;
   } | null;
   images: ManagerCatalogImage[];
-  variant: {
+  variants: ManagerCatalogVariant[];
+  /** The default variant, retained for older catalogue consumers. */
+  variant: ManagerCatalogVariant;
+}
+
+export interface ManagerCatalogVariant {
     id: string;
     sku: string;
     title: string;
     status: ProductVariantStatus;
+    options: PublicCatalogOption[];
     price: {
       amount: string;
       compareAtAmount: string | null;
@@ -210,7 +220,6 @@ export interface ManagerCatalogProduct {
       allowBackorder: boolean;
       movements: ManagerCatalogStockMovement[];
     };
-  };
 }
 
 export interface ManagerCatalogImage {
@@ -269,6 +278,23 @@ export interface ManagedCatalogProductFields {
   reorderLevel: number;
   isTracked: boolean;
   allowBackorder: boolean;
+  variants?: readonly ManagedCatalogVariantInput[];
+}
+
+export interface ManagedCatalogVariantInput {
+  id?: string | null;
+  sku: string;
+  title: string;
+  size?: string | null;
+  color?: string | null;
+  priceAmount: string;
+  compareAtAmount?: string | null;
+  costAmount?: string | null;
+  initialStock?: number;
+  reorderLevel: number;
+  isTracked: boolean;
+  allowBackorder: boolean;
+  status?: ProductVariantStatus;
 }
 
 export interface CreateManagedCatalogProductInput
@@ -291,6 +317,7 @@ export interface AdjustManagedCatalogStockInput {
   storefrontCode: string;
   userId: string;
   storefrontProductId: string;
+  variantId?: string | null;
   quantityDelta: number;
   type: StockMovementType;
   reason: string;

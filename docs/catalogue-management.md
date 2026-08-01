@@ -19,20 +19,26 @@ read and write.
 
 Managers can:
 
-- create a draft or active product with one initial managed variant;
+- create a draft or active product with one or more sellable variants;
 - set its name, descriptions, brand and category;
 - upload, preview, describe, reorder and remove up to eight product
   photos, with the first photo used as the storefront cover;
-- set regular, compare-at and internal cost prices;
+- set size and colour combinations, each with its own locked SKU,
+  regular price, compare-at price, internal cost and opening stock;
 - publish, hide, return to draft or archive a listing;
-- configure featured status, per-order limits, inventory tracking,
-  reorder level and backordering;
-- record purchases, returns, damage and signed count adjustments;
+- configure featured status and per-order limits, plus variant-specific
+  inventory tracking, reorder levels, availability and backordering;
+- record variant-specific purchases, returns, damage and signed count
+  adjustments;
 - review recent stock movements and quantities reserved by orders.
 
-The database and public product page support ordered image galleries.
-The manager screen deliberately manages one default product variant
-so the workflow remains clear while the domain stays extensible.
+The database and public product page support ordered image galleries
+and multiple variants. A manager adds one row for every sellable size
+and colour combination. Existing variants are never deleted through a
+routine edit because carts and orders may refer to them; managers mark
+them unavailable instead. The public catalogue requires the customer
+to choose the exact variant before adding a multi-variant product to
+the cart.
 
 ## Server-controlled boundaries
 
@@ -51,6 +57,10 @@ deactivates the preceding price and creates a new active price, so
 cart and order history can continue referring to historical prices.
 Stock adjustments use the existing atomic inventory service and
 cannot reduce on-hand stock below reserved stock.
+
+The variant milestone uses the existing `ProductVariant`,
+`VariantOption`, `StorefrontPrice`, and `Inventory` tables, so it does
+not require a schema migration or any new Railway variable.
 
 `ACTIVE` products appear in the public live catalogue. `DRAFT`,
 `HIDDEN`, and `ARCHIVED` products do not. Returning from the hosted

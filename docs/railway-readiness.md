@@ -59,7 +59,10 @@ Next.js start command reads it without a hardcoded port.
     database before enabling a test payment provider.
 
 The approved manager catalogue at `/manager/catalogue` supports
+multiple size/colour variants with separate SKU, price and stock, plus
 durable multi-photo uploads through the optional Cloudinary adapter.
+Variant management uses the existing database tables and needs no new
+Railway variable or migration.
 The provider remains disabled by default. Run
 `npm run audit:catalog-media` and
 `npm run db:audit:catalog-management` before enabling it. Uploaded

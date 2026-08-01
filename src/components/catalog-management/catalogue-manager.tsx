@@ -18,6 +18,7 @@ import type {
 } from "@/lib/storefront-auth";
 import type {
   ManagerCatalogProduct,
+  ManagerCatalogVariant,
   ManagerCatalogView,
   UploadedManagedCatalogImage,
 } from "@/server/catalog/types";
@@ -50,6 +51,23 @@ interface EditorImage {
   uploadToken?: string;
   url: string;
   altText: string;
+}
+
+interface EditorVariant {
+  key: string;
+  id?: string;
+  sku: string;
+  title: string;
+  size: string;
+  color: string;
+  priceAmount: string;
+  compareAtAmount: string;
+  costAmount: string;
+  initialStock?: string;
+  reorderLevel: string;
+  isTracked: boolean;
+  allowBackorder: boolean;
+  status: "ACTIVE" | "INACTIVE" | "DISCONTINUED";
 }
 
 function stringValue(
@@ -127,6 +145,40 @@ function productPayload(
     images = [];
   }
 
+  let variants: Array<{
+    id?: string;
+    sku: string;
+    title: string;
+    size: string;
+    color: string;
+    priceAmount: string;
+    compareAtAmount: string;
+    costAmount: string;
+    initialStock?: number;
+    reorderLevel: number;
+    isTracked: boolean;
+    allowBackorder: boolean;
+    status: string;
+  }> = [];
+
+  try {
+    const parsed = JSON.parse(
+      stringValue(data, "catalogVariants") || "[]",
+    ) as unknown;
+
+    if (Array.isArray(parsed)) {
+      variants = parsed;
+    }
+  } catch {
+    variants = [];
+  }
+
+  const firstVariant = variants[0];
+
+  if (!firstVariant) {
+    throw new Error("Add at least one product variant before saving.");
+  }
+
   return {
     storefrontCode,
     categorySlug: stringValue(
@@ -163,35 +215,15 @@ function productPayload(
         "maxPerOrder",
       ),
     images,
-    variantTitle: stringValue(
-      data,
-      "variantTitle",
-    ),
-    priceAmount: stringValue(
-      data,
-      "priceAmount",
-    ),
-    compareAtAmount:
-      stringValue(
-        data,
-        "compareAtAmount",
-      ),
-    costAmount: stringValue(
-      data,
-      "costAmount",
-    ),
-    reorderLevel:
-      integerValue(
-        data,
-        "reorderLevel",
-      ),
-    isTracked:
-      data.get("isTracked") ===
-      "on",
-    allowBackorder:
-      data.get(
-        "allowBackorder",
-      ) === "on",
+    variants,
+    // Mirrors keep older API clients compatible while the server uses variants.
+    variantTitle: firstVariant.title,
+    priceAmount: firstVariant.priceAmount,
+    compareAtAmount: firstVariant.compareAtAmount,
+    costAmount: firstVariant.costAmount,
+    reorderLevel: firstVariant.reorderLevel,
+    isTracked: firstVariant.isTracked,
+    allowBackorder: firstVariant.allowBackorder,
   };
 }
 
@@ -698,6 +730,331 @@ function ProductImageFields({
   );
 }
 
+function variantOption(
+  variant: ManagerCatalogVariant,
+  names: readonly string[],
+): string {
+  return (
+    variant.options.find((option) =>
+      names.includes(option.name.toLowerCase()),
+    )?.value ?? ""
+  );
+}
+
+function ProductVariantFields({
+  catalog,
+  product,
+}: {
+  catalog: ManagerCatalogView;
+  product?: ManagerCatalogProduct;
+}) {
+  const [variants, setVariants] = useState<EditorVariant[]>(() =>
+    product
+      ? product.variants.map((variant) => ({
+          key: variant.id,
+          id: variant.id,
+          sku: variant.sku,
+          title: variant.title,
+          size: variantOption(variant, ["size"]),
+          color: variantOption(variant, ["colour", "color"]),
+          priceAmount: variant.price.amount,
+          compareAtAmount: variant.price.compareAtAmount ?? "",
+          costAmount: variant.price.costAmount ?? "",
+          reorderLevel: String(variant.inventory.reorderLevel),
+          isTracked: variant.inventory.isTracked,
+          allowBackorder: variant.inventory.allowBackorder,
+          status: variant.status,
+        }))
+      : [
+          {
+            key: "new-1",
+            sku: `${catalog.storefront.code}-`,
+            title: "Standard",
+            size: "",
+            color: "",
+            priceAmount: "",
+            compareAtAmount: "",
+            costAmount: "",
+            initialStock: "0",
+            reorderLevel: "0",
+            isTracked: true,
+            allowBackorder: false,
+            status: "ACTIVE",
+          },
+        ],
+  );
+
+  function updateVariant(
+    key: string,
+    update: Partial<EditorVariant>,
+  ) {
+    setVariants((current) =>
+      current.map((variant) =>
+        variant.key === key ? { ...variant, ...update } : variant,
+      ),
+    );
+  }
+
+  function addVariant() {
+    setVariants((current) => {
+      const previous = current[current.length - 1];
+      return [
+        ...current,
+        {
+          key: `new-${Date.now()}-${current.length}`,
+          sku: `${catalog.storefront.code}-`,
+          title: `Variant ${current.length + 1}`,
+          size: "",
+          color: "",
+          priceAmount: previous?.priceAmount ?? "",
+          compareAtAmount: previous?.compareAtAmount ?? "",
+          costAmount: previous?.costAmount ?? "",
+          initialStock: "0",
+          reorderLevel: previous?.reorderLevel ?? "0",
+          isTracked: previous?.isTracked ?? true,
+          allowBackorder: previous?.allowBackorder ?? false,
+          status: "ACTIVE",
+        },
+      ];
+    });
+  }
+
+  const serialized = variants.map((variant) => ({
+    ...(variant.id ? { id: variant.id } : {}),
+    sku: variant.sku,
+    title: variant.title,
+    size: variant.size,
+    color: variant.color,
+    priceAmount: variant.priceAmount,
+    compareAtAmount: variant.compareAtAmount,
+    costAmount: variant.costAmount,
+    ...(!variant.id
+      ? {
+          initialStock: Number.parseInt(variant.initialStock ?? "0", 10),
+        }
+      : {}),
+    reorderLevel: Number.parseInt(variant.reorderLevel || "0", 10),
+    isTracked: variant.isTracked,
+    allowBackorder: variant.allowBackorder,
+    status: variant.status,
+  }));
+
+  return (
+    <section className={styles.variantEditor}>
+      <input
+        type="hidden"
+        name="catalogVariants"
+        value={JSON.stringify(serialized)}
+        readOnly
+      />
+      <div className={styles.variantHeading}>
+        <div>
+          <h3>Sizes, colours and stock</h3>
+          <p>
+            Add one row for every sellable combination. Each combination has
+            its own SKU, price and inventory.
+          </p>
+        </div>
+        <button
+          className={styles.secondaryButton}
+          type="button"
+          onClick={addVariant}
+        >
+          Add another variant
+        </button>
+      </div>
+
+      <div className={styles.variantList}>
+        {variants.map((variant, index) => (
+          <article className={styles.variantCard} key={variant.key}>
+            <div className={styles.variantCardHeading}>
+              <strong>Variant {index + 1}</strong>
+              {!variant.id && variants.length > 1 ? (
+                <button
+                  className={styles.dangerLink}
+                  type="button"
+                  onClick={() =>
+                    setVariants((current) =>
+                      current.filter((candidate) => candidate.key !== variant.key),
+                    )
+                  }
+                >
+                  Remove
+                </button>
+              ) : null}
+            </div>
+
+            <div className={styles.variantGrid}>
+              <label className={styles.field}>
+                <span>Variant name</span>
+                <input
+                  value={variant.title}
+                  onChange={(event) =>
+                    updateVariant(variant.key, { title: event.target.value })
+                  }
+                  maxLength={240}
+                  placeholder="Black / Size 42"
+                  required
+                />
+              </label>
+              <label className={styles.field}>
+                <span>SKU</span>
+                <input
+                  value={variant.sku}
+                  onChange={(event) =>
+                    updateVariant(variant.key, { sku: event.target.value })
+                  }
+                  maxLength={80}
+                  readOnly={Boolean(variant.id)}
+                  required
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Size</span>
+                <input
+                  value={variant.size}
+                  onChange={(event) =>
+                    updateVariant(variant.key, { size: event.target.value })
+                  }
+                  maxLength={120}
+                  placeholder="e.g. 42, XL, One size"
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Colour</span>
+                <input
+                  value={variant.color}
+                  onChange={(event) =>
+                    updateVariant(variant.key, { color: event.target.value })
+                  }
+                  maxLength={120}
+                  placeholder="e.g. Black"
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Selling price ({catalog.storefront.currencyCode})</span>
+                <input
+                  value={variant.priceAmount}
+                  onChange={(event) =>
+                    updateVariant(variant.key, {
+                      priceAmount: event.target.value,
+                    })
+                  }
+                  inputMode="decimal"
+                  placeholder="1000.00"
+                  required
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Compare-at price</span>
+                <input
+                  value={variant.compareAtAmount}
+                  onChange={(event) =>
+                    updateVariant(variant.key, {
+                      compareAtAmount: event.target.value,
+                    })
+                  }
+                  inputMode="decimal"
+                  placeholder="Optional"
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Internal cost price</span>
+                <input
+                  value={variant.costAmount}
+                  onChange={(event) =>
+                    updateVariant(variant.key, {
+                      costAmount: event.target.value,
+                    })
+                  }
+                  inputMode="decimal"
+                  placeholder="Optional"
+                />
+              </label>
+              {!variant.id ? (
+                <label className={styles.field}>
+                  <span>Opening stock</span>
+                  <input
+                    value={variant.initialStock ?? "0"}
+                    onChange={(event) =>
+                      updateVariant(variant.key, {
+                        initialStock: event.target.value,
+                      })
+                    }
+                    type="number"
+                    min={0}
+                    step={1}
+                    required
+                  />
+                </label>
+              ) : null}
+              <label className={styles.field}>
+                <span>Reorder alert level</span>
+                <input
+                  value={variant.reorderLevel}
+                  onChange={(event) =>
+                    updateVariant(variant.key, {
+                      reorderLevel: event.target.value,
+                    })
+                  }
+                  type="number"
+                  min={0}
+                  step={1}
+                  required
+                />
+              </label>
+              <label className={styles.field}>
+                <span>Customer availability</span>
+                <select
+                  value={variant.status}
+                  onChange={(event) =>
+                    updateVariant(variant.key, {
+                      status: event.target.value as EditorVariant["status"],
+                    })
+                  }
+                >
+                  <option value="ACTIVE">Available</option>
+                  <option value="INACTIVE">Unavailable</option>
+                  {variant.status === "DISCONTINUED" ? (
+                    <option value="DISCONTINUED">Discontinued</option>
+                  ) : null}
+                </select>
+              </label>
+            </div>
+
+            <div className={styles.variantChecks}>
+              <label className={styles.check}>
+                <input
+                  type="checkbox"
+                  checked={variant.isTracked}
+                  onChange={(event) =>
+                    updateVariant(variant.key, {
+                      isTracked: event.target.checked,
+                    })
+                  }
+                />
+                Track inventory
+              </label>
+              <label className={styles.check}>
+                <input
+                  type="checkbox"
+                  checked={variant.allowBackorder}
+                  onChange={(event) =>
+                    updateVariant(variant.key, {
+                      allowBackorder: event.target.checked,
+                    })
+                  }
+                />
+                Allow orders when out of stock
+              </label>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ProductFields({
   catalog,
   product,
@@ -818,86 +1175,6 @@ function ProductFields({
       </label>
 
       <label className={styles.field}>
-        <span>Variant name</span>
-        <input
-          name="variantTitle"
-          defaultValue={
-            product?.variant.title ??
-            "Default"
-          }
-          maxLength={240}
-          required
-        />
-      </label>
-
-      <label className={styles.field}>
-        <span>
-          Selling price (
-          {
-            catalog.storefront
-              .currencyCode
-          }
-          )
-        </span>
-        <input
-          name="priceAmount"
-          defaultValue={
-            product?.variant.price
-              .amount ?? ""
-          }
-          inputMode="decimal"
-          placeholder="1000.00"
-          required
-        />
-      </label>
-
-      <label className={styles.field}>
-        <span>
-          Compare-at price
-        </span>
-        <input
-          name="compareAtAmount"
-          defaultValue={
-            product?.variant.price
-              .compareAtAmount ?? ""
-          }
-          inputMode="decimal"
-          placeholder="Optional"
-        />
-      </label>
-
-      <label className={styles.field}>
-        <span>
-          Internal cost price
-        </span>
-        <input
-          name="costAmount"
-          defaultValue={
-            product?.variant.price
-              .costAmount ?? ""
-          }
-          inputMode="decimal"
-          placeholder="Optional"
-        />
-      </label>
-
-      <label className={styles.field}>
-        <span>Reorder alert level</span>
-        <input
-          name="reorderLevel"
-          type="number"
-          min={0}
-          step={1}
-          defaultValue={
-            product?.variant
-              .inventory
-              .reorderLevel ?? 0
-          }
-          required
-        />
-      </label>
-
-      <label className={styles.field}>
         <span>
           Maximum per order
         </span>
@@ -919,6 +1196,11 @@ function ProductFields({
         product={product}
       />
 
+      <ProductVariantFields
+        catalog={catalog}
+        product={product}
+      />
+
       <label
         className={styles.check}
       >
@@ -933,37 +1215,6 @@ function ProductFields({
         Featured product
       </label>
 
-      <label
-        className={styles.check}
-      >
-        <input
-          name="isTracked"
-          type="checkbox"
-          defaultChecked={
-            product?.variant
-              .inventory.isTracked ??
-            true
-          }
-        />
-        Track inventory
-      </label>
-
-      <label
-        className={styles.check}
-      >
-        <input
-          name="allowBackorder"
-          type="checkbox"
-          defaultChecked={
-            product?.variant
-              .inventory
-              .allowBackorder ??
-            false
-          }
-        />
-        Allow orders when out of
-        stock
-      </label>
     </div>
   );
 }
@@ -1175,28 +1426,20 @@ export default function CatalogueManager({
     setNotice(null);
 
     try {
+      const payload = productPayload(data, storefrontCode);
+      const firstVariant = payload.variants[0]!;
       await request(
         "/api/catalog/management/products",
         "POST",
         {
-          ...productPayload(
-            data,
-            storefrontCode,
-          ),
+          ...payload,
           listingSlug:
             stringValue(
               data,
               "listingSlug",
             ),
-          sku: stringValue(
-            data,
-            "sku",
-          ),
-          initialStock:
-            integerValue(
-              data,
-              "initialStock",
-            ),
+          sku: firstVariant.sku,
+          initialStock: firstVariant.initialStock ?? 0,
         },
       );
       form.reset();
@@ -1284,6 +1527,10 @@ export default function CatalogueManager({
         "POST",
         {
           storefrontCode,
+          variantId: stringValue(
+            data,
+            "variantId",
+          ),
           quantityDelta:
             integerValue(
               data,
@@ -1334,12 +1581,12 @@ export default function CatalogueManager({
   const lowStockCount =
     catalog?.products.filter(
       (product) =>
-        product.variant.inventory
-          .isTracked &&
-        product.variant.inventory
-          .availableQuantity <=
-          product.variant.inventory
-            .reorderLevel,
+        product.variants.some(
+          (variant) =>
+            variant.inventory.isTracked &&
+            variant.inventory.availableQuantity <=
+              variant.inventory.reorderLevel,
+        ),
     ).length ?? 0;
 
   return (
@@ -1540,36 +1787,6 @@ export default function CatalogueManager({
                     hyphenated storefront URL.
                   </small>
                 </label>
-                <label
-                  className={
-                    styles.field
-                  }
-                >
-                  <span>SKU</span>
-                  <input
-                    name="sku"
-                    placeholder="ATI-SHOE-001"
-                    maxLength={80}
-                    required
-                  />
-                </label>
-                <label
-                  className={
-                    styles.field
-                  }
-                >
-                  <span>
-                    Opening stock
-                  </span>
-                  <input
-                    name="initialStock"
-                    type="number"
-                    min={0}
-                    step={1}
-                    defaultValue={0}
-                    required
-                  />
-                </label>
               </div>
               <ProductFields
                 key={
@@ -1681,10 +1898,10 @@ export default function CatalogueManager({
                             styles.eyebrow
                           }
                         >
-                          {
-                            product.variant
-                              .sku
-                          }{" "}
+                          {product.variants.length}{" "}
+                          {product.variants.length === 1
+                            ? "variant"
+                            : "variants"}{" "}
                           ·{" "}
                           {readable(
                             product.listingStatus,
@@ -1694,13 +1911,14 @@ export default function CatalogueManager({
                           {product.name}
                         </h3>
                         <p>
+                          From{" "}
                           {formatMoney(
-                            product.variant
-                              .price
-                              .amount,
-                            product.variant
-                              .price
-                              .currencyCode,
+                            Math.min(
+                              ...product.variants.map((variant) =>
+                                Number(variant.price.amount),
+                              ),
+                            ).toFixed(2),
+                            product.variant.price.currencyCode,
                           )}
                         </p>
                       </div>
@@ -1710,19 +1928,19 @@ export default function CatalogueManager({
                         }
                       >
                         <strong>
-                          {
-                            product.variant
-                              .inventory
-                              .availableQuantity
-                          }
+                          {product.variants.reduce(
+                            (total, variant) =>
+                              total + variant.inventory.availableQuantity,
+                            0,
+                          )}
                         </strong>
                         <span>available</span>
                         <small>
-                          {
-                            product.variant
-                              .inventory
-                              .quantityReserved
-                          }{" "}
+                          {product.variants.reduce(
+                            (total, variant) =>
+                              total + variant.inventory.quantityReserved,
+                            0,
+                          )}{" "}
                           reserved by
                           orders
                         </small>
@@ -1766,14 +1984,7 @@ export default function CatalogueManager({
                         >
                           URL: /
                           {product.slug} ·
-                          SKU:{" "}
-                          {
-                            product.variant
-                              .sku
-                          }{" "}
-                          (identifiers are
-                          locked after
-                          creation)
+                          Existing variant SKUs are locked after creation.
                         </p>
                         <button
                           className={
@@ -1814,6 +2025,17 @@ export default function CatalogueManager({
                           )
                         }
                       >
+                        <label className={styles.field}>
+                          <span>Variant</span>
+                          <select name="variantId" required>
+                            {product.variants.map((variant) => (
+                              <option key={variant.id} value={variant.id}>
+                                {variant.title} · {variant.sku} ·{" "}
+                                {variant.inventory.availableQuantity} available
+                              </option>
+                            ))}
+                          </select>
+                        </label>
                         <label
                           className={
                             styles.field
@@ -1893,26 +2115,19 @@ export default function CatalogueManager({
                           styles.movements
                         }
                       >
-                        {product.variant
-                          .inventory
-                          .movements
-                          .length ===
-                        0 ? (
+                        {product.variants.every(
+                          (variant) => variant.inventory.movements.length === 0,
+                        ) ? (
                           <p>
                             No stock
                             movements yet.
                           </p>
                         ) : (
-                          product.variant.inventory.movements.map(
-                            (
-                              movement,
-                            ) => (
-                              <div
-                                key={
-                                  movement.id
-                                }
-                              >
+                          product.variants.flatMap((variant) =>
+                            variant.inventory.movements.map((movement) => (
+                              <div key={movement.id}>
                                 <strong>
+                                  {variant.title} · {variant.sku} ·{" "}
                                   {movement.quantityDelta >
                                   0
                                     ? "+"
@@ -1935,7 +2150,7 @@ export default function CatalogueManager({
                                   ).toLocaleString()}
                                 </time>
                               </div>
-                            ),
+                            )),
                           )
                         )}
                       </div>

@@ -3,6 +3,7 @@ import "server-only";
 import {
   PriceType,
   ProductStatus,
+  ProductVariantStatus,
   StockMovementType,
   StorefrontProductStatus,
 } from "@/generated/prisma/client";
@@ -10,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { CatalogServiceError } from "@/server/catalog/errors";
 import type {
   CatalogImageInput,
+  CatalogProductVariantInput,
   CreateCatalogProductInput,
   CreatedCatalogProduct,
 } from "@/server/catalog/types";
@@ -154,6 +156,176 @@ function normalizeCatalogImages(
   );
 }
 
+function normalizeCatalogVariant(
+  input: CatalogProductVariantInput,
+  index: number,
+  storefrontCode: string,
+  globalProductSlug: string,
+) {
+  const label = `Variant ${index + 1}`;
+  const sku = normalizeSku(input.sku);
+  const expectedSkuPrefix = `${storefrontCode}-`;
+  const status = input.status ?? ProductVariantStatus.ACTIVE;
+
+  if (!Object.values(ProductVariantStatus).includes(status)) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} status is invalid.`,
+    );
+  }
+
+  if (!sku.startsWith(expectedSkuPrefix)) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `SKU must begin with ${expectedSkuPrefix}.`,
+      {
+        expectedPrefix: expectedSkuPrefix,
+        receivedSku: sku,
+      },
+    );
+  }
+
+  const initialStock = requireInteger(
+    input.initialStock,
+    `${label} initial stock`,
+    0,
+  );
+  const quantityReserved = requireInteger(
+    input.quantityReserved ?? 0,
+    `${label} reserved stock`,
+    0,
+  );
+
+  if (quantityReserved > initialStock) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} reserved stock cannot exceed stock on hand.`,
+    );
+  }
+
+  const amount = requireMoney(
+    input.price.amount,
+    `${label} price`,
+  );
+  const compareAtAmount =
+    input.price.compareAtAmount === null ||
+    input.price.compareAtAmount === undefined
+      ? null
+      : requireMoney(
+          input.price.compareAtAmount,
+          `${label} compare-at price`,
+        );
+  const costAmount =
+    input.price.costAmount === null ||
+    input.price.costAmount === undefined
+      ? null
+      : requireMoney(
+          input.price.costAmount,
+          `${label} cost price`,
+          true,
+        );
+
+  if (
+    compareAtAmount !== null &&
+    Number(compareAtAmount) <= Number(amount)
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} compare-at price must be greater than its selling price.`,
+    );
+  }
+
+  if (
+    input.price.startsAt &&
+    input.price.endsAt &&
+    input.price.startsAt >= input.price.endsAt
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} price schedule must end after it begins.`,
+    );
+  }
+
+  const options = (input.options ?? []).map(
+    (option, optionIndex) => ({
+      name: requireText(
+        option.name,
+        `${label} option ${optionIndex + 1} name`,
+        80,
+      ),
+      value: requireText(
+        option.value,
+        `${label} option ${optionIndex + 1} value`,
+        120,
+      ),
+      position: requireInteger(
+        option.position ?? optionIndex + 1,
+        `${label} option ${optionIndex + 1} position`,
+        0,
+      ),
+    }),
+  );
+  const optionNames = new Set(
+    options.map((option) => option.name.toLowerCase()),
+  );
+
+  if (optionNames.size !== options.length) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} option names must be unique.`,
+    );
+  }
+
+  return {
+    sku,
+    barcode: optionalText(input.barcode, `${label} barcode`, 80),
+    title: requireText(input.title, `${label} title`, 240),
+    status,
+    weightGrams:
+      input.weightGrams === null || input.weightGrams === undefined
+        ? null
+        : requireInteger(input.weightGrams, `${label} weight`, 0),
+    options,
+    price: {
+      currencyType: input.price.type ?? PriceType.REGULAR,
+      amount,
+      compareAtAmount,
+      costAmount,
+      startsAt: input.price.startsAt ?? null,
+      endsAt: input.price.endsAt ?? null,
+    },
+    inventory: {
+      initialStock,
+      quantityReserved,
+      reorderLevel: requireInteger(
+        input.reorderLevel ?? 0,
+        `${label} reorder level`,
+        0,
+      ),
+      isTracked: input.isTracked ?? true,
+      allowBackorder: input.allowBackorder ?? false,
+    },
+    openingStockReason:
+      optionalText(
+        input.openingStockReason,
+        `${label} opening stock reason`,
+        500,
+      ) ?? "Opening stock created with product",
+    openingStockReferenceType:
+      optionalText(
+        input.openingStockReferenceType,
+        `${label} opening stock reference type`,
+        80,
+      ) ?? "PRODUCT_CREATION",
+    openingStockReferenceId:
+      optionalText(
+        input.openingStockReferenceId,
+        `${label} opening stock reference`,
+        160,
+      ) ?? `${globalProductSlug}:${sku}`,
+  };
+}
+
 export async function createCatalogProduct(
   input: CreateCatalogProductInput,
 ): Promise<CreatedCatalogProduct> {
@@ -175,7 +347,6 @@ export async function createCatalogProduct(
   );
 
   const name = requireText(input.name, "Product name", 240);
-  const sku = normalizeSku(input.variant.sku);
 
   const storefront = await prisma.storefront.findUnique({
     where: {
@@ -207,19 +378,6 @@ export async function createCatalogProduct(
     );
   }
 
-  const expectedSkuPrefix = `${storefront.code}-`;
-
-  if (!sku.startsWith(expectedSkuPrefix)) {
-    throw new CatalogServiceError(
-      "VALIDATION",
-      `SKU must begin with ${expectedSkuPrefix}.`,
-      {
-        expectedPrefix: expectedSkuPrefix,
-        receivedSku: sku,
-      },
-    );
-  }
-
   const globalProductSlug = `${storefront.key}-${listingSlug}`;
 
   if (globalProductSlug.length > 140) {
@@ -229,30 +387,31 @@ export async function createCatalogProduct(
     );
   }
 
-  const initialStock = requireInteger(
-    input.variant.initialStock,
-    "Initial stock",
-    0,
-  );
+  const rawVariants = input.variants ?? [input.variant];
 
-  const quantityReserved = requireInteger(
-    input.variant.quantityReserved ?? 0,
-    "Reserved stock",
-    0,
-  );
-
-  if (quantityReserved > initialStock) {
+  if (rawVariants.length === 0 || rawVariants.length > 100) {
     throw new CatalogServiceError(
       "VALIDATION",
-      "Reserved stock cannot exceed stock on hand.",
+      "A product must have between 1 and 100 variants.",
     );
   }
 
-  const reorderLevel = requireInteger(
-    input.variant.reorderLevel ?? 0,
-    "Reorder level",
-    0,
+  const variants = rawVariants.map((variant, index) =>
+    normalizeCatalogVariant(
+      variant,
+      index,
+      storefront.code,
+      globalProductSlug,
+    ),
   );
+  const skus = new Set(variants.map((variant) => variant.sku));
+
+  if (skus.size !== variants.length) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "Every product variant must have a unique SKU.",
+    );
+  }
 
   const maxPerOrder =
     input.maxPerOrder === null ||
@@ -264,30 +423,6 @@ export async function createCatalogProduct(
           1,
         );
 
-  const amount = requireMoney(
-    input.variant.price.amount,
-    "Price",
-  );
-
-  const compareAtAmount =
-    input.variant.price.compareAtAmount === null ||
-    input.variant.price.compareAtAmount === undefined
-      ? null
-      : requireMoney(
-          input.variant.price.compareAtAmount,
-          "Compare-at price",
-        );
-
-  const costAmount =
-    input.variant.price.costAmount === null ||
-    input.variant.price.costAmount === undefined
-      ? null
-      : requireMoney(
-          input.variant.price.costAmount,
-          "Cost price",
-          true,
-        );
-
   if (
     input.availableFrom &&
     input.availableUntil &&
@@ -296,48 +431,6 @@ export async function createCatalogProduct(
     throw new CatalogServiceError(
       "VALIDATION",
       "Product availability must end after it begins.",
-    );
-  }
-
-  if (
-    input.variant.price.startsAt &&
-    input.variant.price.endsAt &&
-    input.variant.price.startsAt >= input.variant.price.endsAt
-  ) {
-    throw new CatalogServiceError(
-      "VALIDATION",
-      "Price schedule must end after it begins.",
-    );
-  }
-
-  const options = (input.variant.options ?? []).map(
-    (option, index) => ({
-      name: requireText(
-        option.name,
-        `Variant option ${index + 1} name`,
-        80,
-      ),
-      value: requireText(
-        option.value,
-        `Variant option ${index + 1} value`,
-        120,
-      ),
-      position: requireInteger(
-        option.position ?? index + 1,
-        `Variant option ${index + 1} position`,
-        0,
-      ),
-    }),
-  );
-
-  const optionNames = new Set(
-    options.map((option) => option.name.toLowerCase()),
-  );
-
-  if (optionNames.size !== options.length) {
-    throw new CatalogServiceError(
-      "VALIDATION",
-      "Variant option names must be unique.",
     );
   }
 
@@ -373,29 +466,6 @@ export async function createCatalogProduct(
             : []
         ),
     );
-  const openingStockReason =
-    optionalText(
-      input.variant
-        .openingStockReason,
-      "Opening stock reason",
-      500,
-    ) ??
-    "Opening stock created with product";
-  const openingStockReferenceType =
-    optionalText(
-      input.variant
-        .openingStockReferenceType,
-      "Opening stock reference type",
-      80,
-    ) ?? "PRODUCT_CREATION";
-  const openingStockReferenceId =
-    optionalText(
-      input.variant
-        .openingStockReferenceId,
-      "Opening stock reference",
-      160,
-    ) ?? globalProductSlug;
-
   try {
     const createdProduct = await prisma.product.create({
       data: {
@@ -441,83 +511,66 @@ export async function createCatalogProduct(
                 }
               : undefined,
             variants: {
-              create: {
-                sku,
-                barcode: optionalText(
-                  input.variant.barcode,
-                  "Barcode",
-                  80,
-                ),
-                title: requireText(
-                  input.variant.title,
-                  "Variant title",
-                  240,
-                ),
-                isDefault: true,
-                weightGrams:
-                  input.variant.weightGrams === null ||
-                  input.variant.weightGrams === undefined
-                    ? null
-                    : requireInteger(
-                        input.variant.weightGrams,
-                        "Weight",
-                        0,
-                      ),
+              create: variants.map((variant, index) => ({
+                sku: variant.sku,
+                barcode: variant.barcode,
+                title: variant.title,
+                status: variant.status,
+                isDefault: index === 0,
+                weightGrams: variant.weightGrams,
                 options:
-                  options.length > 0
-                    ? {
-                        create: options,
-                      }
+                  variant.options.length > 0
+                    ? { create: variant.options }
                     : undefined,
                 prices: {
                   create: {
                     currencyCode: storefront.currencyCode,
-                    type:
-                      input.variant.price.type ??
-                      PriceType.REGULAR,
-                    amount,
-                    compareAtAmount,
-                    costAmount,
-                    startsAt:
-                      input.variant.price.startsAt ?? null,
-                    endsAt:
-                      input.variant.price.endsAt ?? null,
+                    type: variant.price.currencyType,
+                    amount: variant.price.amount,
+                    compareAtAmount:
+                      variant.price.compareAtAmount,
+                    costAmount: variant.price.costAmount,
+                    startsAt: variant.price.startsAt,
+                    endsAt: variant.price.endsAt,
                     isActive: true,
                   },
                 },
                 inventory: {
                   create: {
                     storefrontId: storefront.id,
-                    quantityOnHand: initialStock,
-                    quantityReserved,
-                    reorderLevel,
-                    isTracked:
-                      input.variant.isTracked ?? true,
+                    quantityOnHand:
+                      variant.inventory.initialStock,
+                    quantityReserved:
+                      variant.inventory.quantityReserved,
+                    reorderLevel:
+                      variant.inventory.reorderLevel,
+                    isTracked: variant.inventory.isTracked,
                     allowBackorder:
-                      input.variant.allowBackorder ?? false,
+                      variant.inventory.allowBackorder,
                     movements:
-                      initialStock > 0
+                      variant.inventory.initialStock > 0
                         ? {
                             create: {
                               type:
                                 StockMovementType.OPENING_STOCK,
-                              quantityDelta: initialStock,
+                              quantityDelta:
+                                variant.inventory.initialStock,
                               quantityOnHandAfter:
-                                initialStock,
+                                variant.inventory.initialStock,
                               quantityReservedAfter:
-                                quantityReserved,
+                                variant.inventory.quantityReserved,
                               reason:
-                                openingStockReason,
+                                variant.openingStockReason,
                               referenceType:
-                                openingStockReferenceType,
+                                variant.openingStockReferenceType,
                               referenceId:
-                                openingStockReferenceId,
+                                variant.openingStockReferenceId,
                             },
                           }
                         : undefined,
                   },
                 },
-              },
+              })),
             },
           },
         },
@@ -548,7 +601,7 @@ export async function createCatalogProduct(
       storefrontProductId: storefrontProduct.id,
       variantId: variant.id,
       listingSlug,
-      sku,
+      sku: variant.sku,
       storefrontCode: storefront.code,
       currencyCode: storefront.currencyCode,
     };

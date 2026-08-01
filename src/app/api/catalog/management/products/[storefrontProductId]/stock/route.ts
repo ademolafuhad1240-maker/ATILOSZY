@@ -14,6 +14,7 @@ import {
   catalogApiErrorResponse,
   catalogJsonResponse,
   catalogSessionRequiredResponse,
+  optionalCatalogString,
   readCatalogApiSession,
   requireCatalogIdentifier,
   requireCatalogInteger,
@@ -71,6 +72,12 @@ export async function POST(
           requireCatalogIdentifier(
             params
               .storefrontProductId,
+          ),
+        variantId:
+          optionalCatalogString(
+            body,
+            "variantId",
+            191,
           ),
         quantityDelta:
           requireCatalogInteger(

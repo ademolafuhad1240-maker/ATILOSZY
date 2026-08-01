@@ -60,6 +60,8 @@ async function main(): Promise<void> {
     `manager-audit-${lowerToken}`;
   const sku =
     `ATI-MGMT-${token}`;
+  const secondSku =
+    `ATI-MGMT-${token}-42`;
   const userIds: string[] = [];
   let productId: string | null =
     null;
@@ -231,6 +233,34 @@ async function main(): Promise<void> {
       reorderLevel: 1,
       isTracked: true,
       allowBackorder: false,
+      variants: [
+        {
+          sku,
+          title: "Black / Size 41",
+          size: "41",
+          color: "Black",
+          priceAmount: "1000.00",
+          compareAtAmount: "1250.00",
+          costAmount: "600.00",
+          initialStock: 3,
+          reorderLevel: 1,
+          isTracked: true,
+          allowBackorder: false,
+        },
+        {
+          sku: secondSku,
+          title: "Black / Size 42",
+          size: "42",
+          color: "Black",
+          priceAmount: "1050.00",
+          compareAtAmount: "1300.00",
+          costAmount: "625.00",
+          initialStock: 2,
+          reorderLevel: 1,
+          isTracked: true,
+          allowBackorder: false,
+        },
+      ],
     };
 
     await expectCatalogError(
@@ -273,6 +303,23 @@ async function main(): Promise<void> {
       created.storefrontCode,
       "ATI",
     );
+    const createdManaged =
+      await getManagerCatalog({
+        storefrontCode: "ATI",
+        userId: manager.id,
+      });
+    const secondVariantId =
+      createdManaged.products
+        .find(
+          (product) =>
+            product.id ===
+            created.storefrontProductId,
+        )
+        ?.variants.find(
+          (variant) =>
+            variant.sku === secondSku,
+        )?.id;
+    assert.ok(secondVariantId);
 
     const mediaSecret =
       process.env
@@ -401,6 +448,23 @@ async function main(): Promise<void> {
             "Temporary audit damaged item",
         },
       );
+    const afterSecondVariantPurchase =
+      await adjustManagedCatalogStock(
+        {
+          storefrontCode: "ATI",
+          userId: manager.id,
+          storefrontProductId:
+            created.storefrontProductId,
+          variantId:
+            secondVariantId,
+          quantityDelta: 1,
+          type:
+            StockMovementType
+              .PURCHASE,
+          reason:
+            "Temporary audit size 42 delivery",
+        },
+      );
 
     assert.equal(
       afterPurchase.quantityOnHand,
@@ -409,6 +473,10 @@ async function main(): Promise<void> {
     assert.equal(
       afterDamage.quantityOnHand,
       4,
+    );
+    assert.equal(
+      afterSecondVariantPurchase.quantityOnHand,
+      3,
     );
 
     const managed =
@@ -437,6 +505,21 @@ async function main(): Promise<void> {
       managedProduct.variant.inventory
         .availableQuantity,
       4,
+    );
+    assert.equal(
+      managedProduct.variants.length,
+      2,
+    );
+    assert.deepEqual(
+      managedProduct.variants[1]?.options,
+      [
+        { name: "Size", value: "42" },
+        { name: "Colour", value: "Black" },
+      ],
+    );
+    assert.equal(
+      managedProduct.variants[1]?.inventory.availableQuantity,
+      3,
     );
     assert.equal(
       managedProduct.images.length,
@@ -470,6 +553,14 @@ async function main(): Promise<void> {
     assert.equal(
       publicProduct.images.length,
       2,
+    );
+    assert.equal(
+      publicProduct.variants.length,
+      2,
+    );
+    assert.equal(
+      publicProduct.variants[1]?.options[0]?.value,
+      "42",
     );
 
     const [
@@ -509,6 +600,9 @@ async function main(): Promise<void> {
 
     console.log(
       "PASS: Manager product creation derived storefront and NGN currency on the server.",
+    );
+    console.log(
+      "PASS: Multiple size and colour variants retained separate SKUs, prices and stock.",
     );
     console.log(
       "PASS: Product update preserved price history and published an ordered multi-photo gallery.",

@@ -209,6 +209,13 @@ export async function StorefrontLiveProductPage({
           }
           aria-label="Product variants"
         >
+          <div className={styles.variantIntro}>
+            <h2>Choose your size and colour</h2>
+            <p>
+              Select the exact available combination before adding it to your
+              secure cart. Price and stock are checked for that variant.
+            </p>
+          </div>
           {product.variants.map(
             (variant) => (
               <article

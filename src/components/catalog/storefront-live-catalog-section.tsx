@@ -218,7 +218,9 @@ export default async function StorefrontLiveCatalogSection({
                           styles.variantTitle
                         }
                       >
-                        {variant.title}
+                        {product.variants.length > 1
+                          ? `${product.variants.length} size / colour options`
+                          : variant.title}
                       </p>
 
                       <p
@@ -226,15 +228,19 @@ export default async function StorefrontLiveCatalogSection({
                           styles.price
                         }
                       >
+                        {product.variants.length > 1 ? "From " : ""}
                         {formatMoney(
-                          variant.price
-                            .amount,
+                          Math.min(
+                            ...product.variants.map((candidate) =>
+                              Number(candidate.price.amount),
+                            ),
+                          ).toFixed(2),
                           variant.price
                             .currencyCode,
                         )}
 
-                        {variant.price
-                          .compareAtAmount ? (
+                        {product.variants.length === 1 &&
+                        variant.price.compareAtAmount ? (
                           <span
                             className={
                               styles.comparePrice
@@ -265,31 +271,21 @@ export default async function StorefrontLiveCatalogSection({
                       </p>
                     </div>
 
-                    <AuthenticatedAddToCartButton
-                      storefrontCode={
-                        storefront.code
-                      }
-                      productVariantId={
-                        variant.id
-                      }
-                      loginHref={
-                        storefront.loginHref
-                      }
-                      cartHref={
-                        storefront.cartHref
-                      }
-                      availableQuantity={
-                        variant
-                          .availableQuantity
-                      }
-                      allowBackorder={
-                        variant
-                          .allowBackorder
-                      }
-                      disabled={
-                        !variant.isInStock
-                      }
-                    />
+                    {product.variants.length > 1 ? (
+                      <Link className={styles.chooseVariant} href={detailHref}>
+                        Choose size and colour
+                      </Link>
+                    ) : (
+                      <AuthenticatedAddToCartButton
+                        storefrontCode={storefront.code}
+                        productVariantId={variant.id}
+                        loginHref={storefront.loginHref}
+                        cartHref={storefront.cartHref}
+                        availableQuantity={variant.availableQuantity}
+                        allowBackorder={variant.allowBackorder}
+                        disabled={!variant.isInStock}
+                      />
+                    )}
                   </>
                 ) : (
                   <p

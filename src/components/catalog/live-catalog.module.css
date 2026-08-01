@@ -213,6 +213,21 @@
   text-decoration: underline;
 }
 
+.chooseVariant {
+  display: inline-flex;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.8rem 1rem;
+  background: var(--catalog-accent);
+  color: #fff;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.chooseVariant:hover {
+  filter: brightness(0.94);
+}
+
 .productDescription {
   margin: 0;
   min-height: 3rem;
@@ -364,4 +379,25 @@
   .grid {
     grid-template-columns: 1fr;
   }
+}
+
+.variantIntro {
+  grid-column: 1 / -1;
+}
+
+.variantIntro h2,
+.variantIntro p {
+  margin: 0;
+}
+
+.variantIntro h2 {
+  font-family: Georgia, serif;
+  font-size: clamp(1.6rem, 4vw, 2.35rem);
+}
+
+.variantIntro p {
+  max-width: 48rem;
+  margin-top: 0.45rem;
+  color: #606a78;
+  line-height: 1.6;
 }

@@ -182,6 +182,75 @@
   background: #f8f6f0;
 }
 
+.variantEditor {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 1rem;
+  border: 1px solid
+    rgba(20, 31, 36, 0.12);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: #f4f1e8;
+}
+
+.variantHeading,
+.variantCardHeading,
+.variantChecks {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.variantHeading h3,
+.variantHeading p {
+  margin: 0;
+}
+
+.variantHeading p {
+  max-width: 48rem;
+  color: #687278;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.variantList {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.variantCard {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid
+    rgba(20, 31, 36, 0.12);
+  border-radius: 0.9rem;
+  padding: 0.9rem;
+  background: #fff;
+}
+
+.variantGrid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.variantChecks {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.dangerLink {
+  border: 0;
+  background: transparent;
+  color: #9a2f39;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .imageManagerHeading {
   display: flex;
   align-items: center;
@@ -338,6 +407,11 @@
   font: inherit;
 }
 
+.field input:read-only {
+  background: #eeeae1;
+  color: #626b6d;
+}
+
 .field small,
 .wideField small,
 .locked {
@@ -485,6 +559,20 @@
 
   .imageManager {
     grid-column: auto;
+  }
+
+  .variantEditor {
+    grid-column: auto;
+  }
+
+  .variantHeading,
+  .variantCardHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .variantGrid {
+    grid-template-columns: 1fr;
   }
 
   .imageManagerHeading {

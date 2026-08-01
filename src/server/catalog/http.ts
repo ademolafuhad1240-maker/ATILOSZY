@@ -5,6 +5,7 @@ import type {
 } from "next/server";
 
 import {
+  ProductVariantStatus,
   StockMovementType,
   StorefrontProductStatus,
 } from "@/generated/prisma/client";
@@ -22,6 +23,7 @@ import {
 import type {
   ManagedCatalogProductFields,
   ManagedCatalogImageSelectionInput,
+  ManagedCatalogVariantInput,
 } from "./types";
 import {
   MAX_CATALOG_IMAGES,
@@ -53,6 +55,7 @@ const productFields = [
   "reorderLevel",
   "isTracked",
   "allowBackorder",
+  "variants",
 ] as const;
 
 export const createProductFields = [
@@ -70,6 +73,7 @@ export const stockAdjustmentFields = [
   "quantityDelta",
   "type",
   "reason",
+  "variantId",
 ] as const;
 
 export function catalogJsonResponse(
@@ -373,6 +377,104 @@ function optionalCatalogImages(
   );
 }
 
+function optionalCatalogVariants(
+  value: unknown,
+): ManagedCatalogVariantInput[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (!Array.isArray(value) || value.length === 0 || value.length > 100) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "A product must have between 1 and 100 variants.",
+    );
+  }
+
+  return value.map((item, index) => {
+    if (typeof item !== "object" || item === null || Array.isArray(item)) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        `Variant ${index + 1} is invalid.`,
+      );
+    }
+
+    const variant = item as Record<string, unknown>;
+    const allowed = new Set([
+      "id",
+      "sku",
+      "title",
+      "size",
+      "color",
+      "priceAmount",
+      "compareAtAmount",
+      "costAmount",
+      "initialStock",
+      "reorderLevel",
+      "isTracked",
+      "allowBackorder",
+      "status",
+    ]);
+
+    if (Object.keys(variant).some((field) => !allowed.has(field))) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        "Variant storefront, currency, price type and inventory audit identity are controlled by the server.",
+      );
+    }
+
+    const object = variant as JsonObject;
+    const statusValue = object.status;
+    const status =
+      statusValue === undefined
+        ? ProductVariantStatus.ACTIVE
+        : typeof statusValue === "string" &&
+            Object.values(ProductVariantStatus).includes(
+              statusValue as ProductVariantStatus,
+            )
+          ? (statusValue as ProductVariantStatus)
+          : null;
+
+    if (status === null) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        `Variant ${index + 1} availability is invalid.`,
+      );
+    }
+
+    const initialStock = object.initialStock;
+
+    if (
+      initialStock !== undefined &&
+      (typeof initialStock !== "number" || !Number.isSafeInteger(initialStock))
+    ) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        `Variant ${index + 1} opening stock must be a whole number.`,
+      );
+    }
+
+    return {
+      id: optionalCatalogString(object, "id", 191),
+      sku: requireCatalogString(object, "sku", 80),
+      title: requireCatalogString(object, "title", 240),
+      size: optionalCatalogString(object, "size", 120),
+      color: optionalCatalogString(object, "color", 120),
+      priceAmount: requireCatalogString(object, "priceAmount", 40),
+      compareAtAmount:
+        optionalCatalogString(object, "compareAtAmount", 40),
+      costAmount: optionalCatalogString(object, "costAmount", 40),
+      initialStock:
+        typeof initialStock === "number" ? initialStock : undefined,
+      reorderLevel: requireCatalogInteger(object, "reorderLevel"),
+      isTracked: requireCatalogBoolean(object, "isTracked"),
+      allowBackorder:
+        requireCatalogBoolean(object, "allowBackorder"),
+      status,
+    };
+  });
+}
+
 export function requireListingStatus(
   body: JsonObject,
 ): StorefrontProductStatus {
@@ -534,6 +636,10 @@ export function productFieldsFromBody(
       requireCatalogBoolean(
         body,
         "allowBackorder",
+      ),
+    variants:
+      optionalCatalogVariants(
+        body.variants,
       ),
   };
 }

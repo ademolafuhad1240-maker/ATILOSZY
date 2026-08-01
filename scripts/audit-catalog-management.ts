@@ -158,6 +158,34 @@ function main(): void {
   );
 
   assertCondition(
+    includesAll(service, [
+      "Every size and colour combination must be unique.",
+      "Existing variants cannot be deleted.",
+      "variantOption.deleteMany",
+      "candidate.status",
+    ]) &&
+      includesAll(managerUi, [
+        "Sizes, colours and stock",
+        "Add another variant",
+        "catalogVariants",
+        'name="variantId"',
+        "Opening stock",
+      ]) &&
+      includesAll(publicGrid, [
+        "Choose size and colour",
+        "product.variants.length > 1",
+      ]) &&
+      includesAll(publicProductPage, [
+        "Choose your size and colour",
+        "variant.options",
+      ]),
+    "Variant management does not preserve unique combinations, per-variant stock or explicit customer selection.",
+  );
+  console.log(
+    "PASS: Managers control size and colour combinations with variant-specific pricing and stock, and customers must choose the exact variant.",
+  );
+
+  assertCondition(
     includesAll(
       imageRoute,
       [

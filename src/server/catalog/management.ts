@@ -29,6 +29,7 @@ import type {
   CreateManagedCatalogProductInput,
   CreatedCatalogProduct,
   ManagedCatalogProductFields,
+  ManagedCatalogVariantInput,
   ManagedCatalogImageSelectionInput,
   ManagerCatalogView,
   UploadedManagedCatalogImage,
@@ -44,6 +45,7 @@ import {
 } from "./media";
 import {
   normalizeImageUrl,
+  normalizeSku,
   normalizeSlug,
   normalizeStorefrontCode,
   optionalText,
@@ -90,6 +92,23 @@ interface NormalizedManagedProductFields {
   reorderLevel: number;
   isTracked: boolean;
   allowBackorder: boolean;
+  variants: NormalizedManagedVariant[] | null;
+}
+
+interface NormalizedManagedVariant {
+  id: string | null;
+  sku: string;
+  title: string;
+  size: string | null;
+  color: string | null;
+  priceAmount: string;
+  compareAtAmount: string | null;
+  costAmount: string | null;
+  initialStock: number | null;
+  reorderLevel: number;
+  isTracked: boolean;
+  allowBackorder: boolean;
+  status: ProductVariantStatus;
 }
 
 type ResolvedManagedCatalogImage =
@@ -341,6 +360,98 @@ function resolveManagedImageSelections(
   );
 }
 
+function normalizeManagedVariant(
+  input: ManagedCatalogVariantInput,
+  index: number,
+): NormalizedManagedVariant {
+  const label = `Variant ${index + 1}`;
+  const priceAmount = requireMoney(
+    input.priceAmount,
+    `${label} selling price`,
+  );
+  const compareAtAmount =
+    input.compareAtAmount === null ||
+    input.compareAtAmount === undefined ||
+    input.compareAtAmount.trim() === ""
+      ? null
+      : requireMoney(
+          input.compareAtAmount,
+          `${label} compare-at price`,
+        );
+  const costAmount =
+    input.costAmount === null ||
+    input.costAmount === undefined ||
+    input.costAmount.trim() === ""
+      ? null
+      : requireMoney(
+          input.costAmount,
+          `${label} cost price`,
+          true,
+        );
+
+  if (
+    compareAtAmount !== null &&
+    Number(compareAtAmount) <= Number(priceAmount)
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} compare-at price must be greater than its selling price.`,
+    );
+  }
+
+  const status = input.status ?? ProductVariantStatus.ACTIVE;
+
+  if (!Object.values(ProductVariantStatus).includes(status)) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      `${label} availability is invalid.`,
+    );
+  }
+
+  return {
+    id: optionalText(input.id, `${label} identifier`, 191),
+    sku: normalizeSku(input.sku),
+    title: requireText(input.title, `${label} name`, 240),
+    size: optionalText(input.size, `${label} size`, 120),
+    color: optionalText(input.color, `${label} colour`, 120),
+    priceAmount,
+    compareAtAmount,
+    costAmount,
+    initialStock:
+      input.initialStock === undefined
+        ? null
+        : requireInteger(
+            input.initialStock,
+            `${label} opening stock`,
+            0,
+          ),
+    reorderLevel: requireInteger(
+      input.reorderLevel,
+      `${label} reorder level`,
+      0,
+    ),
+    isTracked:
+      typeof input.isTracked === "boolean"
+        ? input.isTracked
+        : (() => {
+            throw new CatalogServiceError(
+              "VALIDATION",
+              `${label} inventory tracking is invalid.`,
+            );
+          })(),
+    allowBackorder:
+      typeof input.allowBackorder === "boolean"
+        ? input.allowBackorder
+        : (() => {
+            throw new CatalogServiceError(
+              "VALIDATION",
+              `${label} backorder setting is invalid.`,
+            );
+          })(),
+    status,
+  };
+}
+
 function normalizeManagedProductFields(
   input: ManagedCatalogProductFields,
 ): NormalizedManagedProductFields {
@@ -398,6 +509,56 @@ function normalizeManagedProductFields(
       "Product image URL",
       2048,
     );
+
+  const variants =
+    input.variants === undefined
+      ? null
+      : input.variants.map(
+          normalizeManagedVariant,
+        );
+
+  if (variants && (variants.length === 0 || variants.length > 100)) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "A product must have between 1 and 100 variants.",
+    );
+  }
+
+  if (variants) {
+    const skus = new Set(variants.map((variant) => variant.sku));
+    const ids = variants
+      .map((variant) => variant.id)
+      .filter((id): id is string => id !== null);
+    const combinations = new Set(
+      variants.map((variant) =>
+        `${variant.size ?? ""}\u0000${variant.color ?? ""}`.toLowerCase(),
+      ),
+    );
+
+    if (skus.size !== variants.length) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        "Every product variant must have a unique SKU.",
+      );
+    }
+
+    if (new Set(ids).size !== ids.length) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        "A product variant was submitted more than once.",
+      );
+    }
+
+    if (
+      variants.length > 1 &&
+      combinations.size !== variants.length
+    ) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        "Every size and colour combination must be unique.",
+      );
+    }
+  }
 
   return {
     categorySlug: normalizeSlug(
@@ -479,6 +640,7 @@ function normalizeManagedProductFields(
       input.allowBackorder,
       "Backorder setting",
     ),
+    variants,
   };
 }
 
@@ -585,8 +747,12 @@ export async function getManagerCatalog(
                 createdAt: "asc",
               },
             ],
-            take: 1,
             include: {
+              options: {
+                orderBy: {
+                  position: "asc",
+                },
+              },
               prices: {
                 where: {
                   isActive: true,
@@ -615,26 +781,62 @@ export async function getManagerCatalog(
     [];
 
   for (const listing of listings) {
-    const variant =
-      listing.variants[0];
-    const price =
-      variant?.prices.find(
-        (candidate) =>
-          candidate.type ===
-          PriceType.REGULAR,
-      ) ??
-      variant?.prices[0];
-    const inventory =
-      variant?.inventory;
+    const variants = listing.variants.map((variant) => {
+      const price =
+        variant.prices.find(
+          (candidate) => candidate.type === PriceType.REGULAR,
+        ) ?? variant.prices[0];
+      const inventory = variant.inventory;
 
-    if (
-      !variant ||
-      !price ||
-      !inventory
-    ) {
+      if (!price || !inventory) {
+        throw new CatalogServiceError(
+          "CONFLICT",
+          `Catalogue listing "${listing.slug}" has a variant without an active price or inventory record.`,
+        );
+      }
+
+      return {
+        id: variant.id,
+        sku: variant.sku,
+        title: variant.title,
+        status: variant.status,
+        options: variant.options.map((option) => ({
+          name: option.name,
+          value: option.value,
+        })),
+        price: {
+          amount: price.amount.toString(),
+          compareAtAmount:
+            price.compareAtAmount?.toString() ?? null,
+          costAmount: price.costAmount?.toString() ?? null,
+          currencyCode: price.currencyCode,
+        },
+        inventory: {
+          quantityOnHand: inventory.quantityOnHand,
+          quantityReserved: inventory.quantityReserved,
+          availableQuantity:
+            inventory.quantityOnHand - inventory.quantityReserved,
+          reorderLevel: inventory.reorderLevel,
+          isTracked: inventory.isTracked,
+          allowBackorder: inventory.allowBackorder,
+          movements: inventory.movements.map((movement) => ({
+            id: movement.id,
+            type: movement.type,
+            quantityDelta: movement.quantityDelta,
+            quantityOnHandAfter: movement.quantityOnHandAfter,
+            quantityReservedAfter: movement.quantityReservedAfter,
+            reason: movement.reason,
+            createdAt: movement.createdAt.toISOString(),
+          })),
+        },
+      };
+    });
+    const variant = variants[0];
+
+    if (!variant) {
       throw new CatalogServiceError(
         "CONFLICT",
-        `Catalogue listing "${listing.slug}" is missing its managed variant, active price, or inventory record.`,
+        `Catalogue listing "${listing.slug}" is missing its managed variant.`,
       );
     }
 
@@ -693,67 +895,8 @@ export async function getManagerCatalog(
               image.isPrimary,
           }),
         ),
-      variant: {
-        id: variant.id,
-        sku: variant.sku,
-        title: variant.title,
-        status: variant.status,
-        price: {
-          amount:
-            price.amount.toString(),
-          compareAtAmount:
-            price.compareAtAmount
-              ?.toString() ?? null,
-          costAmount:
-            price.costAmount
-              ?.toString() ?? null,
-          currencyCode:
-            price.currencyCode,
-        },
-        inventory: {
-          quantityOnHand:
-            inventory
-              .quantityOnHand,
-          quantityReserved:
-            inventory
-              .quantityReserved,
-          availableQuantity:
-            inventory
-              .quantityOnHand -
-            inventory
-              .quantityReserved,
-          reorderLevel:
-            inventory.reorderLevel,
-          isTracked:
-            inventory.isTracked,
-          allowBackorder:
-            inventory
-              .allowBackorder,
-          movements:
-            inventory.movements
-              .map(
-                (movement) => ({
-                  id: movement.id,
-                  type:
-                    movement.type,
-                  quantityDelta:
-                    movement
-                      .quantityDelta,
-                  quantityOnHandAfter:
-                    movement
-                      .quantityOnHandAfter,
-                  quantityReservedAfter:
-                    movement
-                      .quantityReservedAfter,
-                  reason:
-                    movement.reason,
-                  createdAt:
-                    movement.createdAt
-                      .toISOString(),
-                }),
-              ),
-        },
-      },
+      variants,
+      variant,
     });
   }
 
@@ -812,6 +955,77 @@ export async function createManagedCatalogProduct(
     throw new CatalogServiceError(
       "VALIDATION",
       "A new product can use only newly uploaded photos.",
+    );
+  }
+
+  const managedVariants =
+    fields.variants ?? [
+      {
+        id: null,
+        sku: normalizeSku(input.sku),
+        title: fields.variantTitle,
+        size: null,
+        color: null,
+        priceAmount: fields.priceAmount,
+        compareAtAmount: fields.compareAtAmount,
+        costAmount: fields.costAmount,
+        initialStock: requireInteger(
+          input.initialStock,
+          "Opening stock",
+          0,
+        ),
+        reorderLevel: fields.reorderLevel,
+        isTracked: fields.isTracked,
+        allowBackorder: fields.allowBackorder,
+        status: ProductVariantStatus.ACTIVE,
+      },
+    ];
+  const catalogVariants = managedVariants.map((variant, index) => {
+    if (variant.initialStock === null) {
+      throw new CatalogServiceError(
+        "VALIDATION",
+        `Variant ${index + 1} opening stock is required.`,
+      );
+    }
+
+    return {
+      sku: variant.sku,
+      title: variant.title,
+      status: variant.status,
+      options: [
+        ...(variant.size
+          ? [{ name: "Size", value: variant.size, position: 1 }]
+          : []),
+        ...(variant.color
+          ? [{ name: "Colour", value: variant.color, position: 2 }]
+          : []),
+      ],
+      price: {
+        amount: variant.priceAmount,
+        compareAtAmount: variant.compareAtAmount,
+        costAmount: variant.costAmount,
+        type: PriceType.REGULAR,
+      },
+      initialStock: variant.initialStock,
+      reorderLevel: variant.reorderLevel,
+      isTracked: variant.isTracked,
+      allowBackorder: variant.allowBackorder,
+      openingStockReason:
+        "Opening stock recorded by storefront manager",
+      openingStockReferenceType: "MANAGER_CATALOG",
+      openingStockReferenceId: manager.membershipId,
+    };
+  });
+
+  if (
+    fields.listingStatus === StorefrontProductStatus.ACTIVE &&
+    managedVariants.every(
+      (variant) => variant.status !== ProductVariantStatus.ACTIVE,
+    )
+  ) {
+    throw new CatalogServiceError(
+      "VALIDATION",
+      "A live product must have at least one available variant.",
     );
   }
 
@@ -874,38 +1088,8 @@ export async function createManagedCatalogProduct(
                 selection.altText,
             }),
           ),
-    variant: {
-      sku: input.sku,
-      title:
-        fields.variantTitle,
-      price: {
-        amount:
-          fields.priceAmount,
-        compareAtAmount:
-          fields.compareAtAmount,
-        costAmount:
-          fields.costAmount,
-        type: PriceType.REGULAR,
-      },
-      initialStock:
-        requireInteger(
-          input.initialStock,
-          "Opening stock",
-          0,
-        ),
-      reorderLevel:
-        fields.reorderLevel,
-      isTracked:
-        fields.isTracked,
-      allowBackorder:
-        fields.allowBackorder,
-      openingStockReason:
-        "Opening stock recorded by storefront manager",
-      openingStockReferenceType:
-        "MANAGER_CATALOG",
-      openingStockReferenceId:
-        manager.membershipId,
-    },
+    variant: catalogVariants[0]!,
+    variants: catalogVariants,
   });
 }
 
@@ -996,9 +1180,9 @@ export async function updateManagedCatalogProduct(
                         "asc",
                     },
                   ],
-                  take: 1,
                   select: {
                     id: true,
+                    sku: true,
                   },
                 },
               },
@@ -1019,13 +1203,88 @@ export async function updateManagedCatalogProduct(
           );
         }
 
-        const variant =
-          listing.variants[0];
+        const variant = listing.variants[0];
 
         if (!variant) {
           throw new CatalogServiceError(
             "CONFLICT",
             "The catalogue product is missing its managed variant.",
+          );
+        }
+
+        const variants =
+          fields.variants ?? [
+            {
+              id: variant.id,
+              sku: variant.sku,
+              title: fields.variantTitle,
+              size: null,
+              color: null,
+              priceAmount: fields.priceAmount,
+              compareAtAmount: fields.compareAtAmount,
+              costAmount: fields.costAmount,
+              initialStock: null,
+              reorderLevel: fields.reorderLevel,
+              isTracked: fields.isTracked,
+              allowBackorder: fields.allowBackorder,
+              status: ProductVariantStatus.ACTIVE,
+            },
+          ];
+        const existingById = new Map(
+          listing.variants.map((candidate) => [candidate.id, candidate]),
+        );
+        const submittedExistingIds = new Set(
+          variants
+            .map((candidate) => candidate.id)
+            .filter((id): id is string => id !== null),
+        );
+
+        if (
+          fields.variants &&
+          listing.variants.some(
+            (candidate) => !submittedExistingIds.has(candidate.id),
+          )
+        ) {
+          throw new CatalogServiceError(
+            "VALIDATION",
+            "Existing variants cannot be deleted. Mark a variant unavailable instead.",
+          );
+        }
+
+        for (const candidate of variants) {
+          if (candidate.id) {
+            const existing = existingById.get(candidate.id);
+
+            if (!existing) {
+              throw new CatalogServiceError(
+                "NOT_FOUND",
+                "A submitted variant does not belong to this storefront product.",
+              );
+            }
+
+            if (candidate.sku !== existing.sku) {
+              throw new CatalogServiceError(
+                "VALIDATION",
+                "Existing variant SKUs are locked after creation.",
+              );
+            }
+          } else if (!candidate.sku.startsWith(`${manager.storefront.code}-`)) {
+            throw new CatalogServiceError(
+              "VALIDATION",
+              `New variant SKUs must begin with ${manager.storefront.code}-.`,
+            );
+          }
+        }
+
+        if (
+          fields.listingStatus === StorefrontProductStatus.ACTIVE &&
+          variants.every(
+            (candidate) => candidate.status !== ProductVariantStatus.ACTIVE,
+          )
+        ) {
+          throw new CatalogServiceError(
+            "VALIDATION",
+            "A live product must have at least one available variant.",
           );
         }
 
@@ -1081,94 +1340,143 @@ export async function updateManagedCatalogProduct(
             },
           });
 
-        await transaction
-          .productVariant
-          .update({
-            where: {
-              id: variant.id,
-            },
-            data: {
-              title:
-                fields.variantTitle,
-              status:
-                fields.listingStatus ===
-                StorefrontProductStatus
-                  .ARCHIVED
-                  ? ProductVariantStatus
-                      .DISCONTINUED
-                  : ProductVariantStatus
-                      .ACTIVE,
-            },
-          });
+        for (const candidate of variants) {
+          const options = [
+            ...(candidate.size
+              ? [{ name: "Size", value: candidate.size, position: 1 }]
+              : []),
+            ...(candidate.color
+              ? [{ name: "Colour", value: candidate.color, position: 2 }]
+              : []),
+          ];
+          const status =
+            fields.listingStatus === StorefrontProductStatus.ARCHIVED
+              ? ProductVariantStatus.DISCONTINUED
+              : candidate.status;
+          let variantId = candidate.id;
 
-        await transaction
-          .storefrontPrice
-          .updateMany({
-            where: {
-              productVariantId:
-                variant.id,
-              isActive: true,
-            },
-            data: {
-              isActive: false,
-              endsAt: changedAt,
-            },
-          });
+          if (variantId) {
+            await transaction.productVariant.update({
+              where: { id: variantId },
+              data: {
+                title: candidate.title,
+                status,
+              },
+            });
 
-        await transaction
-          .storefrontPrice
-          .create({
-            data: {
-              productVariantId:
-                variant.id,
-              currencyCode:
-                manager.storefront
-                  .currencyCode,
-              type:
-                PriceType.REGULAR,
-              amount:
-                fields.priceAmount,
-              compareAtAmount:
-                fields
-                  .compareAtAmount,
-              costAmount:
-                fields.costAmount,
-              startsAt: changedAt,
-              isActive: true,
-            },
-          });
+            if (fields.variants) {
+              await transaction.variantOption.deleteMany({
+                where: { productVariantId: variantId },
+              });
 
-        await transaction.inventory
-          .upsert({
-            where: {
-              productVariantId:
-                variant.id,
-            },
-            create: {
-              storefrontId:
-                manager.storefront.id,
-              productVariantId:
-                variant.id,
-              quantityOnHand: 0,
-              quantityReserved: 0,
-              reorderLevel:
-                fields.reorderLevel,
-              isTracked:
-                fields.isTracked,
-              allowBackorder:
-                fields
-                  .allowBackorder,
-            },
-            update: {
-              reorderLevel:
-                fields.reorderLevel,
-              isTracked:
-                fields.isTracked,
-              allowBackorder:
-                fields
-                  .allowBackorder,
-            },
-          });
+              if (options.length > 0) {
+                await transaction.variantOption.createMany({
+                  data: options.map((option) => ({
+                    productVariantId: variantId!,
+                    ...option,
+                  })),
+                });
+              }
+            }
+
+            await transaction.storefrontPrice.updateMany({
+              where: {
+                productVariantId: variantId,
+                isActive: true,
+              },
+              data: {
+                isActive: false,
+                endsAt: changedAt,
+              },
+            });
+            await transaction.storefrontPrice.create({
+              data: {
+                productVariantId: variantId,
+                currencyCode: manager.storefront.currencyCode,
+                type: PriceType.REGULAR,
+                amount: candidate.priceAmount,
+                compareAtAmount: candidate.compareAtAmount,
+                costAmount: candidate.costAmount,
+                startsAt: changedAt,
+                isActive: true,
+              },
+            });
+            await transaction.inventory.upsert({
+              where: { productVariantId: variantId },
+              create: {
+                storefrontId: manager.storefront.id,
+                productVariantId: variantId,
+                quantityOnHand: 0,
+                quantityReserved: 0,
+                reorderLevel: candidate.reorderLevel,
+                isTracked: candidate.isTracked,
+                allowBackorder: candidate.allowBackorder,
+              },
+              update: {
+                reorderLevel: candidate.reorderLevel,
+                isTracked: candidate.isTracked,
+                allowBackorder: candidate.allowBackorder,
+              },
+            });
+          } else {
+            if (candidate.initialStock === null) {
+              throw new CatalogServiceError(
+                "VALIDATION",
+                `Opening stock is required for new variant ${candidate.sku}.`,
+              );
+            }
+
+            const createdVariant = await transaction.productVariant.create({
+              data: {
+                storefrontProductId,
+                sku: candidate.sku,
+                title: candidate.title,
+                status,
+                isDefault: false,
+                options:
+                  options.length > 0 ? { create: options } : undefined,
+                prices: {
+                  create: {
+                    currencyCode: manager.storefront.currencyCode,
+                    type: PriceType.REGULAR,
+                    amount: candidate.priceAmount,
+                    compareAtAmount: candidate.compareAtAmount,
+                    costAmount: candidate.costAmount,
+                    startsAt: changedAt,
+                    isActive: true,
+                  },
+                },
+                inventory: {
+                  create: {
+                    storefrontId: manager.storefront.id,
+                    quantityOnHand: candidate.initialStock,
+                    quantityReserved: 0,
+                    reorderLevel: candidate.reorderLevel,
+                    isTracked: candidate.isTracked,
+                    allowBackorder: candidate.allowBackorder,
+                    movements:
+                      candidate.initialStock > 0
+                        ? {
+                            create: {
+                              type: StockMovementType.OPENING_STOCK,
+                              quantityDelta: candidate.initialStock,
+                              quantityOnHandAfter: candidate.initialStock,
+                              quantityReservedAfter: 0,
+                              reason:
+                                "Opening stock recorded by storefront manager",
+                              referenceType: "MANAGER_CATALOG",
+                              referenceId: manager.membershipId,
+                            },
+                          }
+                        : undefined,
+                  },
+                },
+              },
+              select: { id: true },
+            });
+            variantId = createdVariant.id;
+          }
+        }
 
         if (managedImages) {
           const existingById =
@@ -1431,6 +1739,11 @@ export async function adjustManagedCatalogStock(
       "Catalogue listing",
       191,
     );
+  const variantId = optionalText(
+    input.variantId,
+    "Product variant",
+    191,
+  );
   const reason = requireText(
     input.reason,
     "Stock adjustment reason",
@@ -1485,6 +1798,11 @@ export async function adjustManagedCatalogStock(
         },
         select: {
           variants: {
+            where: variantId
+              ? {
+                  id: variantId,
+                }
+              : undefined,
             orderBy: [
               {
                 isDefault: "desc",
@@ -1507,7 +1825,7 @@ export async function adjustManagedCatalogStock(
   if (!variant) {
     throw new CatalogServiceError(
       "NOT_FOUND",
-      "The catalogue product was not found in this storefront.",
+      "The catalogue product variant was not found in this storefront.",
     );
   }
 
