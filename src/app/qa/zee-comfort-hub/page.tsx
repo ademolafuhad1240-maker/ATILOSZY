@@ -25,10 +25,11 @@ export const metadata: Metadata = {
 
 const navigation = [
   { label: 'Shop all', href: '/qa/zee-comfort-hub/shop' },
-  { label: 'Women', href: '#comfort-categories' },
+  { label: 'Underwear', href: '#comfort-categories' },
+  { label: 'Bras', href: '#comfort-categories' },
   { label: 'Sleepwear', href: '#comfort-categories' },
   { label: 'Leggings', href: '#comfort-categories' },
-  { label: 'Loungewear', href: '#comfort-categories' },
+  { label: 'Men', href: '#comfort-categories' },
   { label: 'Visit store', href: '#visit-comfort-hub' },
 ];
 
@@ -107,8 +108,9 @@ export default function ZeeComfortHubPage() {
               </h1>
 
               <p className="mt-8 max-w-xl text-base leading-8 text-white/65">
-                Shop sleepwear, leggings, loungewear, bras, underwear, vintage
-                clothing and everyday essentials for women and men.
+                Shop underwear, bras, bralettes, leggings, sleepwear, boxers,
+                vintage clothing, round-necks and everyday essentials for women
+                and men.
               </p>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -150,8 +152,8 @@ export default function ZeeComfortHubPage() {
           <div className="grid min-h-[620px] grid-cols-2 grid-rows-2 gap-4">
             <div className="group relative col-span-2 overflow-hidden">
               <Image
-                src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1400&auto=format&fit=crop&q=90"
-                alt="Women’s loungewear and everyday clothing"
+                src="/brand/zee-comfort-hub-essentials-hero.webp"
+                alt="Bras, underwear, leggings, sleepwear and boxers"
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -162,19 +164,19 @@ export default function ZeeComfortHubPage() {
 
               <div className="absolute inset-x-0 bottom-0 p-7">
                 <p className="text-[8px] font-extrabold uppercase tracking-[0.2em] text-[#efc4ce]">
-                  Loungewear and everyday comfort
+                  Underwear, sleepwear and everyday comfort
                 </p>
 
                 <h2 className="mt-2 font-display text-4xl font-semibold">
-                  Soft essentials for real life.
+                  Essentials for women and men.
                 </h2>
               </div>
             </div>
 
             <div className="group relative overflow-hidden">
               <Image
-                src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=900&auto=format&fit=crop&q=90"
-                alt="Women’s sleepwear"
+                src="/brand/zee-comfort-hub-bras-underwear.webp"
+                alt="Bras, bralettes and women’s underwear"
                 fill
                 sizes="(max-width: 1024px) 50vw, 25vw"
                 className="object-cover transition duration-700 group-hover:scale-105"
@@ -184,19 +186,19 @@ export default function ZeeComfortHubPage() {
 
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <p className="text-[8px] font-extrabold uppercase tracking-[0.18em] text-[#efc4ce]">
-                  Sleepwear
+                  Bras &amp; underwear
                 </p>
 
                 <h2 className="mt-2 font-display text-2xl font-semibold">
-                  Unwind in comfort.
+                  Everyday confidence.
                 </h2>
               </div>
             </div>
 
             <div className="group relative overflow-hidden">
               <Image
-                src="https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=900&auto=format&fit=crop&q=90"
-                alt="Women’s leggings"
+                src="/brand/zee-comfort-hub-sleepwear-leggings.webp"
+                alt="Sleepwear and leggings"
                 fill
                 sizes="(max-width: 1024px) 50vw, 25vw"
                 className="object-cover transition duration-700 group-hover:scale-105"
@@ -206,11 +208,11 @@ export default function ZeeComfortHubPage() {
 
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <p className="text-[8px] font-extrabold uppercase tracking-[0.18em] text-[#efc4ce]">
-                  Leggings
+                  Sleepwear &amp; leggings
                 </p>
 
                 <h2 className="mt-2 font-display text-2xl font-semibold">
-                  Move comfortably.
+                  Rest. Move. Repeat.
                 </h2>
               </div>
             </div>
@@ -292,8 +294,8 @@ export default function ZeeComfortHubPage() {
         <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="relative min-h-[570px] overflow-hidden">
             <Image
-              src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1400&auto=format&fit=crop&q=90"
-              alt="Women’s comfort fashion"
+              src="/brand/zee-comfort-hub-mens-essentials.webp"
+              alt="Men’s boxers, round-neck shirts and everyday essentials"
               fill
               sizes="(max-width: 1024px) 100vw, 55vw"
               className="object-cover"
@@ -302,7 +304,7 @@ export default function ZeeComfortHubPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-[#481428]/80 via-transparent to-transparent" />
 
             <p className="absolute bottom-7 left-7 text-[8px] font-extrabold uppercase tracking-[0.2em] text-[#efc4ce]">
-              The Zee COMFORT HUB edit
+              Men’s comfort essentials
             </p>
           </div>
 

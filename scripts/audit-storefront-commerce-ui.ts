@@ -119,6 +119,42 @@ function main(): void {
   assert.ok(!logoMigration.includes('UPDATE "Storefront"'));
   console.log("PASS: Approved storefront logos persist across store, account, cart and checkout pages.");
 
+  const comfortHome = read("src/app/qa/zee-comfort-hub/page.tsx");
+  const comfortData = read("src/data/zee-comfort-store.ts");
+  for (const imagePath of [
+    "/brand/zee-comfort-hub-essentials-hero.webp",
+    "/brand/zee-comfort-hub-bras-underwear.webp",
+    "/brand/zee-comfort-hub-sleepwear-leggings.webp",
+    "/brand/zee-comfort-hub-mens-essentials.webp",
+  ]) {
+    assert.ok(
+      comfortHome.includes(imagePath) || comfortData.includes(imagePath),
+      `Zee Comfort Hub does not reference ${imagePath}.`,
+    );
+    assert.ok(
+      existsSync(`public${imagePath}`),
+      `Missing Zee Comfort Hub image public${imagePath}.`,
+    );
+  }
+  for (const category of [
+    "Underwear",
+    "Bras",
+    "Bralettes",
+    "Leggings",
+    "Sleepwear",
+    "Boxers",
+    "Vintage",
+    "Round Necks",
+    "Women's Essentials",
+    "Men's Essentials",
+  ]) {
+    assert.ok(
+      read("prisma/seed.ts").includes(`name: \"${category}\"`),
+      `The manager catalogue is missing the ${category} category.`,
+    );
+  }
+  console.log("PASS: Zee Comfort Hub imagery and manager categories match its core product range.");
+
   const cartStyles = read(
     "src/components/cart/storefront-cart.module.css",
   );
