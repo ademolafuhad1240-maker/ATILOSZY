@@ -109,6 +109,14 @@ function main(): void {
     assert.ok(checkoutConfig.includes(logoPath));
   }
   assert.ok(authShell.includes("storefront.logoPath"));
+  const logoMigration = read(
+    "prisma/migrations/20260801130000_update_zee_storefront_logos/migration.sql",
+  );
+  assert.ok(
+    logoMigration.includes('UPDATE "storefronts"'),
+    "The logo migration must target the mapped storefronts table.",
+  );
+  assert.ok(!logoMigration.includes('UPDATE "Storefront"'));
   console.log("PASS: Approved storefront logos persist across store, account, cart and checkout pages.");
 
   const cartStyles = read(
