@@ -12,6 +12,7 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
+import SorvyraLogo from '@/components/brand/sorvyra-logo';
 import Container from '@/components/ui/container';
 
 const categories = [
@@ -32,12 +33,11 @@ export default function Header() {
       <Container>
         <div className="flex min-h-[82px] items-center gap-5 lg:gap-8">
           <Link href="/" className="shrink-0" aria-label="SORVYRA STORE home">
-            <span className="block text-[20px] font-extrabold tracking-[0.14em] sm:text-[23px]">
-              SORVYRA
-            </span>
-            <span className="mt-0.5 block text-[7px] font-extrabold uppercase tracking-[0.44em] text-[#d4ad55]">
-              Store
-            </span>
+            <SorvyraLogo
+              size="compact"
+              subtitle="Nigeria · Qatar"
+              tone="dark"
+            />
           </Link>
 
           <form

@@ -26,38 +26,6 @@
   text-decoration: none;
 }
 
-.brandMark {
-  display: grid;
-  width: 2.7rem;
-  height: 2.7rem;
-  place-items: center;
-  border-radius: 0.85rem;
-  color: #fff;
-  background: #172024;
-  font-family: Georgia, serif;
-  font-size: 1.45rem;
-}
-
-.brandEyebrow,
-.brandName {
-  display: block;
-}
-
-.brandEyebrow {
-  color: #6b716d;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-
-.brandName {
-  margin-top: 0.12rem;
-  font-family: Georgia, serif;
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
-}
-
 .nav {
   display: flex;
   align-items: center;

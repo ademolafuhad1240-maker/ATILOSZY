@@ -3,6 +3,8 @@ import type {
 } from "react";
 import Link from "next/link";
 
+import SorvyraLogo from "@/components/brand/sorvyra-logo";
+
 import styles from "./governance.module.css";
 
 export default function GovernanceShell({
@@ -25,25 +27,13 @@ export default function GovernanceShell({
         <Link
           href="/"
           className={styles.brand}
+          aria-label="SORVYRA STORE home"
         >
-          <span
-            className={styles.brandMark}
-            aria-hidden="true"
-          >
-            S
-          </span>
-          <span>
-            <span
-              className={styles.brandEyebrow}
-            >
-              Multi-brand commerce
-            </span>
-            <span
-              className={styles.brandName}
-            >
-              SORVYRA STORE
-            </span>
-          </span>
+          <SorvyraLogo
+            size="compact"
+            subtitle="Multi-brand commerce"
+            tone="light"
+          />
         </Link>
 
         <nav

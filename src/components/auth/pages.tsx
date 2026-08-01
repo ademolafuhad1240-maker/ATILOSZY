@@ -3,6 +3,8 @@ import type {
 } from "react";
 import Link from "next/link";
 
+import SorvyraLogo from "@/components/brand/sorvyra-logo";
+
 import {
   getAllStorefrontAuthConfigs,
   type StorefrontAuthConfig,
@@ -238,29 +240,13 @@ export function GlobalAccountPortalPage() {
         <Link
           href="/"
           className={styles.brand}
+          aria-label="SORVYRA STORE home"
         >
-          <span
-            className={styles.brandMark}
-            aria-hidden="true"
-          >
-            S
-          </span>
-
-          <span
-            className={styles.brandCopy}
-          >
-            <span
-              className={styles.eyebrow}
-            >
-              Owned storefront network
-            </span>
-
-            <span
-              className={styles.brandName}
-            >
-              SORVYRA STORE
-            </span>
-          </span>
+          <SorvyraLogo
+            size="compact"
+            subtitle="Owned storefront network"
+            tone="dark"
+          />
         </Link>
 
         <nav

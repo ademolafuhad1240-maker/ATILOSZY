@@ -1,5 +1,5 @@
-import Image from 'next/image';
 import Link from 'next/link';
+import SorvyraLogo from '@/components/brand/sorvyra-logo';
 import Container from '@/components/ui/container';
 
 export default function Footer() {
@@ -8,17 +8,13 @@ export default function Footer() {
       <Container>
         <div className="grid gap-14 py-20 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
-            <div className="relative h-52 w-52 overflow-hidden">
-              <Image
-                src="/brand/sorvyra-store-logo.png"
-                alt="SORVYRA STORE"
-                fill
-                sizes="208px"
-                className="object-contain"
-              />
-            </div>
+            <SorvyraLogo
+              size="large"
+              subtitle="Nigeria · Qatar"
+              tone="dark"
+            />
 
-            <p className="mt-5 max-w-md text-sm leading-7 text-white/52">
+            <p className="mt-8 max-w-md text-sm leading-7 text-white/52">
               The official multi-brand shopping and services platform for
               ATILOSZY, ZEE and DENALD across Nigeria and Qatar.
             </p>

@@ -1,0 +1,205 @@
+.logo {
+  --sorvyra-text: #172024;
+  --sorvyra-muted: #67706d;
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.72rem;
+}
+
+.dark {
+  --sorvyra-text: #ffffff;
+  --sorvyra-muted: rgba(255, 255, 255, 0.58);
+}
+
+.light {
+  --sorvyra-text: #172024;
+  --sorvyra-muted: #67706d;
+}
+
+.mark {
+  position: relative;
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(215, 178, 88, 0.42);
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(
+      circle at 18% 12%,
+      rgba(255, 255, 255, 0.2),
+      transparent 35%
+    ),
+    linear-gradient(145deg, #122529, #081317);
+  box-shadow:
+    0 0.65rem 1.6rem rgba(5, 15, 18, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mark::after {
+  position: absolute;
+  right: -0.65rem;
+  bottom: -0.75rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 0.38rem solid rgba(17, 160, 163, 0.3);
+  border-radius: 999px;
+  content: "";
+}
+
+.markS,
+.markV {
+  position: absolute;
+  z-index: 1;
+  font-size: 1.42rem;
+}
+
+.markS {
+  left: 0.62rem;
+  top: 0.65rem;
+  color: #e6bf61;
+}
+
+.markV {
+  right: 0.52rem;
+  bottom: 0.55rem;
+  color: #58c6c2;
+  font-size: 1.2rem;
+}
+
+.copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.wordmark {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.48rem;
+  color: var(--sorvyra-text);
+  white-space: nowrap;
+}
+
+.name {
+  font-size: 1.05rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.divider {
+  width: 1px;
+  height: 0.88rem;
+  background: rgba(215, 178, 88, 0.68);
+}
+
+.store {
+  color: #c99f45;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.2em;
+}
+
+.subtitle {
+  overflow: hidden;
+  color: var(--sorvyra-muted);
+  font-size: 0.56rem;
+  font-weight: 760;
+  letter-spacing: 0.18em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.compact {
+  gap: 0.6rem;
+}
+
+.compact .mark {
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 0.78rem;
+}
+
+.compact .markS {
+  left: 0.52rem;
+  top: 0.55rem;
+  font-size: 1.23rem;
+}
+
+.compact .markV {
+  right: 0.44rem;
+  bottom: 0.47rem;
+  font-size: 1rem;
+}
+
+.compact .name {
+  font-size: 0.93rem;
+}
+
+.compact .store {
+  font-size: 0.63rem;
+}
+
+.compact .subtitle {
+  font-size: 0.5rem;
+}
+
+.large {
+  gap: 0.95rem;
+}
+
+.large .mark {
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 1.05rem;
+}
+
+.large .markS {
+  left: 0.78rem;
+  top: 0.78rem;
+  font-size: 1.8rem;
+}
+
+.large .markV {
+  right: 0.68rem;
+  bottom: 0.65rem;
+  font-size: 1.5rem;
+}
+
+.large .name {
+  font-size: 1.36rem;
+}
+
+.large .store {
+  font-size: 0.85rem;
+}
+
+.large .subtitle {
+  font-size: 0.62rem;
+}
+
+@media (max-width: 420px) {
+  .subtitle {
+    display: none;
+  }
+
+  .wordmark {
+    gap: 0.34rem;
+  }
+
+  .divider {
+    display: none;
+  }
+
+  .store {
+    letter-spacing: 0.12em;
+  }
+}
